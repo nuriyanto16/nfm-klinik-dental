@@ -164,7 +164,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                   itemBuilder: (context, i) {
                     final item = _quickMenu[i];
                     return InkWell(
-                      onTap: () => context.push(item.route),
+                      onTap: () {
+                        if (item.label == 'Tampilkan Semua') {
+                          _showAllMenuSheet(context);
+                        } else {
+                          context.push(item.route);
+                        }
+                      },
                       borderRadius: BorderRadius.circular(16),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -809,6 +815,100 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showAllMenuSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        final allItems = [
+          const _QuickMenuItem('Promo Spesial', Icons.local_offer_outlined, '/promos', badge: '🔥'),
+          const _QuickMenuItem('Reservasi Baru', Icons.calendar_today_outlined, '/reservations/new'),
+          const _QuickMenuItem('Pricelist & Perawatan', Icons.receipt_long_outlined, '/pricelist'),
+          const _QuickMenuItem('Klinik Terdekat', Icons.home_outlined, '/branches'),
+          const _QuickMenuItem('Payment History', Icons.credit_card_outlined, '/payments/history'),
+          const _QuickMenuItem('Dokter Spesialis', Icons.medical_services_outlined, '/doctors'),
+          const _QuickMenuItem('Info Asuransi', Icons.shield_outlined, '/insurance'),
+          const _QuickMenuItem('Riwayat Jadwal', Icons.event_available_outlined, '/schedule'),
+          const _QuickMenuItem('Membership', Icons.card_membership_outlined, '/membership'),
+          const _QuickMenuItem('Hadiah Reward', Icons.card_giftcard_outlined, '/reward'),
+          const _QuickMenuItem('Video Edukasi', Icons.play_circle_outline, '/videos'),
+          const _QuickMenuItem('Testimoni Pasien', Icons.star_outline, '/testimonials'),
+        ];
+
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.65,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Semua Layanan Klinik',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 0.95,
+                  ),
+                  itemCount: allItems.length,
+                  itemBuilder: (context, i) {
+                    final item = allItems[i];
+                    return InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push(item.route);
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 54,
+                            height: 54,
+                            decoration: BoxDecoration(
+                              color: i % 2 == 0 ? Colors.green.shade50 : Colors.pink.shade50,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(item.icon, color: i % 2 == 0 ? AppColors.primary : AppColors.pink, size: 28),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            item.label,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

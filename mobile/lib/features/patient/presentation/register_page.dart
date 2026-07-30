@@ -62,12 +62,21 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     setState(() => _isLoading = true);
 
     try {
+      String phone = _phoneCtrl.text.trim();
+      if (phone.startsWith('0')) {
+        phone = '+62${phone.substring(1)}';
+      } else if (phone.startsWith('62')) {
+        phone = '+$phone';
+      } else if (!phone.startsWith('+')) {
+        phone = '+62$phone';
+      }
+
       await ref.read(sessionControllerProvider.notifier).register(
             CreatePatientInput(
               fullName: _fullNameCtrl.text.trim(),
               relation: 'self',
               email: _emailCtrl.text.trim(),
-              phoneWa: _phoneCtrl.text.trim(),
+              phoneWa: phone,
               dateOfBirth: DateFormat('yyyy-MM-dd').format(_dob!),
               gender: _gender,
               city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),

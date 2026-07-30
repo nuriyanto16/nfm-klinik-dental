@@ -22,10 +22,10 @@ const features = [
         <span>Nina Dental Care</span>
       </div>
 
-      <div class="relative space-y-6 max-w-md">
+      <div class="relative space-y-5 max-w-md">
         <UIcon
           name="i-lucide-shield-check"
-          class="w-10 h-10 opacity-80"
+          class="w-9 h-9 opacity-80"
         />
         <h2 class="text-2xl font-semibold leading-snug">
           Office Panel untuk reservasi, rekam medis, dan billing — Soreang & Baleendah.
@@ -33,13 +33,13 @@ const features = [
         <p class="text-white/70 text-sm">
           Satu tempat untuk staf klinik mengelola jadwal, pasien, dan transaksi harian.
         </p>
-        <ul class="space-y-3 pt-2">
+        <ul class="space-y-2.5 pt-1">
           <li
             v-for="f in features"
             :key="f.label"
             class="flex items-center gap-3 text-sm text-white/85"
           >
-            <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 shrink-0">
+            <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-white/10 shrink-0">
               <UIcon
                 :name="f.icon"
                 class="w-4 h-4"
@@ -48,6 +48,34 @@ const features = [
             {{ f.label }}
           </li>
         </ul>
+
+        <!-- Mobile APK Download Card -->
+        <div class="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 space-y-3 shadow-lg">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-emerald-400/20 border border-emerald-300/40 flex items-center justify-center">
+                <UIcon name="i-lucide-smartphone" class="w-5 h-5 text-emerald-300" />
+              </div>
+              <div>
+                <p class="text-xs font-bold text-white flex items-center gap-1.5">
+                  Aplikasi Mobile Android
+                  <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-400 text-emerald-950">v1.0.0</span>
+                </p>
+                <p class="text-[11px] text-white/70">APK Rilis Terbaru · Nina Dental Care</p>
+              </div>
+            </div>
+          </div>
+
+          <a
+            href="/downloads/nina-dental-care.apk"
+            download="nina-dental-care.apk"
+            target="_blank"
+            class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-300 text-emerald-950 font-bold text-xs shadow-md hover:brightness-110 transition-all cursor-pointer"
+          >
+            <UIcon name="i-lucide-download" class="w-4 h-4" />
+            <span>Download APK Mobile (57.9 MB)</span>
+          </a>
+        </div>
       </div>
 
       <p class="relative text-xs text-white/60">

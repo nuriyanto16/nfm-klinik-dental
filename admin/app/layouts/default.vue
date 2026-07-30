@@ -69,31 +69,46 @@ const notificationCount = computed(() => lowStockItems.value.length + (reservati
       />
 
       <template #footer="{ collapsed }">
-        <UDropdownMenu
-          :items="userMenuItems"
-          :content="{ align: 'start' }"
-        >
-          <UButton
-            color="neutral"
-            variant="ghost"
-            :block="!collapsed"
-            :square="collapsed"
-            trailing-icon="i-lucide-chevrons-up-down"
+        <div class="space-y-2 w-full">
+          <a
+            href="/downloads/nina-dental-care.apk"
+            download="nina-dental-care.apk"
+            target="_blank"
+            class="flex items-center gap-2 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 transition-colors w-full cursor-pointer text-xs font-bold"
+            :title="collapsed ? 'Download APK Mobile (Android v1.0.0)' : undefined"
           >
-            <UAvatar
-              icon="i-lucide-user-round"
-              size="xs"
-              class="bg-primary-100 text-primary-700"
-            />
-            <span
-              v-if="!collapsed"
-              class="flex flex-col items-start text-left"
+            <UIcon name="i-lucide-smartphone" class="w-4 h-4 shrink-0" />
+            <span v-if="!collapsed" class="truncate">Download APK Mobile</span>
+            <UBadge v-if="!collapsed" size="xs" color="emerald" variant="subtle" class="ml-auto">v1.0.0</UBadge>
+          </a>
+
+          <UDropdownMenu
+            :items="userMenuItems"
+            :content="{ align: 'start' }"
+            class="w-full"
+          >
+            <UButton
+              color="neutral"
+              variant="ghost"
+              :block="!collapsed"
+              :square="collapsed"
+              trailing-icon="i-lucide-chevrons-up-down"
             >
-              <span class="text-xs font-medium">{{ authUser?.fullName ?? 'Staf' }}</span>
-              <span class="text-[10px] text-muted">{{ roleLabels[authUser?.role ?? ''] ?? authUser?.role }}</span>
-            </span>
-          </UButton>
-        </UDropdownMenu>
+              <UAvatar
+                icon="i-lucide-user-round"
+                size="xs"
+                class="bg-primary-100 text-primary-700"
+              />
+              <span
+                v-if="!collapsed"
+                class="flex flex-col items-start text-left"
+              >
+                <span class="text-xs font-medium">{{ authUser?.fullName ?? 'Staf' }}</span>
+                <span class="text-[10px] text-muted">{{ roleLabels[authUser?.role ?? ''] ?? authUser?.role }}</span>
+              </span>
+            </UButton>
+          </UDropdownMenu>
+        </div>
       </template>
     </UDashboardSidebar>
 

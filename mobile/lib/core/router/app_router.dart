@@ -73,6 +73,10 @@ final appRouter = GoRouter(
       path: '/reservations/new',
       builder: (context, state) => const BookingFlowPage(),
     ),
+    GoRoute(
+      path: '/booking',
+      builder: (context, state) => const BookingFlowPage(),
+    ),
     GoRoute(path: '/reservations/history', builder: (context, state) => const SchedulePage()),
     GoRoute(
       path: '/payment/checkout',
@@ -81,5 +85,6 @@ final appRouter = GoRouter(
       ),
     ),
     GoRoute(path: '/payments/history', builder: (context, state) => const PaymentHistoryPage()),
+    GoRoute(path: '/payment-history', builder: (context, state) => const PaymentHistoryPage()),
   ],
 );

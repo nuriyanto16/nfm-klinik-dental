@@ -154,9 +154,30 @@ async function onSubmit() {
     </form>
 
     <template #footer>
-      <p class="text-xs text-muted text-center">
-        Demo: <code class="font-mono">admin@ninadentalcare.com</code> / <code class="font-mono">NinaDental#2026</code>
-      </p>
+      <div class="space-y-3">
+        <a
+          href="/downloads/nina-dental-care.apk"
+          download="nina-dental-care.apk"
+          target="_blank"
+          class="flex items-center justify-between p-3 rounded-xl border border-emerald-300/40 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/50 transition-colors group cursor-pointer"
+        >
+          <div class="flex items-center gap-2.5">
+            <UIcon name="i-lucide-smartphone" class="w-5 h-5 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+            <div class="text-left">
+              <p class="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                Download APK Mobile Android
+                <UBadge size="xs" color="emerald" variant="subtle">v1.0.0</UBadge>
+              </p>
+              <p class="text-[11px] text-muted">Aplikasi Nina Dental Care Terbaru (57.9 MB)</p>
+            </div>
+          </div>
+          <UIcon name="i-lucide-download" class="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+        </a>
+
+        <p class="text-[11px] text-muted text-center pt-1">
+          Demo Account: <code class="font-mono font-semibold text-primary">admin@ninadentalcare.com</code> / <code class="font-mono font-semibold text-primary">NinaDental#2026</code>
+        </p>
+      </div>
     </template>
   </UCard>
 </template>
