@@ -47,13 +47,13 @@ Bukan lagi skeleton "coming soon" — semua layar tersambung ke `core-api` sungg
 
 Terlokalisasi penuh bahasa Indonesia (`flutter_localizations` + `initializeDateFormatting('id_ID')`, termasuk date/time picker). Diverifikasi: `flutter analyze` bersih, `flutter test` lulus, alur register→booking→riwayat dites lewat curl langsung ke core-api.
 
-**APK release** dibuild dengan `--dart-define=API_BASE_URL=https://nfmtech.my.id/product/klinik/mobile/api/v1` (bicara ke backend produksi di VPS): `mobile/build/app/outputs/flutter-apk/app-release.apk` (57.3MB).
+**APK release** dibuild dengan `--dart-define=API_BASE_URL=https://nfmtech.my.id/product/klinik/api/v1` (bicara ke backend produksi di VPS): `mobile/build/app/outputs/flutter-apk/app-release.apk` (57.3MB).
 
 ### Deployment (VPS produksi)
 
 Stack penuh (`postgres`, `redis`, `core-api`, `payment-service`, `notification-service`, `admin-frontend`) berjalan di VPS bersama (shared dengan project lain milik user — total RAM cuma 3.6GB, ~20 container lain). Override compose baru `docker-compose.vps.yml` (host-port langsung, tanpa Traefik) dengan port yang dipastikan tidak bentrok dengan project lain: `4001` (admin), `8092` (core-api), `8093` (payment-service), `8094` (notification-service), `5435` (postgres), `6381` (redis). Reverse proxy lewat nginx yang sudah ada di VPS (domain `nfmtech.my.id`, pola path-per-produk): `/product/klinik/` → admin-frontend, `/product/klinik/mobile/` → core-api.
 
-- **Live**: https://nfmtech.my.id/product/klinik/ (login admin panel, akun demo `admin@ninadentalcare.com` / `NinaDental#2026`) dan https://nfmtech.my.id/product/klinik/mobile/api/v1/ (API untuk mobile)
+- **Live**: https://nfmtech.my.id/product/klinik/ (login admin panel, akun demo `admin@ninadentalcare.com` / `NinaDental#2026`) dan https://nfmtech.my.id/product/klinik/api/v1/ (API — dipakai admin panel & mobile). Path awalnya `/product/klinik/mobile/`, diganti ke `/product/klinik/api/` sesuai VPS.md yang diperbarui user. Flutter Web sengaja **tidak** dibangun/dideploy ke VPS (permintaan eksplisit user) — VPS cuma menjalankan backend + admin panel.
 - Repo: https://github.com/nuriyanto16/nfm-klinik-dental.git
 
 ### Data dummy
