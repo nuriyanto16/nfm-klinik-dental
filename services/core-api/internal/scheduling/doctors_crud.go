@@ -12,15 +12,33 @@ import (
 func (r *Repository) GetDoctor(ctx context.Context, id string) (DoctorDetail, error) {
 	var d DoctorDetail
 	err := r.pool.QueryRow(ctx, `
-		SELECT s.id, u.full_name, s.specialization, s.photo_url, u.email, u.phone_wa, u.is_active
+		SELECT s.id, u.full_name, s.specialization, s.photo_url, s.bio, s.commission_rate, u.email, u.phone_wa, u.is_active
 		FROM identity.staff s
 		JOIN identity.users u ON u.id = s.user_id
 		WHERE s.id = $1 AND s.is_doctor = true`, id,
-	).Scan(&d.ID, &d.FullName, &d.Specialization, &d.PhotoURL, &d.Email, &d.PhoneWA, &d.IsActive)
+	).Scan(&d.ID, &d.FullName, &d.Specialization, &d.PhotoURL, &d.Bio, &d.CommissionRate, &d.Email, &d.PhoneWA, &d.IsActive)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return d, dberr.ErrNotFound
 	}
 	if err != nil {
+		return d, err
+	}
+
+	skillRows, err := r.pool.Query(ctx, `
+		SELECT id, skill_name, proficiency, years_experience
+		FROM identity.staff_skills WHERE staff_id = $1 ORDER BY proficiency DESC`, id)
+	if err != nil {
+		return d, err
+	}
+	defer skillRows.Close()
+	for skillRows.Next() {
+		var s StaffSkill
+		if err := skillRows.Scan(&s.ID, &s.SkillName, &s.Proficiency, &s.YearsExperience); err != nil {
+			return d, err
+		}
+		d.Skills = append(d.Skills, s)
+	}
+	if err := skillRows.Err(); err != nil {
 		return d, err
 	}
 
@@ -79,15 +97,18 @@ func (r *Repository) CreateDoctor(ctx context.Context, in CreateDoctorInput) (Do
 
 	var staffID string
 	if err := tx.QueryRow(ctx, `
-		INSERT INTO identity.staff (user_id, specialization, is_doctor)
-		VALUES ($1, $2, true)
+		INSERT INTO identity.staff (user_id, specialization, bio, photo_url, commission_rate, is_doctor)
+		VALUES ($1, $2, $3, $4, $5, true)
 		RETURNING id`,
-		userID, in.Specialization,
+		userID, in.Specialization, in.Bio, in.PhotoURL, in.CommissionRate,
 	).Scan(&staffID); err != nil {
 		return DoctorDetail{}, err
 	}
 
 	if err := insertStaffBranchesAndSchedules(ctx, tx, staffID, in.BranchIDs, in.Schedules); err != nil {
+		return DoctorDetail{}, err
+	}
+	if err := insertStaffSkills(ctx, tx, staffID, in.Skills); err != nil {
 		return DoctorDetail{}, err
 	}
 
@@ -116,7 +137,9 @@ func (r *Repository) UpdateDoctor(ctx context.Context, id string, in UpdateDocto
 		in.FullName, in.IsActive, userID); err != nil {
 		return DoctorDetail{}, err
 	}
-	if _, err := tx.Exec(ctx, `UPDATE identity.staff SET specialization = $1 WHERE id = $2`, in.Specialization, id); err != nil {
+	if _, err := tx.Exec(ctx, `
+		UPDATE identity.staff SET specialization = $1, bio = $2, photo_url = $3, commission_rate = $4 WHERE id = $5`,
+		in.Specialization, in.Bio, in.PhotoURL, in.CommissionRate, id); err != nil {
 		return DoctorDetail{}, err
 	}
 
@@ -126,7 +149,13 @@ func (r *Repository) UpdateDoctor(ctx context.Context, id string, in UpdateDocto
 	if _, err := tx.Exec(ctx, `DELETE FROM scheduling.doctor_schedules WHERE staff_id = $1`, id); err != nil {
 		return DoctorDetail{}, err
 	}
+	if _, err := tx.Exec(ctx, `DELETE FROM identity.staff_skills WHERE staff_id = $1`, id); err != nil {
+		return DoctorDetail{}, err
+	}
 	if err := insertStaffBranchesAndSchedules(ctx, tx, id, in.BranchIDs, in.Schedules); err != nil {
+		return DoctorDetail{}, err
+	}
+	if err := insertStaffSkills(ctx, tx, id, in.Skills); err != nil {
 		return DoctorDetail{}, err
 	}
 
@@ -163,6 +192,18 @@ func insertStaffBranchesAndSchedules(ctx context.Context, tx pgx.Tx, staffID str
 			INSERT INTO scheduling.doctor_schedules (staff_id, branch_id, day_of_week, start_time, end_time, slot_duration_minutes)
 			VALUES ($1, $2, $3, $4, $5, $6)`,
 			staffID, s.BranchID, s.DayOfWeek, s.StartTime, s.EndTime, s.SlotDurationMinutes); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func insertStaffSkills(ctx context.Context, tx pgx.Tx, staffID string, skills []StaffSkillInput) error {
+	for _, s := range skills {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO identity.staff_skills (staff_id, skill_name, proficiency, years_experience)
+			VALUES ($1, $2, $3, $4)`,
+			staffID, s.SkillName, s.Proficiency, s.YearsExperience); err != nil {
 			return err
 		}
 	}

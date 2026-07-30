@@ -2,8 +2,11 @@ package billing
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/nina-dental-care/core-api/internal/platform/pagination"
 )
 
 type Repository struct {
@@ -16,7 +19,7 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 
 func (r *Repository) ListTreatments(ctx context.Context) ([]Treatment, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT t.id, t.name, c.name AS category_name, t.price, t.duration_minutes, t.is_active
+		SELECT t.id, t.category_id, t.name, c.name AS category_name, t.description, t.price, t.duration_minutes, t.image_url, t.is_active
 		FROM billing.treatments t
 		JOIN billing.treatment_categories c ON c.id = t.category_id
 		ORDER BY c.sort_order, t.name`)
@@ -28,7 +31,7 @@ func (r *Repository) ListTreatments(ctx context.Context) ([]Treatment, error) {
 	treatments := []Treatment{}
 	for rows.Next() {
 		var t Treatment
-		if err := rows.Scan(&t.ID, &t.Name, &t.CategoryName, &t.Price, &t.DurationMinutes, &t.IsActive); err != nil {
+		if err := rows.Scan(&t.ID, &t.CategoryID, &t.Name, &t.CategoryName, &t.Description, &t.Price, &t.DurationMinutes, &t.ImageURL, &t.IsActive); err != nil {
 			return nil, err
 		}
 		treatments = append(treatments, t)
@@ -36,17 +39,20 @@ func (r *Repository) ListTreatments(ctx context.Context) ([]Treatment, error) {
 	return treatments, rows.Err()
 }
 
-func (r *Repository) ListPayments(ctx context.Context, patientID string) ([]Payment, error) {
+func (r *Repository) ListPayments(ctx context.Context, patientID string, page pagination.Params) ([]Payment, int64, error) {
 	query := `
 		SELECT
 			pay.id, pay.reservation_id, pay.patient_id, pay.amount, pay.deposit_amount, pay.status, pay.provider,
-			pay.provider_reference, pay.payment_method, pay.paid_at, pay.expired_at, pay.created_at,
+			pay.provider_reference, pay.payment_method, pay.promo_id, promo.title, pay.discount_amount,
+			pay.paid_at, pay.expired_at, pay.created_at,
 			p.full_name AS patient_name,
-			b.name AS branch_name
+			b.name AS branch_name,
+			count(*) OVER() AS total_count
 		FROM billing.payments pay
 		JOIN identity.patients p ON p.id = pay.patient_id
 		JOIN scheduling.reservations r ON r.id = pay.reservation_id
-		JOIN scheduling.branches b ON b.id = r.branch_id`
+		JOIN scheduling.branches b ON b.id = r.branch_id
+		LEFT JOIN content.promos promo ON promo.id = pay.promo_id`
 
 	args := []any{}
 	if patientID != "" {
@@ -54,22 +60,29 @@ func (r *Repository) ListPayments(ctx context.Context, patientID string) ([]Paym
 		query += " WHERE pay.patient_id = $1"
 	}
 	query += " ORDER BY pay.created_at DESC"
+	if page.Enabled {
+		args = append(args, page.Limit())
+		query += fmt.Sprintf(" LIMIT $%d", len(args))
+		args = append(args, page.Offset())
+		query += fmt.Sprintf(" OFFSET $%d", len(args))
+	}
 
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
+	var total int64
 	payments := []Payment{}
 	for rows.Next() {
 		var p Payment
-		if err := rows.Scan(&p.ID, &p.ReservationID, &p.PatientID, &p.Amount, &p.DepositAmount, &p.Status, &p.Provider, &p.ProviderReference, &p.PaymentMethod, &p.PaidAt, &p.ExpiredAt, &p.CreatedAt, &p.PatientName, &p.BranchName); err != nil {
-			return nil, err
+		if err := rows.Scan(&p.ID, &p.ReservationID, &p.PatientID, &p.Amount, &p.DepositAmount, &p.Status, &p.Provider, &p.ProviderReference, &p.PaymentMethod, &p.PromoID, &p.PromoTitle, &p.DiscountAmount, &p.PaidAt, &p.ExpiredAt, &p.CreatedAt, &p.PatientName, &p.BranchName, &total); err != nil {
+			return nil, 0, err
 		}
 		payments = append(payments, p)
 	}
-	return payments, rows.Err()
+	return payments, total, rows.Err()
 }
 
 func (r *Repository) DashboardSummary(ctx context.Context) (DashboardSummary, error) {

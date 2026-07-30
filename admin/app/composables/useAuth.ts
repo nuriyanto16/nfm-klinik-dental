@@ -2,6 +2,7 @@ export interface AuthUser {
   id: string
   fullName: string
   email: string
+  phoneWa: string | null
   role: string
 }
 

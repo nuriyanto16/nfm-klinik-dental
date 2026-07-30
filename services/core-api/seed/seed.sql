@@ -8,6 +8,9 @@
 BEGIN;
 
 -- Clean slate for seeded rows (children first, respecting FKs).
+DELETE FROM billing.expenses;
+DELETE FROM billing.loyalty_points;
+DELETE FROM identity.staff_skills;
 DELETE FROM clinical.medical_record_items;
 DELETE FROM clinical.odontogram_entries;
 DELETE FROM clinical.medical_records;
@@ -50,11 +53,25 @@ INSERT INTO identity.users (id, email, phone_wa, password_hash, full_name, gende
   ('20000000-0000-0000-0000-000000000003', 'drg.siti@ninadentalcare.com', '+62811300003', 'seed-no-auth-yet', 'drg. Siti Rahmawati', 'female', '1992-11-05', 'Kab. Bandung', 'dokter'),
   ('20000000-0000-0000-0000-000000000004', 'drg.yoga@ninadentalcare.com', '+62811300004', 'seed-no-auth-yet', 'drg. Yoga Pratama', 'male', '1993-01-18', 'Kab. Bandung', 'dokter');
 
-INSERT INTO identity.staff (id, user_id, specialization, is_doctor) VALUES
-  ('21000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Konservasi Gigi (Sp.KG)', true),
-  ('21000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'Dokter Gigi Umum', true),
-  ('21000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000003', 'Ortodonti (Behel)', true),
-  ('21000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000004', 'Dokter Gigi Anak (Nina Kidz)', true);
+INSERT INTO identity.staff (id, user_id, specialization, bio, photo_url, commission_rate, is_doctor) VALUES
+  ('21000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Konservasi Gigi (Sp.KG)', 'Spesialis konservasi gigi dengan 12 tahun pengalaman menangani tambal & saluran akar.', 'https://i.pravatar.cc/300?img=47', 12.5, true),
+  ('21000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'Dokter Gigi Umum', 'Dokter gigi umum, fokus pada scaling, tambal, dan cabut gigi dewasa.', 'https://i.pravatar.cc/300?img=12', 10, true),
+  ('21000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000003', 'Ortodonti (Behel)', 'Menangani pemasangan & perawatan behel metal maupun clear aligner.', 'https://i.pravatar.cc/300?img=45', 15, true),
+  ('21000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000004', 'Dokter Gigi Anak (Nina Kidz)', 'Spesialis perawatan gigi anak, pengalaman menangani pasien program Nina Kidz.', 'https://i.pravatar.cc/300?img=33', 10, true);
+
+INSERT INTO identity.staff_skills (staff_id, skill_name, proficiency, years_experience) VALUES
+  ('21000000-0000-0000-0000-000000000001', 'Perawatan Saluran Akar', 5, 12),
+  ('21000000-0000-0000-0000-000000000001', 'Tambal Estetik', 4, 12),
+  ('21000000-0000-0000-0000-000000000001', 'Bedah Mulut', 3, 8),
+  ('21000000-0000-0000-0000-000000000002', 'Scaling & Whitening', 5, 6),
+  ('21000000-0000-0000-0000-000000000002', 'Tambal Gigi', 4, 6),
+  ('21000000-0000-0000-0000-000000000002', 'Cabut Gigi', 4, 6),
+  ('21000000-0000-0000-0000-000000000003', 'Behel Metal', 5, 9),
+  ('21000000-0000-0000-0000-000000000003', 'Clear Aligner', 4, 5),
+  ('21000000-0000-0000-0000-000000000003', 'Evaluasi Ortodonti', 5, 9),
+  ('21000000-0000-0000-0000-000000000004', 'Perawatan Gigi Anak', 5, 7),
+  ('21000000-0000-0000-0000-000000000004', 'Sedasi Ringan', 3, 4),
+  ('21000000-0000-0000-0000-000000000004', 'Edukasi Orang Tua', 4, 7);
 
 INSERT INTO scheduling.staff_branches (staff_id, branch_id) VALUES
   ('21000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001'),
@@ -79,13 +96,13 @@ INSERT INTO identity.users (id, email, phone_wa, password_hash, full_name, gende
   ('30000000-0000-0000-0000-000000000004', 'dewi.lestari@example.com', '+62812340004', 'seed-no-auth-yet', 'Dewi Lestari', 'female', '1998-12-09', 'Baleendah', 'patient'),
   ('30000000-0000-0000-0000-000000000005', 'rina.marlina@example.com', '+62812340005', 'seed-no-auth-yet', 'Rina Marlina', 'female', '1993-06-30', 'Soreang', 'patient');
 
-INSERT INTO identity.patients (id, primary_account_user_id, user_id, rm_number, full_name, relation, gender, date_of_birth, address) VALUES
-  ('31000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 'RM-0001', 'Budi Santoso', 'self', 'male', '1988-05-14', 'Jl. Melati No. 3, Soreang'),
-  ('31000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000002', 'RM-0002', 'Siti Aminah', 'self', 'female', '1991-09-02', 'Jl. Kenanga No. 8, Soreang'),
-  ('31000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000002', NULL, 'RM-0003', 'Kayla Aminah', 'child', 'female', '2019-04-11', 'Jl. Kenanga No. 8, Soreang'),
-  ('31000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000003', 'RM-0004', 'Ahmad Fauzi', 'self', 'male', '1995-02-27', 'Jl. Anggrek No. 15, Baleendah'),
-  ('31000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000004', 'RM-0005', 'Dewi Lestari', 'self', 'female', '1998-12-09', 'Jl. Mawar No. 21, Baleendah'),
-  ('31000000-0000-0000-0000-000000000006', '30000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000005', NULL, 'Rina Marlina', 'self', 'female', '1993-06-30', 'Jl. Dahlia No. 5, Soreang');
+INSERT INTO identity.patients (id, primary_account_user_id, user_id, rm_number, full_name, relation, gender, date_of_birth, address, photo_url) VALUES
+  ('31000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 'RM-0001', 'Budi Santoso', 'self', 'male', '1988-05-14', 'Jl. Melati No. 3, Soreang', 'https://i.pravatar.cc/300?img=51'),
+  ('31000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000002', 'RM-0002', 'Siti Aminah', 'self', 'female', '1991-09-02', 'Jl. Kenanga No. 8, Soreang', 'https://i.pravatar.cc/300?img=32'),
+  ('31000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000002', NULL, 'RM-0003', 'Kayla Aminah', 'child', 'female', '2019-04-11', 'Jl. Kenanga No. 8, Soreang', NULL),
+  ('31000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000003', 'RM-0004', 'Ahmad Fauzi', 'self', 'male', '1995-02-27', 'Jl. Anggrek No. 15, Baleendah', 'https://i.pravatar.cc/300?img=13'),
+  ('31000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000004', 'RM-0005', 'Dewi Lestari', 'self', 'female', '1998-12-09', 'Jl. Mawar No. 21, Baleendah', 'https://i.pravatar.cc/300?img=25'),
+  ('31000000-0000-0000-0000-000000000006', '30000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000005', NULL, 'Rina Marlina', 'self', 'female', '1993-06-30', 'Jl. Dahlia No. 5, Soreang', 'https://i.pravatar.cc/300?img=44');
 
 -- === Treatment categories & treatments ===
 INSERT INTO billing.treatment_categories (id, name, sort_order) VALUES
@@ -244,11 +261,14 @@ INSERT INTO billing.inventory_items (id, name, category, unit, stock_quantity, u
 -- === Rekam medis (untuk reservasi yang sudah completed) ===
 INSERT INTO clinical.medical_records (id, patient_id, reservation_id, staff_id, diagnosis, treatment_notes, created_at) VALUES
   ('a0000000-0000-0000-0000-000000000001', '31000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', '21000000-0000-0000-0000-000000000002', 'Karies dentin pada gigi 36', 'Dilakukan penambalan komposit pada gigi 36. Pasien tidak ada keluhan pasca tindakan.', date_trunc('day', now()) - interval '3 days' + time '10:30'),
-  ('a0000000-0000-0000-0000-000000000002', '31000000-0000-0000-0000-000000000002', '50000000-0000-0000-0000-000000000002', '21000000-0000-0000-0000-000000000003', 'Kontrol rutin behel bulan ke-3', 'Penggantian karet behel, evaluasi pergerakan gigi sesuai rencana perawatan.', date_trunc('day', now()) - interval '2 days' + time '14:20'),
-  ('a0000000-0000-0000-0000-000000000003', '31000000-0000-0000-0000-000000000005', '50000000-0000-0000-0000-000000000005', '21000000-0000-0000-0000-000000000002', 'Akumulasi plak & kalkulus ringan', 'Scaling ultrasonik seluruh regio, edukasi oral hygiene.', date_trunc('day', now()) + time '09:30');
+  ('a0000000-0000-0000-0000-000000000002', '31000000-0000-0000-0000-000000000002', '50000000-0000-0000-0000-000000000002', '21000000-0000-0000-0000-000000000003', 'Kontrol rutin behel bulan ke-3', 'Penggantian karet behel, evaluasi pergerakan gigi sesuai rencana perawatan — progres baik, gigi mulai rapi.', date_trunc('day', now()) - interval '2 days' + time '14:20'),
+  ('a0000000-0000-0000-0000-000000000003', '31000000-0000-0000-0000-000000000005', '50000000-0000-0000-0000-000000000005', '21000000-0000-0000-0000-000000000002', 'Akumulasi plak & kalkulus ringan', 'Scaling ultrasonik seluruh regio, edukasi oral hygiene.', date_trunc('day', now()) + time '09:30'),
+  ('a0000000-0000-0000-0000-000000000004', '31000000-0000-0000-0000-000000000002', NULL, '21000000-0000-0000-0000-000000000003', 'Gigi berjejal, indikasi behel metal', 'Pemasangan behel metal awal, rencana kontrol tiap bulan.', date_trunc('day', now()) - interval '90 days' + time '11:00');
 
-INSERT INTO clinical.odontogram_entries (medical_record_id, tooth_number, condition, notes) VALUES
-  ('a0000000-0000-0000-0000-000000000001', 36, 'filled', 'Tambal komposit');
+INSERT INTO clinical.odontogram_entries (medical_record_id, tooth_number, condition, notes, photo_url) VALUES
+  ('a0000000-0000-0000-0000-000000000001', 36, 'filled', 'Tambal komposit', NULL),
+  ('a0000000-0000-0000-0000-000000000004', 11, 'braces_initial', 'Kondisi awal sebelum behel — gigi berjejal', 'https://placehold.co/400x300/1e3a8a/white?text=Sebelum+Behel'),
+  ('a0000000-0000-0000-0000-000000000002', 11, 'braces_progress', 'Progres bulan ke-3 — mulai rapi', 'https://placehold.co/400x300/16a34a/white?text=Progres+Bulan+ke-3');
 
 INSERT INTO clinical.medical_record_items (medical_record_id, inventory_item_id, quantity, notes) VALUES
   ('a0000000-0000-0000-0000-000000000001', '90000000-0000-0000-0000-000000000001', 1, NULL),
@@ -276,9 +296,9 @@ INSERT INTO content.articles (category_id, title, slug, cover_image_url, body, p
   ('b0000000-0000-0000-0000-000000000002', '5 Kebiasaan Sehari-hari Perusak Enamel Gigi', '5-kebiasaan-perusak-enamel', NULL, 'Minum soda berlebihan, menggigit kuku, dan sikat gigi terlalu keras adalah beberapa kebiasaan yang perlahan merusak enamel gigi tanpa disadari.', now() - interval '4 days'),
   ('b0000000-0000-0000-0000-000000000003', 'Program Nina Kidz: Gigi Sehat Sejak Dini', 'program-nina-kidz', NULL, 'Nina Kidz adalah program pemeriksaan gigi anak dengan pendekatan ramah anak, termasuk vitamin gigi dan fluoride treatment untuk mencegah karies sejak dini.', now() - interval '1 days');
 
-INSERT INTO content.promos (title, banner_image_url, description, starts_at, ends_at, is_active) VALUES
-  ('Promo Scaling 6-in-1', NULL, 'Paket scaling lengkap mulai Rp149.000, berlaku di semua cabang.', now() - interval '5 days', now() + interval '25 days', true),
-  ('Diskon Behel Metal 10%', NULL, 'Diskon 10% untuk pemasangan behel metal konvensional, khusus reservasi lewat aplikasi.', now() - interval '2 days', now() + interval '13 days', true);
+INSERT INTO content.promos (title, banner_image_url, description, starts_at, ends_at, is_active, discount_type, discount_value) VALUES
+  ('Promo Scaling 6-in-1', NULL, 'Paket scaling lengkap mulai Rp149.000, berlaku di semua cabang.', now() - interval '5 days', now() + interval '25 days', true, 'fixed', 50000),
+  ('Diskon Behel Metal 10%', NULL, 'Diskon 10% untuk pemasangan behel metal konvensional, khusus reservasi lewat aplikasi.', now() - interval '2 days', now() + interval '13 days', true, 'percentage', 10);
 
 INSERT INTO content.testimonials (patient_name, staff_id, photo_url, rating, quote) VALUES
   ('Budi Santoso', '21000000-0000-0000-0000-000000000002', NULL, 5, 'Pelayanan ramah, tambal giginya rapi dan gak sakit sama sekali!'),
@@ -288,5 +308,25 @@ INSERT INTO content.testimonials (patient_name, staff_id, photo_url, rating, quo
 INSERT INTO content.videos (title, video_url, thumbnail_url, published_at) VALUES
   ('Tur Klinik Nina Dental Care Soreang', 'https://www.youtube.com/watch?v=example1', NULL, now() - interval '20 days'),
   ('Edukasi: Cara Sikat Gigi yang Benar', 'https://www.youtube.com/watch?v=example2', NULL, now() - interval '7 days');
+
+-- === Pembiayaan operasional (laporan keuntungan/pembiayaan) ===
+INSERT INTO billing.expenses (branch_id, category, description, amount, expense_date) VALUES
+  ('10000000-0000-0000-0000-000000000001', 'Sewa', 'Sewa ruko bulan berjalan', 8000000, date_trunc('month', now())::date),
+  ('10000000-0000-0000-0000-000000000002', 'Sewa', 'Sewa ruko bulan berjalan', 7000000, date_trunc('month', now())::date),
+  ('10000000-0000-0000-0000-000000000001', 'Listrik & Air', 'Tagihan listrik & air bulan berjalan', 1500000, now()::date - 5),
+  ('10000000-0000-0000-0000-000000000002', 'Listrik & Air', 'Tagihan listrik & air bulan berjalan', 1200000, now()::date - 5),
+  (NULL, 'Restock Alat/Obat', 'Restock bahan tambal & obat anestesi', 4500000, now()::date - 10),
+  ('10000000-0000-0000-0000-000000000001', 'Gaji Non-Komisi', 'Gaji staf front office & perawat', 12000000, date_trunc('month', now())::date),
+  (NULL, 'Marketing', 'Promosi Instagram Ads bulan berjalan', 1000000, now()::date - 15);
+
+-- === Poin loyalitas (rewards) — dihitung manual di sini karena payments di
+-- atas diinsert langsung lewat SQL, bukan lewat billing.CreatePayment yang
+-- biasanya mengakumulasi poin otomatis saat status jadi 'paid'. ===
+INSERT INTO billing.loyalty_points (patient_id, points) VALUES
+  ('31000000-0000-0000-0000-000000000001', 145),
+  ('31000000-0000-0000-0000-000000000002', 320),
+  ('31000000-0000-0000-0000-000000000004', 80),
+  ('31000000-0000-0000-0000-000000000005', 210),
+  ('31000000-0000-0000-0000-000000000006', 55);
 
 COMMIT;

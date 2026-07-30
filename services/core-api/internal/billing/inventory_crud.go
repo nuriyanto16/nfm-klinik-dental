@@ -3,10 +3,12 @@ package billing
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 
 	"github.com/nina-dental-care/core-api/internal/platform/dberr"
+	"github.com/nina-dental-care/core-api/internal/platform/pagination"
 )
 
 type InventoryItem struct {
@@ -30,25 +32,35 @@ type InventoryItemInput struct {
 	IsActive         bool    `json:"isActive"`
 }
 
-func (r *Repository) ListInventoryItems(ctx context.Context) ([]InventoryItem, error) {
-	rows, err := r.pool.Query(ctx, `
-		SELECT id, name, category::text, unit, stock_quantity, unit_price, reorder_threshold, is_active
+func (r *Repository) ListInventoryItems(ctx context.Context, page pagination.Params) ([]InventoryItem, int64, error) {
+	query := `
+		SELECT id, name, category::text, unit, stock_quantity, unit_price, reorder_threshold, is_active, count(*) OVER() AS total_count
 		FROM billing.inventory_items
-		ORDER BY category, name`)
+		ORDER BY category, name`
+	args := []any{}
+	if page.Enabled {
+		args = append(args, page.Limit())
+		query += fmt.Sprintf(" LIMIT $%d", len(args))
+		args = append(args, page.Offset())
+		query += fmt.Sprintf(" OFFSET $%d", len(args))
+	}
+
+	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
+	var total int64
 	items := []InventoryItem{}
 	for rows.Next() {
 		var i InventoryItem
-		if err := rows.Scan(&i.ID, &i.Name, &i.Category, &i.Unit, &i.StockQuantity, &i.UnitPrice, &i.ReorderThreshold, &i.IsActive); err != nil {
-			return nil, err
+		if err := rows.Scan(&i.ID, &i.Name, &i.Category, &i.Unit, &i.StockQuantity, &i.UnitPrice, &i.ReorderThreshold, &i.IsActive, &total); err != nil {
+			return nil, 0, err
 		}
 		items = append(items, i)
 	}
-	return items, rows.Err()
+	return items, total, rows.Err()
 }
 
 func (r *Repository) CreateInventoryItem(ctx context.Context, in InventoryItemInput) (InventoryItem, error) {

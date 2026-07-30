@@ -1,3 +1,11 @@
+export interface PaginatedResponse<T> {
+  data: T[]
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
 export interface Branch {
   id: string
   name: string
@@ -25,12 +33,28 @@ export interface DoctorSchedule {
   slotDurationMinutes: number
 }
 
+export interface StaffSkill {
+  id: string
+  skillName: string
+  proficiency: number
+  yearsExperience: number | null
+}
+
+export interface StaffSkillInput {
+  skillName: string
+  proficiency: number
+  yearsExperience: number | null
+}
+
 export interface DoctorDetail extends Doctor {
   email: string | null
   phoneWa: string | null
+  bio: string | null
+  commissionRate: number
   isActive: boolean
   branchIds: string[] | null
   schedules: DoctorSchedule[] | null
+  skills: StaffSkill[] | null
 }
 
 export interface CreateDoctorInput {
@@ -38,16 +62,43 @@ export interface CreateDoctorInput {
   email: string
   phoneWa: string | null
   specialization: string | null
+  bio: string | null
+  photoUrl: string | null
+  commissionRate: number
   branchIds: string[]
   schedules: DoctorSchedule[]
+  skills: StaffSkillInput[]
 }
 
 export interface UpdateDoctorInput {
   fullName: string
   specialization: string | null
+  bio: string | null
+  photoUrl: string | null
+  commissionRate: number
   isActive: boolean
   branchIds: string[]
   schedules: DoctorSchedule[]
+  skills: StaffSkillInput[]
+}
+
+export interface DailyRevenuePair {
+  period: string
+  revenue: number
+}
+
+export interface TreatmentCountPair {
+  treatmentName: string
+  count: number
+}
+
+export interface DoctorStats {
+  totalRevenue: number
+  commissionEarned: number
+  reservationsCount: number
+  patientsServed: number
+  monthlyRevenue: DailyRevenuePair[] | null
+  topTreatments: TreatmentCountPair[] | null
 }
 
 export interface Patient {
@@ -61,6 +112,7 @@ export interface Patient {
   email: string | null
   city: string | null
   address: string | null
+  photoUrl: string | null
   createdAt: string
 }
 
@@ -74,6 +126,7 @@ export interface CreatePatientInput {
   email: string | null
   phoneWa: string | null
   city: string | null
+  photoUrl: string | null
 }
 
 export interface UpdatePatientInput {
@@ -83,6 +136,25 @@ export interface UpdatePatientInput {
   dateOfBirth: string | null
   address: string | null
   rmNumber: string | null
+  photoUrl: string | null
+}
+
+export interface MonthlySpendingRow {
+  period: string
+  amount: number
+}
+
+export interface PatientStats {
+  loyaltyPoints: number
+  totalSpent: number
+  visitsCount: number
+  monthlySpending: MonthlySpendingRow[] | null
+}
+
+export interface PatientOdontogramTimeline {
+  medicalRecordId: string
+  createdAt: string
+  odontogram: OdontogramEntry[] | null
 }
 
 export interface StaffUser {
@@ -109,13 +181,57 @@ export interface UpdateUserInput {
   isActive: boolean
 }
 
-export interface Treatment {
+export interface AuthUser {
+  id: string
+  fullName: string
+  email: string
+  phoneWa: string | null
+  role: string
+}
+
+export interface UpdateOwnProfileInput {
+  fullName: string
+  phoneWa: string | null
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string
+  newPassword: string
+}
+
+export interface TreatmentCategory {
   id: string
   name: string
+  sortOrder: number
+}
+
+export interface Treatment {
+  id: string
+  categoryId: string
+  name: string
   categoryName: string
+  description: string | null
   price: number
   durationMinutes: number
+  imageUrl: string | null
   isActive: boolean
+}
+
+export interface TreatmentInput {
+  categoryId: string
+  name: string
+  description: string | null
+  price: number
+  durationMinutes: number
+  imageUrl: string | null
+  isActive: boolean
+}
+
+export interface TreatmentStat {
+  treatmentId: string
+  treatmentName: string
+  bookingCount: number
+  revenue: number
 }
 
 export interface Reservation {
@@ -142,6 +258,9 @@ export interface Payment {
   provider: string
   providerReference: string | null
   paymentMethod: string | null
+  promoId: string | null
+  promoTitle: string | null
+  discountAmount: number
   paidAt: string | null
   expiredAt: string | null
   createdAt: string
@@ -155,6 +274,8 @@ export interface CreatePaymentInput {
   depositAmount: number
   paymentMethod: string
   status: string
+  promoId?: string | null
+  discountAmount?: number
 }
 
 export interface InvoiceLineItem {
@@ -205,6 +326,7 @@ export interface OdontogramEntryInput {
   toothNumber: number
   condition: string
   notes: string | null
+  photoUrl: string | null
 }
 
 export interface ItemUsageInput {
@@ -230,6 +352,7 @@ export interface OdontogramEntry {
   toothNumber: number
   condition: string
   notes: string | null
+  photoUrl: string | null
 }
 
 export interface ItemUsage {
@@ -291,6 +414,8 @@ export interface Promo {
   startsAt: string | null
   endsAt: string | null
   isActive: boolean
+  discountType: 'percentage' | 'fixed' | null
+  discountValue: number | null
 }
 
 export interface PromoInput {
@@ -300,6 +425,8 @@ export interface PromoInput {
   startsAt: string | null
   endsAt: string | null
   isActive: boolean
+  discountType: 'percentage' | 'fixed' | null
+  discountValue: number | null
 }
 
 export interface Testimonial {
@@ -332,6 +459,76 @@ export interface VideoInput {
   videoUrl: string
   thumbnailUrl: string | null
   published: boolean
+}
+
+export interface NotificationTemplate {
+  id: string
+  code: string
+  channel: 'wa' | 'push' | 'email'
+  subject: string | null
+  body: string
+  updatedAt: string
+}
+
+export interface NotificationTemplateInput {
+  code: string
+  channel: 'wa' | 'push' | 'email'
+  subject: string | null
+  body: string
+}
+
+export interface NotificationLog {
+  id: string
+  templateCode: string
+  channel: string
+  recipient: string
+  status: string
+  errorMessage: string | null
+  sentAt: string
+}
+
+export interface SendNotificationInput {
+  templateCode: string
+  recipient: string
+}
+
+export interface Expense {
+  id: string
+  branchId: string | null
+  branchName: string | null
+  category: string
+  description: string | null
+  amount: number
+  expenseDate: string
+  createdAt: string
+}
+
+export interface ExpenseInput {
+  branchId: string | null
+  category: string
+  description: string | null
+  amount: number
+  expenseDate: string
+}
+
+export interface ExpenseCategoryTotal {
+  category: string
+  total: number
+}
+
+export interface CommissionRow {
+  staffId: string
+  doctorName: string
+  revenue: number
+  commissionRate: number
+  commission: number
+}
+
+export interface ProfitReport {
+  totalRevenue: number
+  totalCommission: number
+  totalExpenses: number
+  netProfit: number
 }
 
 export interface FinancialSummary {

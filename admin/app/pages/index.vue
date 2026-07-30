@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import type { EChartsOption } from 'echarts'
 import type { BranchRevenue, DailyRevenue, DashboardSummary, Payment, Reservation, StatusCount, TreatmentCount } from '~/types/api'
 
 definePageMeta({ title: 'Dashboard' })
 
 const { data: summary, status: summaryStatus, error } = useApiFetch<DashboardSummary>('/admin/dashboard')
-const { data: trend, status: trendStatus } = useApiFetch<DailyRevenue[]>('/admin/dashboard/revenue-trend?days=7')
+const { data: trend, status: trendStatus } = useApiFetch<DailyRevenue[]>('/admin/dashboard/revenue-trend?days=14')
 const { data: statusCounts, status: statusCountsStatus } = useApiFetch<StatusCount[]>('/admin/dashboard/reservations-by-status')
 const { data: branchRevenue, status: branchRevenueStatus } = useApiFetch<BranchRevenue[]>('/admin/dashboard/revenue-by-branch')
 const { data: topTreatments, status: topTreatmentsStatus } = useApiFetch<TreatmentCount[]>('/admin/dashboard/top-treatments')
@@ -20,9 +21,46 @@ const kpis = computed(() => [
   { label: 'Total Pasien', value: summary.value?.totalPatients ?? '—', icon: 'i-lucide-users', hint: 'Termasuk anggota keluarga' }
 ])
 
-const statusItems = computed(() => (statusCounts.value ?? []).map(s => ({ label: reservationStatusLabel(s.status), value: s.count })))
-const branchItems = computed(() => (branchRevenue.value ?? []).map(b => ({ label: b.branchName, value: b.revenue })))
-const treatmentItems = computed(() => (topTreatments.value ?? []).map(t => ({ label: t.treatmentName, value: t.bookingCount })))
+const trendOption = computed<EChartsOption>(() => ({
+  tooltip: { trigger: 'axis', valueFormatter: v => formatIDR(Number(v)) },
+  grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
+  xAxis: { type: 'category', data: (trend.value ?? []).map(d => formatDateShort(d.date)), axisTick: { show: false } },
+  yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatCompactIDR(v) }, splitLine: { lineStyle: { type: 'dashed' } } },
+  series: [{
+    type: 'line',
+    data: (trend.value ?? []).map(d => d.revenue),
+    smooth: true,
+    symbol: 'circle',
+    symbolSize: 6,
+    itemStyle: { color: CHART_PRIMARY },
+    lineStyle: { width: 2, color: CHART_PRIMARY },
+    areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(37,99,235,0.25)' }, { offset: 1, color: 'rgba(37,99,235,0)' }] } }
+  }]
+}))
+
+const statusOption = computed<EChartsOption>(() => ({
+  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+  grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
+  xAxis: { type: 'category', data: (statusCounts.value ?? []).map(s => reservationStatusLabel(s.status)), axisLabel: { rotate: 20 } },
+  yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed' } } },
+  series: [{ type: 'bar', data: (statusCounts.value ?? []).map(s => s.count), itemStyle: { color: CHART_PRIMARY, borderRadius: [4, 4, 0, 0] }, barMaxWidth: 36 }]
+}))
+
+const branchOption = computed<EChartsOption>(() => ({
+  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: v => formatIDR(Number(v)) },
+  grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
+  xAxis: { type: 'category', data: (branchRevenue.value ?? []).map(b => b.branchName) },
+  yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatCompactIDR(v) }, splitLine: { lineStyle: { type: 'dashed' } } },
+  series: [{ type: 'bar', data: (branchRevenue.value ?? []).map(b => b.revenue), itemStyle: { color: CHART_PRIMARY, borderRadius: [4, 4, 0, 0] }, barMaxWidth: 60 }]
+}))
+
+const treatmentOption = computed<EChartsOption>(() => ({
+  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+  grid: { left: 8, right: 24, top: 8, bottom: 8, containLabel: true },
+  xAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed' } } },
+  yAxis: { type: 'category', data: (topTreatments.value ?? []).map(t => t.treatmentName).reverse(), axisTick: { show: false } },
+  series: [{ type: 'bar', data: (topTreatments.value ?? []).map(t => t.bookingCount).reverse(), itemStyle: { color: CHART_PRIMARY, borderRadius: [0, 4, 4, 0] }, barMaxWidth: 22 }]
+}))
 
 const recentReservations = computed(() => (reservations.value ?? []).slice(0, 5))
 const recentPayments = computed(() => (payments.value ?? []).slice(0, 5))
@@ -85,13 +123,13 @@ const paymentColumns = [
       <UCard>
         <template #header>
           <h2 class="font-medium">
-            Revenue 7 Hari Terakhir
+            Revenue 14 Hari Terakhir
           </h2>
         </template>
         <SkeletonChartSkeleton v-if="trendStatus === 'pending'" />
-        <ChartsTrendChart
+        <ChartsEChart
           v-else
-          :points="trend ?? []"
+          :option="trendOption"
         />
       </UCard>
 
@@ -102,9 +140,9 @@ const paymentColumns = [
           </h2>
         </template>
         <SkeletonChartSkeleton v-if="statusCountsStatus === 'pending'" />
-        <ChartsBarChart
+        <ChartsEChart
           v-else
-          :items="statusItems"
+          :option="statusOption"
         />
       </UCard>
     </div>
@@ -117,10 +155,9 @@ const paymentColumns = [
           </h2>
         </template>
         <SkeletonChartSkeleton v-if="branchRevenueStatus === 'pending'" />
-        <ChartsBarChart
+        <ChartsEChart
           v-else
-          :items="branchItems"
-          :format-value="formatIDR"
+          :option="branchOption"
         />
       </UCard>
 
@@ -131,9 +168,9 @@ const paymentColumns = [
           </h2>
         </template>
         <SkeletonChartSkeleton v-if="topTreatmentsStatus === 'pending'" />
-        <ChartsBarChart
+        <ChartsEChart
           v-else
-          :items="treatmentItems"
+          :option="treatmentOption"
         />
       </UCard>
     </div>

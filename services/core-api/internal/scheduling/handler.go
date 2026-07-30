@@ -6,7 +6,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	"github.com/nina-dental-care/core-api/internal/platform/apperr"
 	"github.com/nina-dental-care/core-api/internal/platform/dberr"
+	"github.com/nina-dental-care/core-api/internal/platform/pagination"
 )
 
 type Handler struct {
@@ -27,6 +29,7 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Get("/doctors", h.listDoctors)
 	router.Get("/doctors/admin", h.listDoctorsAdmin)
 	router.Get("/doctors/:id", h.getDoctor)
+	router.Get("/doctors/:id/stats", h.doctorStats)
 	router.Post("/doctors", h.createDoctor)
 	router.Put("/doctors/:id", h.updateDoctor)
 	router.Delete("/doctors/:id", h.deactivateDoctor)
@@ -40,7 +43,7 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 func (h *Handler) listBranches(c *fiber.Ctx) error {
 	branches, err := h.repo.ListBranches(c.Context())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return apperr.Internal(c, err)
 	}
 	return c.JSON(branches)
 }
@@ -48,17 +51,21 @@ func (h *Handler) listBranches(c *fiber.Ctx) error {
 func (h *Handler) listDoctors(c *fiber.Ctx) error {
 	doctors, err := h.repo.ListDoctors(c.Context())
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return apperr.Internal(c, err)
 	}
 	return c.JSON(doctors)
 }
 
 func (h *Handler) listDoctorsAdmin(c *fiber.Ctx) error {
-	doctors, err := h.repo.ListDoctorsAdmin(c.Context())
+	page := pagination.FromQuery(c)
+	doctors, total, err := h.repo.ListDoctorsAdmin(c.Context(), page)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return apperr.Internal(c, err)
 	}
-	return c.JSON(doctors)
+	if !page.Enabled {
+		return c.JSON(doctors)
+	}
+	return c.JSON(pagination.Wrap(doctors, total, page))
 }
 
 func (h *Handler) getDoctor(c *fiber.Ctx) error {
@@ -67,9 +74,21 @@ func (h *Handler) getDoctor(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "doctor not found")
 	}
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return apperr.Internal(c, err)
 	}
 	return c.JSON(doctor)
+}
+
+func (h *Handler) doctorStats(c *fiber.Ctx) error {
+	months := c.QueryInt("months", 6)
+	if months < 1 || months > 24 {
+		months = 6
+	}
+	stats, err := h.repo.DoctorStats(c.Context(), c.Params("id"), months)
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.JSON(stats)
 }
 
 func (h *Handler) createDoctor(c *fiber.Ctx) error {
@@ -85,7 +104,7 @@ func (h *Handler) createDoctor(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusConflict, "email sudah dipakai")
 	}
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return apperr.Internal(c, err)
 	}
 	return c.Status(fiber.StatusCreated).JSON(doctor)
 }
@@ -100,7 +119,7 @@ func (h *Handler) updateDoctor(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "doctor not found")
 	}
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return apperr.Internal(c, err)
 	}
 	return c.JSON(doctor)
 }
@@ -111,7 +130,7 @@ func (h *Handler) deactivateDoctor(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "doctor not found")
 	}
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return apperr.Internal(c, err)
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
@@ -124,11 +143,15 @@ func (h *Handler) listReservations(c *fiber.Ctx) error {
 		To:        c.Query("to"),
 		PatientID: c.Query("patientId"),
 	}
-	reservations, err := h.repo.ListReservations(c.Context(), filter)
+	page := pagination.FromQuery(c)
+	reservations, total, err := h.repo.ListReservations(c.Context(), filter, page)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return apperr.Internal(c, err)
 	}
-	return c.JSON(reservations)
+	if !page.Enabled {
+		return c.JSON(reservations)
+	}
+	return c.JSON(pagination.Wrap(reservations, total, page))
 }
 
 func (h *Handler) createReservation(c *fiber.Ctx) error {
@@ -144,7 +167,7 @@ func (h *Handler) createReservation(c *fiber.Ctx) error {
 	}
 	reservation, err := h.repo.CreateReservation(c.Context(), in)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return apperr.Internal(c, err)
 	}
 	return c.Status(fiber.StatusCreated).JSON(reservation)
 }
@@ -159,7 +182,7 @@ func (h *Handler) updateReservationStatus(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "reservation not found")
 	}
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return apperr.Internal(c, err)
 	}
 	return c.JSON(reservation)
 }

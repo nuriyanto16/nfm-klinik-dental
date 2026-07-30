@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import type { InventoryItem, InventoryItemInput } from '~/types/api'
+import type { InventoryItem, InventoryItemInput, PaginatedResponse } from '~/types/api'
 
 definePageMeta({ title: 'Inventaris (Alat & Obat)' })
 
-const { data: items, status, refresh, error } = useApiFetch<InventoryItem[]>('/inventory')
+const page = ref(1)
+const pageSize = 10
+const { data: itemsPage, status, refresh, error } = useApiFetch<PaginatedResponse<InventoryItem>>(() => `/inventory?page=${page.value}&pageSize=${pageSize}`)
+const items = computed(() => itemsPage.value?.data ?? [])
 
 const categoryLabel: Record<string, string> = { obat: 'Obat', alat: 'Alat' }
 
@@ -120,67 +123,77 @@ async function onDelete(item: InventoryItem) {
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <SkeletonTableSkeleton
-      v-if="status === 'pending'"
-      :columns="6"
-    />
-    <UTable
-      v-else
-      :data="items ?? []"
-      :columns="columns"
-    >
-      <template #category-cell="{ row }">
-        <UBadge
-          :color="row.original.category === 'obat' ? 'info' : 'primary'"
-          variant="subtle"
-        >
-          {{ categoryLabel[row.original.category] ?? row.original.category }}
-        </UBadge>
-      </template>
-      <template #stockQuantity-cell="{ row }">
-        <span :class="isLowStock(row.original) ? 'text-error font-medium' : ''">
-          {{ row.original.stockQuantity }} {{ row.original.unit }}
-        </span>
-        <UBadge
-          v-if="isLowStock(row.original)"
-          color="error"
-          variant="subtle"
-          size="xs"
-          class="ml-2"
-        >
-          Stok Menipis
-        </UBadge>
-      </template>
-      <template #unitPrice-cell="{ row }">
-        {{ formatIDR(row.original.unitPrice) }}
-      </template>
-      <template #isActive-cell="{ row }">
-        <UBadge
-          :color="row.original.isActive ? 'success' : 'neutral'"
-          variant="subtle"
-        >
-          {{ row.original.isActive ? 'Aktif' : 'Nonaktif' }}
-        </UBadge>
-      </template>
-      <template #actions-cell="{ row }">
-        <div class="flex justify-end gap-1">
-          <UButton
-            icon="i-lucide-pencil"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            @click="openEdit(row.original)"
-          />
-          <UButton
-            icon="i-lucide-trash-2"
-            size="xs"
+    <UCard :ui="{ body: 'p-0 sm:p-0' }">
+      <SkeletonTableSkeleton
+        v-if="status === 'pending'"
+        :columns="6"
+      />
+      <UTable
+        v-else
+        :data="items"
+        :columns="columns"
+      >
+        <template #category-cell="{ row }">
+          <UBadge
+            :color="row.original.category === 'obat' ? 'info' : 'primary'"
+            variant="subtle"
+          >
+            {{ categoryLabel[row.original.category] ?? row.original.category }}
+          </UBadge>
+        </template>
+        <template #stockQuantity-cell="{ row }">
+          <span :class="isLowStock(row.original) ? 'text-error font-medium' : ''">
+            {{ row.original.stockQuantity }} {{ row.original.unit }}
+          </span>
+          <UBadge
+            v-if="isLowStock(row.original)"
             color="error"
-            variant="ghost"
-            @click="onDelete(row.original)"
-          />
-        </div>
-      </template>
-    </UTable>
+            variant="subtle"
+            size="xs"
+            class="ml-2"
+          >
+            Stok Menipis
+          </UBadge>
+        </template>
+        <template #unitPrice-cell="{ row }">
+          {{ formatIDR(row.original.unitPrice) }}
+        </template>
+        <template #isActive-cell="{ row }">
+          <UBadge
+            :color="row.original.isActive ? 'success' : 'neutral'"
+            variant="subtle"
+          >
+            {{ row.original.isActive ? 'Aktif' : 'Nonaktif' }}
+          </UBadge>
+        </template>
+        <template #actions-cell="{ row }">
+          <div class="flex justify-end gap-1">
+            <UButton
+              icon="i-lucide-pencil"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="openEdit(row.original)"
+            />
+            <UButton
+              icon="i-lucide-trash-2"
+              size="xs"
+              color="error"
+              variant="ghost"
+              @click="onDelete(row.original)"
+            />
+          </div>
+        </template>
+      </UTable>
+      <PaginationBar
+        v-if="itemsPage"
+        :page="itemsPage.page"
+        :total-pages="itemsPage.totalPages"
+        :total="itemsPage.total"
+        :page-size="itemsPage.pageSize"
+        @update:page="page = $event"
+      />
+    </UCard>
 
     <UModal
       v-model:open="showModal"

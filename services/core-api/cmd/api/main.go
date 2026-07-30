@@ -40,6 +40,7 @@ func main() {
 		DB:                  pool,
 		JWTAccessSecret:     cfg.JWTAccessSecret,
 		JWTAccessTTLMinutes: cfg.JWTAccessTTLMinutes,
+		AllowedOrigins:      cfg.AllowedOrigins,
 	})
 
 	go func() {

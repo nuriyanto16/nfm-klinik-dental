@@ -78,3 +78,38 @@ type VideoInput struct {
 	ThumbnailURL *string `json:"thumbnailUrl"`
 	Published    bool    `json:"published"`
 }
+
+// NotificationTemplate/Log model the WA/push/email broadcast module. There's
+// no real 3rd-party gateway wired up yet (see docs/architecture.md §7), so
+// "sending" here writes a log row immediately as 'sent' — enough to build
+// and demo the template/log management UI without an external dependency.
+type NotificationTemplate struct {
+	ID        string    `json:"id"`
+	Code      string    `json:"code"`
+	Channel   string    `json:"channel"`
+	Subject   *string   `json:"subject"`
+	Body      string    `json:"body"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type NotificationTemplateInput struct {
+	Code    string  `json:"code"`
+	Channel string  `json:"channel"`
+	Subject *string `json:"subject"`
+	Body    string  `json:"body"`
+}
+
+type NotificationLog struct {
+	ID           string    `json:"id"`
+	TemplateCode string    `json:"templateCode"`
+	Channel      string    `json:"channel"`
+	Recipient    string    `json:"recipient"`
+	Status       string    `json:"status"`
+	ErrorMessage *string   `json:"errorMessage"`
+	SentAt       time.Time `json:"sentAt"`
+}
+
+type SendNotificationInput struct {
+	TemplateCode string `json:"templateCode"`
+	Recipient    string `json:"recipient"`
+}

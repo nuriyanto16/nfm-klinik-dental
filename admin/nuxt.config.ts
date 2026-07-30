@@ -9,8 +9,6 @@ export default defineNuxtConfig({
     enabled: true
   },
 
-  css: ['~/assets/css/main.css'],
-
   // Overridable at runtime (no rebuild needed) via NUXT_APP_BASE_URL — set
   // to e.g. '/product/klinik/' when this app is served from a path prefix
   // behind a reverse proxy, so internal routes/redirects/assets resolve
@@ -18,6 +16,8 @@ export default defineNuxtConfig({
   app: {
     baseURL: process.env.NUXT_APP_BASE_URL || '/'
   },
+
+  css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
     // Server-only: used for SSR fetches from inside the admin-frontend

@@ -29,30 +29,74 @@ type DoctorSchedule struct {
 	SlotDurationMinutes int    `json:"slotDurationMinutes"`
 }
 
+type StaffSkill struct {
+	ID              string `json:"id"`
+	SkillName       string `json:"skillName"`
+	Proficiency     int    `json:"proficiency"`
+	YearsExperience *int   `json:"yearsExperience"`
+}
+
+type StaffSkillInput struct {
+	SkillName       string `json:"skillName"`
+	Proficiency     int    `json:"proficiency"`
+	YearsExperience *int   `json:"yearsExperience"`
+}
+
 type DoctorDetail struct {
 	Doctor
-	Email     *string          `json:"email"`
-	PhoneWA   *string          `json:"phoneWa"`
-	IsActive  bool             `json:"isActive"`
-	BranchIDs []string         `json:"branchIds"`
-	Schedules []DoctorSchedule `json:"schedules"`
-}
-
-type CreateDoctorInput struct {
-	FullName       string           `json:"fullName"`
-	Email          string           `json:"email"`
+	Email          *string          `json:"email"`
 	PhoneWA        *string          `json:"phoneWa"`
-	Specialization *string          `json:"specialization"`
-	BranchIDs      []string         `json:"branchIds"`
-	Schedules      []DoctorSchedule `json:"schedules"`
-}
-
-type UpdateDoctorInput struct {
-	FullName       string           `json:"fullName"`
-	Specialization *string          `json:"specialization"`
+	Bio            *string          `json:"bio"`
+	CommissionRate float64          `json:"commissionRate"`
 	IsActive       bool             `json:"isActive"`
 	BranchIDs      []string         `json:"branchIds"`
 	Schedules      []DoctorSchedule `json:"schedules"`
+	Skills         []StaffSkill     `json:"skills"`
+}
+
+type CreateDoctorInput struct {
+	FullName       string            `json:"fullName"`
+	Email          string            `json:"email"`
+	PhoneWA        *string           `json:"phoneWa"`
+	Specialization *string           `json:"specialization"`
+	Bio            *string           `json:"bio"`
+	PhotoURL       *string           `json:"photoUrl"`
+	CommissionRate float64           `json:"commissionRate"`
+	BranchIDs      []string          `json:"branchIds"`
+	Schedules      []DoctorSchedule  `json:"schedules"`
+	Skills         []StaffSkillInput `json:"skills"`
+}
+
+type UpdateDoctorInput struct {
+	FullName       string            `json:"fullName"`
+	Specialization *string           `json:"specialization"`
+	Bio            *string           `json:"bio"`
+	PhotoURL       *string           `json:"photoUrl"`
+	CommissionRate float64           `json:"commissionRate"`
+	IsActive       bool              `json:"isActive"`
+	BranchIDs      []string          `json:"branchIds"`
+	Schedules      []DoctorSchedule  `json:"schedules"`
+	Skills         []StaffSkillInput `json:"skills"`
+}
+
+// DoctorStats backs the doctor detail panel's chart/commission section.
+type DoctorStats struct {
+	TotalRevenue      float64              `json:"totalRevenue"`
+	CommissionEarned  float64              `json:"commissionEarned"`
+	ReservationsCount int64                `json:"reservationsCount"`
+	PatientsServed    int64                `json:"patientsServed"`
+	MonthlyRevenue    []DailyRevenuePair   `json:"monthlyRevenue"`
+	TopTreatments     []TreatmentCountPair `json:"topTreatments"`
+}
+
+type DailyRevenuePair struct {
+	Period  string  `json:"period"`
+	Revenue float64 `json:"revenue"`
+}
+
+type TreatmentCountPair struct {
+	TreatmentName string `json:"treatmentName"`
+	Count         int64  `json:"count"`
 }
 
 type Reservation struct {

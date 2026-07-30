@@ -73,7 +73,7 @@ async function deleteArticle(a: Article) {
 const showPromoModal = ref(false)
 const savingPromo = ref(false)
 const promoError = ref('')
-const promoForm = reactive({ title: '', bannerImageUrl: '', description: '', startsAt: '', endsAt: '', isActive: true })
+const promoForm = reactive({ title: '', bannerImageUrl: '', description: '', startsAt: '', endsAt: '', isActive: true, discountType: null as 'percentage' | 'fixed' | null, discountValue: 0 })
 
 function openCreatePromo() {
   promoForm.title = ''
@@ -82,6 +82,8 @@ function openCreatePromo() {
   promoForm.startsAt = ''
   promoForm.endsAt = ''
   promoForm.isActive = true
+  promoForm.discountType = null
+  promoForm.discountValue = 0
   promoError.value = ''
   showPromoModal.value = true
 }
@@ -97,7 +99,8 @@ async function savePromo() {
       bannerImageUrl: promoForm.bannerImageUrl || null,
       description: promoForm.description || null,
       startsAt: promoForm.startsAt || null,
-      endsAt: promoForm.endsAt || null
+      endsAt: promoForm.endsAt || null,
+      discountValue: promoForm.discountType ? promoForm.discountValue : null
     })
     showPromoModal.value = false
     await refreshPromos()
@@ -520,6 +523,25 @@ async function deleteVideo(v: Video) {
               <UInput
                 v-model="promoForm.endsAt"
                 type="date"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <UFormField label="Tipe Diskon">
+              <USelect
+                v-model="promoForm.discountType"
+                :items="[{ label: 'Tanpa Diskon Otomatis', value: null }, { label: 'Persentase (%)', value: 'percentage' }, { label: 'Potongan Tetap (Rp)', value: 'fixed' }]"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField
+              v-if="promoForm.discountType"
+              :label="promoForm.discountType === 'percentage' ? 'Persentase (%)' : 'Jumlah (Rp)'"
+            >
+              <UInput
+                v-model.number="promoForm.discountValue"
+                type="number"
                 class="w-full"
               />
             </UFormField>

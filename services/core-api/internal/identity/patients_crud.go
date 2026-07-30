@@ -19,6 +19,7 @@ type CreatePatientInput struct {
 	Email                *string `json:"email"`
 	PhoneWA              *string `json:"phoneWa"`
 	City                 *string `json:"city"`
+	PhotoURL             *string `json:"photoUrl"`
 }
 
 type UpdatePatientInput struct {
@@ -28,6 +29,7 @@ type UpdatePatientInput struct {
 	DateOfBirth *string `json:"dateOfBirth"`
 	Address     *string `json:"address"`
 	RMNumber    *string `json:"rmNumber"`
+	PhotoURL    *string `json:"photoUrl"`
 }
 
 var ErrPatientInUse = errors.New("patient has related records and cannot be deleted")
@@ -61,10 +63,10 @@ func (r *Repository) CreatePatient(ctx context.Context, in CreatePatientInput) (
 	}
 
 	if err := tx.QueryRow(ctx, `
-		INSERT INTO identity.patients (primary_account_user_id, user_id, full_name, relation, gender, date_of_birth, address)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO identity.patients (primary_account_user_id, user_id, full_name, relation, gender, date_of_birth, address, photo_url)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id`,
-		primaryUserID, newUserID, in.FullName, in.Relation, in.Gender, in.DateOfBirth, in.Address,
+		primaryUserID, newUserID, in.FullName, in.Relation, in.Gender, in.DateOfBirth, in.Address, in.PhotoURL,
 	).Scan(&p.ID); err != nil {
 		return p, err
 	}
@@ -80,9 +82,9 @@ func (r *Repository) UpdatePatient(ctx context.Context, id string, in UpdatePati
 	_, err := r.pool.Exec(ctx, `
 		UPDATE identity.patients
 		SET full_name = $1, relation = $2, gender = $3, date_of_birth = $4, address = $5,
-		    rm_number = $6, updated_at = now()
-		WHERE id = $7`,
-		in.FullName, in.Relation, in.Gender, in.DateOfBirth, in.Address, in.RMNumber, id,
+		    rm_number = $6, photo_url = $7, updated_at = now()
+		WHERE id = $8`,
+		in.FullName, in.Relation, in.Gender, in.DateOfBirth, in.Address, in.RMNumber, in.PhotoURL, id,
 	)
 	if err != nil {
 		return Patient{}, err
@@ -105,11 +107,11 @@ func (r *Repository) getPatientByID(ctx context.Context, id string) (Patient, er
 	var p Patient
 	err := r.pool.QueryRow(ctx, `
 		SELECT p.id, p.full_name, p.rm_number, p.relation, p.gender, p.date_of_birth,
-		       u.phone_wa, u.email, u.city, p.address, p.created_at
+		       u.phone_wa, u.email, u.city, p.address, p.photo_url, p.created_at
 		FROM identity.patients p
 		JOIN identity.users u ON u.id = p.primary_account_user_id
 		WHERE p.id = $1`, id,
-	).Scan(&p.ID, &p.FullName, &p.RMNumber, &p.Relation, &p.Gender, &p.DateOfBirth, &p.PhoneWA, &p.Email, &p.City, &p.Address, &p.CreatedAt)
+	).Scan(&p.ID, &p.FullName, &p.RMNumber, &p.Relation, &p.Gender, &p.DateOfBirth, &p.PhoneWA, &p.Email, &p.City, &p.Address, &p.PhotoURL, &p.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return p, dberr.ErrNotFound
 	}

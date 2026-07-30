@@ -3,12 +3,14 @@ package identity
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/nina-dental-care/core-api/internal/platform/dberr"
+	"github.com/nina-dental-care/core-api/internal/platform/pagination"
 )
 
 // StaffRoles are the roles manageable from the generic User & Role page.
@@ -44,26 +46,36 @@ type UpdateUserInput struct {
 
 var ErrEmailInUse = errors.New("email already in use")
 
-func (r *Repository) ListUsers(ctx context.Context) ([]StaffUser, error) {
-	rows, err := r.pool.Query(ctx, `
-		SELECT id, full_name, email, phone_wa, role::text, is_active, created_at
+func (r *Repository) ListUsers(ctx context.Context, page pagination.Params) ([]StaffUser, int64, error) {
+	query := `
+		SELECT id, full_name, email, phone_wa, role::text, is_active, created_at, count(*) OVER() AS total_count
 		FROM identity.users
 		WHERE role <> 'patient'
-		ORDER BY created_at DESC`)
+		ORDER BY created_at DESC`
+	args := []any{}
+	if page.Enabled {
+		args = append(args, page.Limit())
+		query += fmt.Sprintf(" LIMIT $%d", len(args))
+		args = append(args, page.Offset())
+		query += fmt.Sprintf(" OFFSET $%d", len(args))
+	}
+
+	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
+	var total int64
 	users := []StaffUser{}
 	for rows.Next() {
 		var u StaffUser
-		if err := rows.Scan(&u.ID, &u.FullName, &u.Email, &u.PhoneWA, &u.Role, &u.IsActive, &u.CreatedAt); err != nil {
-			return nil, err
+		if err := rows.Scan(&u.ID, &u.FullName, &u.Email, &u.PhoneWA, &u.Role, &u.IsActive, &u.CreatedAt, &total); err != nil {
+			return nil, 0, err
 		}
 		users = append(users, u)
 	}
-	return users, rows.Err()
+	return users, total, rows.Err()
 }
 
 func (r *Repository) CreateUser(ctx context.Context, in CreateUserInput) (StaffUser, error) {

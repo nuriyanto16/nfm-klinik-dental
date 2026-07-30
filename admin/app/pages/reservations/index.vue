@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import type { Branch, CreateReservationInput, DoctorDetail, Patient, Reservation, Treatment } from '~/types/api'
+import type { EChartsOption } from 'echarts'
+import type { Branch, CreateReservationInput, DoctorDetail, PaginatedResponse, Patient, Reservation, StatusCount, Treatment } from '~/types/api'
 
 definePageMeta({ title: 'Reservasi & Antrian' })
 
 const viewMode = ref<'list' | 'calendar'>('list')
+const page = ref(1)
+const pageSize = 10
 
 const filters = reactive({ branchId: '', status: '', from: '', to: '' })
 
@@ -13,18 +16,32 @@ function buildQuery() {
   if (filters.status) params.set('status', filters.status)
   if (filters.from) params.set('from', filters.from)
   if (filters.to) params.set('to', filters.to)
-  const qs = params.toString()
-  return qs ? `/reservations?${qs}` : '/reservations'
+  params.set('page', String(page.value))
+  params.set('pageSize', String(pageSize))
+  return `/reservations?${params.toString()}`
 }
 
 // Initial load (SSR-friendly, no filters). Filter changes re-fetch
 // client-side into the same ref via applyFilters — useFetch's own
 // `refresh()` can't change the URL it was created with.
-const { data: reservations, status, error } = useApiFetch<Reservation[]>('/reservations')
+const { data: reservationsPage, status, error } = useApiFetch<PaginatedResponse<Reservation>>(() => buildQuery())
+const reservations = computed(() => reservationsPage.value?.data ?? [])
 
 async function applyFilters() {
-  reservations.value = await $fetch<Reservation[]>(apiUrl(buildQuery()))
+  reservationsPage.value = await $fetch<PaginatedResponse<Reservation>>(apiUrl(buildQuery()))
 }
+watch(page, applyFilters)
+
+const { data: statusCounts } = useApiFetch<StatusCount[]>('/admin/dashboard/reservations-by-status')
+const statusOption = computed<EChartsOption>(() => ({
+  tooltip: { trigger: 'item' },
+  legend: { bottom: 0 },
+  series: [{
+    type: 'pie',
+    radius: ['40%', '70%'],
+    data: (statusCounts.value ?? []).map((s, i) => ({ name: reservationStatusLabel(s.status), value: s.count, itemStyle: { color: colorForIndex(i) } }))
+  }]
+}))
 
 // The calendar view always shows the whole month regardless of the list
 // filters (branch/status still apply, but not the date range) — fetched
@@ -42,7 +59,14 @@ function onSelectDay(date: string) {
   filters.from = date
   filters.to = date
   viewMode.value = 'list'
+  page.value = 1
   applyFilters()
+}
+
+function onFilterChange() {
+  page.value = 1
+  applyFilters()
+  applyCalendarFilters()
 }
 
 const { data: branches } = useApiFetch<Branch[]>('/branches')
@@ -180,13 +204,27 @@ async function onStatusChange(reservation: Reservation, newStatus: string) {
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
+    <UCard v-if="viewMode === 'list'">
+      <template #header>
+        <h2 class="font-medium">
+          Distribusi Status (Keseluruhan)
+        </h2>
+      </template>
+      <SkeletonChartSkeleton v-if="!statusCounts" />
+      <ChartsEChart
+        v-else
+        :option="statusOption"
+        height="220px"
+      />
+    </UCard>
+
     <div class="flex flex-wrap items-end gap-3">
       <UFormField label="Cabang">
         <USelect
           v-model="filters.branchId"
           :items="[{ label: 'Semua Cabang', value: '' }, ...(branches ?? []).map(b => ({ label: b.name, value: b.id }))]"
           class="w-48"
-          @update:model-value="applyFilters(); applyCalendarFilters()"
+          @update:model-value="onFilterChange"
         />
       </UFormField>
       <UFormField label="Status">
@@ -194,7 +232,7 @@ async function onStatusChange(reservation: Reservation, newStatus: string) {
           v-model="filters.status"
           :items="STATUS_OPTIONS"
           class="w-44"
-          @update:model-value="applyFilters(); applyCalendarFilters()"
+          @update:model-value="onFilterChange"
         />
       </UFormField>
       <template v-if="viewMode === 'list'">
@@ -202,49 +240,62 @@ async function onStatusChange(reservation: Reservation, newStatus: string) {
           <UInput
             v-model="filters.from"
             type="date"
-            @change="applyFilters"
+            @change="onFilterChange"
           />
         </UFormField>
         <UFormField label="Sampai Tanggal">
           <UInput
             v-model="filters.to"
             type="date"
-            @change="applyFilters"
+            @change="onFilterChange"
           />
         </UFormField>
       </template>
     </div>
 
-    <SkeletonTableSkeleton
-      v-if="viewMode === 'list' && status === 'pending'"
-      :columns="6"
-    />
-    <UTable
-      v-else-if="viewMode === 'list'"
-      :data="reservations ?? []"
-      :columns="columns"
+    <UCard
+      v-if="viewMode === 'list'"
+      :ui="{ body: 'p-0 sm:p-0' }"
     >
-      <template #scheduledAt-cell="{ row }">
-        {{ formatDateTime(row.original.scheduledAt) }}
-      </template>
-      <template #status-cell="{ row }">
-        <UBadge
-          :color="reservationStatusColor(row.original.status)"
-          variant="subtle"
-        >
-          {{ reservationStatusLabel(row.original.status) }}
-        </UBadge>
-      </template>
-      <template #actions-cell="{ row }">
-        <USelect
-          :model-value="row.original.status"
-          :items="STATUS_OPTIONS.filter(o => o.value)"
-          size="xs"
-          class="w-40"
-          @update:model-value="(v: string) => onStatusChange(row.original, v)"
-        />
-      </template>
-    </UTable>
+      <SkeletonTableSkeleton
+        v-if="status === 'pending'"
+        :columns="7"
+      />
+      <UTable
+        v-else
+        :data="reservations"
+        :columns="columns"
+      >
+        <template #scheduledAt-cell="{ row }">
+          {{ formatDateTime(row.original.scheduledAt) }}
+        </template>
+        <template #status-cell="{ row }">
+          <UBadge
+            :color="reservationStatusColor(row.original.status)"
+            variant="subtle"
+          >
+            {{ reservationStatusLabel(row.original.status) }}
+          </UBadge>
+        </template>
+        <template #actions-cell="{ row }">
+          <USelect
+            :model-value="row.original.status"
+            :items="STATUS_OPTIONS.filter(o => o.value)"
+            size="xs"
+            class="w-40"
+            @update:model-value="(v: string) => onStatusChange(row.original, v)"
+          />
+        </template>
+      </UTable>
+      <PaginationBar
+        v-if="reservationsPage"
+        :page="reservationsPage.page"
+        :total-pages="reservationsPage.totalPages"
+        :total="reservationsPage.total"
+        :page-size="reservationsPage.pageSize"
+        @update:page="page = $event"
+      />
+    </UCard>
 
     <UCard v-else>
       <SkeletonCalendarSkeleton v-if="calendarStatus === 'pending'" />

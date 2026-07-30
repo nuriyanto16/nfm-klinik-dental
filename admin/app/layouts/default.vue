@@ -26,9 +26,21 @@ async function onLogout() {
 }
 
 const userMenuItems = [[
-  { label: 'Profil', icon: 'i-lucide-user' },
+  { label: 'Profil', icon: 'i-lucide-user', to: '/profile' },
   { label: 'Keluar', icon: 'i-lucide-log-out', onSelect: onLogout }
 ]]
+
+// Navbar bell: a lightweight, real-data notification center — low-stock
+// inventory and reservations still pending confirmation today — rather
+// than a fake WA/push feed (that's the dedicated Notifikasi & Broadcast
+// page's job once a 3rd-party gateway is wired up).
+const { data: inventory } = useApiFetch<{ name: string, stockQuantity: number, reorderThreshold: number }[]>('/inventory')
+const lowStockItems = computed(() => (inventory.value ?? []).filter(i => i.stockQuantity <= i.reorderThreshold))
+const { data: reservationsToday } = useApiFetch<{ status: string }[]>(() => {
+  const today = new Date().toISOString().slice(0, 10)
+  return `/reservations?from=${today}&to=${today}&status=pending`
+})
+const notificationCount = computed(() => lowStockItems.value.length + (reservationsToday.value?.length ?? 0))
 </script>
 
 <template>
@@ -92,12 +104,60 @@ const userMenuItems = [[
             <UDashboardSidebarToggle />
           </template>
           <template #right>
-            <UButton
-              icon="i-lucide-bell"
-              color="neutral"
-              variant="ghost"
-              aria-label="Notifikasi"
-            />
+            <UPopover>
+              <UChip
+                :text="notificationCount"
+                :show="notificationCount > 0"
+                size="lg"
+                color="error"
+              >
+                <UButton
+                  icon="i-lucide-bell"
+                  color="neutral"
+                  variant="ghost"
+                  aria-label="Notifikasi"
+                />
+              </UChip>
+              <template #content>
+                <div class="w-72 p-3 space-y-3">
+                  <h3 class="text-sm font-semibold">
+                    Notifikasi
+                  </h3>
+                  <div v-if="notificationCount === 0">
+                    <p class="text-sm text-muted">
+                      Tidak ada notifikasi baru.
+                    </p>
+                  </div>
+                  <div
+                    v-if="lowStockItems.length"
+                    class="space-y-1"
+                  >
+                    <NuxtLink
+                      to="/inventory"
+                      class="flex items-start gap-2 text-sm hover:text-primary"
+                    >
+                      <UIcon
+                        name="i-lucide-alert-triangle"
+                        class="mt-0.5 text-warning"
+                      />
+                      <span>{{ lowStockItems.length }} item stok menipis</span>
+                    </NuxtLink>
+                  </div>
+                  <div v-if="reservationsToday?.length">
+                    <NuxtLink
+                      to="/reservations"
+                      class="flex items-start gap-2 text-sm hover:text-primary"
+                    >
+                      <UIcon
+                        name="i-lucide-calendar-clock"
+                        class="mt-0.5 text-info"
+                      />
+                      <span>{{ reservationsToday.length }} reservasi hari ini menunggu konfirmasi</span>
+                    </NuxtLink>
+                  </div>
+                </div>
+              </template>
+            </UPopover>
             <UColorModeButton />
           </template>
         </UDashboardNavbar>

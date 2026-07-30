@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/nina-dental-care/core-api/internal/platform/dberr"
+	"github.com/nina-dental-care/core-api/internal/platform/pagination"
 )
 
 type Repository struct {
@@ -21,10 +22,11 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 
 var ErrInsufficientStock = errors.New("insufficient stock")
 
-func (r *Repository) ListMedicalRecords(ctx context.Context, patientID string) ([]MedicalRecord, error) {
+func (r *Repository) ListMedicalRecords(ctx context.Context, patientID string, page pagination.Params) ([]MedicalRecord, int64, error) {
 	query := `
 		SELECT mr.id, mr.patient_id, p.full_name AS patient_name, mr.reservation_id, mr.staff_id,
-		       su.full_name AS doctor_name, mr.diagnosis, mr.treatment_notes, mr.created_at
+		       su.full_name AS doctor_name, mr.diagnosis, mr.treatment_notes, mr.created_at,
+		       count(*) OVER() AS total_count
 		FROM clinical.medical_records mr
 		JOIN identity.patients p ON p.id = mr.patient_id
 		JOIN identity.staff s ON s.id = mr.staff_id
@@ -36,22 +38,29 @@ func (r *Repository) ListMedicalRecords(ctx context.Context, patientID string) (
 		query += fmt.Sprintf(" AND mr.patient_id = $%d", len(args))
 	}
 	query += " ORDER BY mr.created_at DESC"
+	if page.Enabled {
+		args = append(args, page.Limit())
+		query += fmt.Sprintf(" LIMIT $%d", len(args))
+		args = append(args, page.Offset())
+		query += fmt.Sprintf(" OFFSET $%d", len(args))
+	}
 
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
+	var total int64
 	records := []MedicalRecord{}
 	for rows.Next() {
 		var m MedicalRecord
-		if err := rows.Scan(&m.ID, &m.PatientID, &m.PatientName, &m.ReservationID, &m.StaffID, &m.DoctorName, &m.Diagnosis, &m.TreatmentNotes, &m.CreatedAt); err != nil {
-			return nil, err
+		if err := rows.Scan(&m.ID, &m.PatientID, &m.PatientName, &m.ReservationID, &m.StaffID, &m.DoctorName, &m.Diagnosis, &m.TreatmentNotes, &m.CreatedAt, &total); err != nil {
+			return nil, 0, err
 		}
 		records = append(records, m)
 	}
-	return records, rows.Err()
+	return records, total, rows.Err()
 }
 
 func (r *Repository) GetMedicalRecord(ctx context.Context, id string) (MedicalRecordDetail, error) {
@@ -73,7 +82,7 @@ func (r *Repository) GetMedicalRecord(ctx context.Context, id string) (MedicalRe
 	}
 
 	odontoRows, err := r.pool.Query(ctx, `
-		SELECT id, tooth_number, condition, notes FROM clinical.odontogram_entries
+		SELECT id, tooth_number, condition, notes, photo_url FROM clinical.odontogram_entries
 		WHERE medical_record_id = $1 ORDER BY tooth_number`, id)
 	if err != nil {
 		return d, err
@@ -81,7 +90,7 @@ func (r *Repository) GetMedicalRecord(ctx context.Context, id string) (MedicalRe
 	defer odontoRows.Close()
 	for odontoRows.Next() {
 		var e OdontogramEntry
-		if err := odontoRows.Scan(&e.ID, &e.ToothNumber, &e.Condition, &e.Notes); err != nil {
+		if err := odontoRows.Scan(&e.ID, &e.ToothNumber, &e.Condition, &e.Notes, &e.PhotoURL); err != nil {
 			return d, err
 		}
 		d.Odontogram = append(d.Odontogram, e)
@@ -109,6 +118,64 @@ func (r *Repository) GetMedicalRecord(ctx context.Context, id string) (MedicalRe
 	return d, itemRows.Err()
 }
 
+// PatientOdontogramTimeline returns every medical record for a patient that
+// has at least one odontogram entry with a photo, oldest first — the
+// frontend picks the first and last entries to render a before/after
+// comparison (e.g. braces progression).
+func (r *Repository) PatientOdontogramTimeline(ctx context.Context, patientID string) ([]PatientOdontogramTimeline, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT mr.id, mr.created_at
+		FROM clinical.medical_records mr
+		WHERE mr.patient_id = $1
+		  AND EXISTS (
+		    SELECT 1 FROM clinical.odontogram_entries oe
+		    WHERE oe.medical_record_id = mr.id AND oe.photo_url IS NOT NULL
+		  )
+		ORDER BY mr.created_at ASC`, patientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	timeline := []PatientOdontogramTimeline{}
+	for rows.Next() {
+		var t PatientOdontogramTimeline
+		if err := rows.Scan(&t.MedicalRecordID, &t.CreatedAt); err != nil {
+			return nil, err
+		}
+		timeline = append(timeline, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	for i := range timeline {
+		entryRows, err := r.pool.Query(ctx, `
+			SELECT id, tooth_number, condition, notes, photo_url
+			FROM clinical.odontogram_entries
+			WHERE medical_record_id = $1 AND photo_url IS NOT NULL
+			ORDER BY tooth_number`, timeline[i].MedicalRecordID)
+		if err != nil {
+			return nil, err
+		}
+		for entryRows.Next() {
+			var e OdontogramEntry
+			if err := entryRows.Scan(&e.ID, &e.ToothNumber, &e.Condition, &e.Notes, &e.PhotoURL); err != nil {
+				entryRows.Close()
+				return nil, err
+			}
+			timeline[i].Odontogram = append(timeline[i].Odontogram, e)
+		}
+		if err := entryRows.Err(); err != nil {
+			entryRows.Close()
+			return nil, err
+		}
+		entryRows.Close()
+	}
+
+	return timeline, nil
+}
+
 // CreateMedicalRecord writes the clinical encounter, its odontogram entries,
 // and any inventory items consumed — decrementing stock in the same
 // transaction so usage and stock never drift apart.
@@ -131,9 +198,9 @@ func (r *Repository) CreateMedicalRecord(ctx context.Context, in CreateMedicalRe
 
 	for _, o := range in.Odontogram {
 		if _, err := tx.Exec(ctx, `
-			INSERT INTO clinical.odontogram_entries (medical_record_id, tooth_number, condition, notes)
-			VALUES ($1, $2, $3, $4)`,
-			recordID, o.ToothNumber, o.Condition, o.Notes); err != nil {
+			INSERT INTO clinical.odontogram_entries (medical_record_id, tooth_number, condition, notes, photo_url)
+			VALUES ($1, $2, $3, $4, $5)`,
+			recordID, o.ToothNumber, o.Condition, o.Notes, o.PhotoURL); err != nil {
 			return MedicalRecordDetail{}, err
 		}
 	}

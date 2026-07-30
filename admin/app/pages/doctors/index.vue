@@ -1,13 +1,19 @@
 <script setup lang="ts">
-import type { Branch, CreateDoctorInput, DoctorDetail, DoctorSchedule, Reservation, UpdateDoctorInput } from '~/types/api'
+import type { EChartsOption } from 'echarts'
+import type { Branch, CreateDoctorInput, DoctorDetail, DoctorSchedule, DoctorStats, PaginatedResponse, Reservation, StaffSkillInput, UpdateDoctorInput } from '~/types/api'
 
 definePageMeta({ title: 'Dokter & Jadwal' })
 
-const { data: doctors, status, refresh, error } = useApiFetch<DoctorDetail[]>('/doctors/admin')
+const page = ref(1)
+const pageSize = 10
+const { data: doctorsPage, status, refresh, error } = useApiFetch<PaginatedResponse<DoctorDetail>>(() => `/doctors/admin?page=${page.value}&pageSize=${pageSize}`)
+const doctors = computed(() => doctorsPage.value?.data ?? [])
+
 const { data: branches } = useApiFetch<Branch[]>('/branches')
 const { data: reservations } = useApiFetch<Reservation[]>('/reservations')
 
 const columns = [
+  { id: 'photo', header: '' },
   { accessorKey: 'fullName', header: 'Nama Dokter' },
   { accessorKey: 'specialization', header: 'Spesialisasi' },
   { accessorKey: 'email', header: 'Email' },
@@ -17,9 +23,13 @@ const columns = [
 ]
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+const PROFICIENCY_LABELS = ['', 'Dasar', 'Cukup', 'Baik', 'Mahir', 'Ahli']
 
 function blankSchedule(): DoctorSchedule {
   return { dayOfWeek: 1, branchId: branches.value?.[0]?.id ?? '', startTime: '08:00', endTime: '17:00', slotDurationMinutes: 30 }
+}
+function blankSkill(): StaffSkillInput {
+  return { skillName: '', proficiency: 3, yearsExperience: null }
 }
 function initials(name: string) {
   return name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()
@@ -31,13 +41,50 @@ function branchName(id: string) {
 // --- Detail panel ---
 const showDetail = ref(false)
 const detailDoctor = ref<DoctorDetail | null>(null)
+const detailStats = ref<DoctorStats | null>(null)
+const detailStatsLoading = ref(false)
 const detailReservations = computed(() => (reservations.value ?? []).filter(r => r.staffId === detailDoctor.value?.id))
-const detailCompletedCount = computed(() => detailReservations.value.filter(r => r.status === 'completed').length)
-const detailUpcomingCount = computed(() => detailReservations.value.filter(r => ['pending', 'confirmed', 'checked_in'].includes(r.status)).length)
+
+const revenueTrendOption = computed<EChartsOption>(() => ({
+  tooltip: { trigger: 'axis', valueFormatter: v => formatIDR(Number(v)) },
+  grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
+  xAxis: { type: 'category', data: (detailStats.value?.monthlyRevenue ?? []).map(m => m.period.slice(5)) },
+  yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatCompactIDR(v) }, splitLine: { lineStyle: { type: 'dashed' } } },
+  series: [{
+    type: 'line',
+    data: (detailStats.value?.monthlyRevenue ?? []).map(m => m.revenue),
+    smooth: true,
+    itemStyle: { color: CHART_PRIMARY },
+    lineStyle: { color: CHART_PRIMARY },
+    areaStyle: { color: 'rgba(37,99,235,0.15)' }
+  }]
+}))
+
+const skillsRadarOption = computed<EChartsOption>(() => {
+  const skills = detailDoctor.value?.skills ?? []
+  return {
+    tooltip: {},
+    radar: {
+      indicator: skills.map(s => ({ name: s.skillName, max: 5 })),
+      radius: '65%'
+    },
+    series: [{
+      type: 'radar',
+      data: [{ value: skills.map(s => s.proficiency), areaStyle: { color: 'rgba(37,99,235,0.25)' }, lineStyle: { color: CHART_PRIMARY }, itemStyle: { color: CHART_PRIMARY } }]
+    }]
+  }
+})
 
 async function openDetail(doctor: DoctorDetail) {
   detailDoctor.value = await $fetch<DoctorDetail>(apiUrl(`/doctors/${doctor.id}`))
   showDetail.value = true
+  detailStatsLoading.value = true
+  detailStats.value = null
+  try {
+    detailStats.value = await $fetch<DoctorStats>(apiUrl(`/doctors/${doctor.id}/stats`))
+  } finally {
+    detailStatsLoading.value = false
+  }
 }
 function editFromDetail() {
   if (detailDoctor.value) openEdit(detailDoctor.value)
@@ -55,9 +102,13 @@ const form = reactive({
   email: '',
   phoneWa: '',
   specialization: '',
+  bio: '',
+  photoUrl: '',
+  commissionRate: 0,
   isActive: true,
   branchIds: [] as string[],
-  schedules: [] as DoctorSchedule[]
+  schedules: [] as DoctorSchedule[],
+  skills: [] as StaffSkillInput[]
 })
 
 function openCreate() {
@@ -66,9 +117,13 @@ function openCreate() {
   form.email = ''
   form.phoneWa = ''
   form.specialization = ''
+  form.bio = ''
+  form.photoUrl = ''
+  form.commissionRate = 0
   form.isActive = true
   form.branchIds = []
   form.schedules = []
+  form.skills = []
   formError.value = ''
   showModal.value = true
 }
@@ -80,9 +135,13 @@ async function openEdit(doctor: DoctorDetail) {
   form.email = detail.email ?? ''
   form.phoneWa = detail.phoneWa ?? ''
   form.specialization = detail.specialization ?? ''
+  form.bio = detail.bio ?? ''
+  form.photoUrl = detail.photoUrl ?? ''
+  form.commissionRate = detail.commissionRate
   form.isActive = detail.isActive
   form.branchIds = detail.branchIds ?? []
   form.schedules = detail.schedules ?? []
+  form.skills = (detail.skills ?? []).map(s => ({ skillName: s.skillName, proficiency: s.proficiency, yearsExperience: s.yearsExperience }))
   formError.value = ''
   showModal.value = true
 }
@@ -92,6 +151,12 @@ function addScheduleRow() {
 }
 function removeScheduleRow(index: number) {
   form.schedules.splice(index, 1)
+}
+function addSkillRow() {
+  form.skills.push(blankSkill())
+}
+function removeSkillRow(index: number) {
+  form.skills.splice(index, 1)
 }
 
 async function onSubmit() {
@@ -106,9 +171,13 @@ async function onSubmit() {
       const payload: UpdateDoctorInput = {
         fullName: form.fullName,
         specialization: form.specialization || null,
+        bio: form.bio || null,
+        photoUrl: form.photoUrl || null,
+        commissionRate: form.commissionRate,
         isActive: form.isActive,
         branchIds: form.branchIds,
-        schedules: form.schedules
+        schedules: form.schedules,
+        skills: form.skills.filter(s => s.skillName)
       }
       await apiPut(`/doctors/${editingId.value}`, payload as unknown as Record<string, unknown>)
     } else {
@@ -117,8 +186,12 @@ async function onSubmit() {
         email: form.email,
         phoneWa: form.phoneWa || null,
         specialization: form.specialization || null,
+        bio: form.bio || null,
+        photoUrl: form.photoUrl || null,
+        commissionRate: form.commissionRate,
         branchIds: form.branchIds,
-        schedules: form.schedules
+        schedules: form.schedules,
+        skills: form.skills.filter(s => s.skillName)
       }
       await apiPost('/doctors', payload as unknown as Record<string, unknown>)
     }
@@ -170,60 +243,78 @@ async function onDeactivate(doctor: DoctorDetail) {
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <SkeletonTableSkeleton
-      v-if="status === 'pending'"
-      :columns="6"
-    />
-    <UTable
-      v-else
-      :data="doctors ?? []"
-      :columns="columns"
-      class="cursor-pointer"
-      @select="(_e, row) => openDetail(row.original)"
-    >
-      <template #isActive-cell="{ row }">
-        <UBadge
-          :color="row.original.isActive ? 'success' : 'neutral'"
-          variant="subtle"
-        >
-          {{ row.original.isActive ? 'Aktif' : 'Nonaktif' }}
-        </UBadge>
-      </template>
-      <template #actions-cell="{ row }">
-        <div
-          class="flex justify-end gap-1"
-          @click.stop
-        >
-          <UButton
-            icon="i-lucide-eye"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            @click="openDetail(row.original)"
+    <UCard :ui="{ body: 'p-0 sm:p-0' }">
+      <SkeletonTableSkeleton
+        v-if="status === 'pending'"
+        :columns="7"
+      />
+      <UTable
+        v-else
+        :data="doctors"
+        :columns="columns"
+        class="cursor-pointer"
+        @select="(_e, row) => openDetail(row.original)"
+      >
+        <template #photo-cell="{ row }">
+          <UAvatar
+            :src="row.original.photoUrl ?? undefined"
+            :text="initials(row.original.fullName)"
+            size="sm"
+            class="bg-primary-100 text-primary-700"
           />
-          <UButton
-            icon="i-lucide-pencil"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            @click="openEdit(row.original)"
-          />
-          <UButton
-            v-if="row.original.isActive"
-            icon="i-lucide-user-x"
-            size="xs"
-            color="error"
-            variant="ghost"
-            @click="onDeactivate(row.original)"
-          />
-        </div>
-      </template>
-    </UTable>
+        </template>
+        <template #isActive-cell="{ row }">
+          <UBadge
+            :color="row.original.isActive ? 'success' : 'neutral'"
+            variant="subtle"
+          >
+            {{ row.original.isActive ? 'Aktif' : 'Nonaktif' }}
+          </UBadge>
+        </template>
+        <template #actions-cell="{ row }">
+          <div
+            class="flex justify-end gap-1"
+            @click.stop
+          >
+            <UButton
+              icon="i-lucide-eye"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="openDetail(row.original)"
+            />
+            <UButton
+              icon="i-lucide-pencil"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="openEdit(row.original)"
+            />
+            <UButton
+              v-if="row.original.isActive"
+              icon="i-lucide-user-x"
+              size="xs"
+              color="error"
+              variant="ghost"
+              @click="onDeactivate(row.original)"
+            />
+          </div>
+        </template>
+      </UTable>
+      <PaginationBar
+        v-if="doctorsPage"
+        :page="doctorsPage.page"
+        :total-pages="doctorsPage.totalPages"
+        :total="doctorsPage.total"
+        :page-size="doctorsPage.pageSize"
+        @update:page="page = $event"
+      />
+    </UCard>
 
     <!-- Detail panel -->
     <USlideover
       v-model:open="showDetail"
-      :ui="{ content: 'max-w-md' }"
+      :ui="{ content: 'max-w-lg' }"
     >
       <template #body>
         <div
@@ -232,8 +323,9 @@ async function onDeactivate(doctor: DoctorDetail) {
         >
           <div class="flex items-center gap-3">
             <UAvatar
+              :src="detailDoctor.photoUrl ?? undefined"
               :text="initials(detailDoctor.fullName)"
-              size="lg"
+              size="xl"
               class="bg-primary-100 text-primary-700"
             />
             <div>
@@ -260,20 +352,58 @@ async function onDeactivate(doctor: DoctorDetail) {
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-2">
-            <UPageCard
-              :title="String(detailReservations.length)"
-              description="Total Reservasi"
-            />
-            <UPageCard
-              :title="String(detailCompletedCount)"
-              description="Selesai"
-            />
-            <UPageCard
-              :title="String(detailUpcomingCount)"
-              description="Akan Datang"
-            />
-          </div>
+          <p
+            v-if="detailDoctor.bio"
+            class="text-sm text-muted"
+          >
+            {{ detailDoctor.bio }}
+          </p>
+
+          <template v-if="detailStatsLoading">
+            <div class="grid grid-cols-3 gap-2">
+              <SkeletonStatCardSkeleton
+                v-for="i in 3"
+                :key="i"
+              />
+            </div>
+            <SkeletonChartSkeleton />
+          </template>
+          <template v-else-if="detailStats">
+            <div class="grid grid-cols-3 gap-2">
+              <UPageCard
+                :title="formatCompactIDR(detailStats.totalRevenue)"
+                description="Total Revenue"
+              />
+              <UPageCard
+                :title="formatCompactIDR(detailStats.commissionEarned)"
+                :description="`Komisi (${detailDoctor.commissionRate}%)`"
+              />
+              <UPageCard
+                :title="String(detailStats.reservationsCount)"
+                description="Total Reservasi"
+              />
+            </div>
+
+            <div>
+              <h4 class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+                Tren Revenue (6 Bulan)
+              </h4>
+              <ChartsEChart
+                :option="revenueTrendOption"
+                height="180px"
+              />
+            </div>
+
+            <div v-if="detailDoctor.skills?.length">
+              <h4 class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+                Kemampuan
+              </h4>
+              <ChartsEChart
+                :option="skillsRadarOption"
+                height="220px"
+              />
+            </div>
+          </template>
 
           <div>
             <h4 class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
@@ -387,6 +517,7 @@ async function onDeactivate(doctor: DoctorDetail) {
     <UModal
       v-model:open="showModal"
       :title="editingId ? 'Edit Dokter' : 'Tambah Dokter'"
+      :ui="{ content: 'max-w-xl' }"
     >
       <template #body>
         <form
@@ -422,11 +553,37 @@ async function onDeactivate(doctor: DoctorDetail) {
               />
             </UFormField>
           </div>
-          <UFormField label="Spesialisasi">
+          <div class="grid grid-cols-2 gap-4">
+            <UFormField label="Spesialisasi">
+              <UInput
+                v-model="form.specialization"
+                class="w-full"
+                placeholder="Dokter Gigi Umum"
+              />
+            </UFormField>
+            <UFormField label="Komisi (%)">
+              <UInput
+                v-model.number="form.commissionRate"
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+          <UFormField label="Foto (URL)">
             <UInput
-              v-model="form.specialization"
+              v-model="form.photoUrl"
               class="w-full"
-              placeholder="Dokter Gigi Umum"
+              placeholder="https://..."
+            />
+          </UFormField>
+          <UFormField label="Bio Singkat">
+            <UTextarea
+              v-model="form.bio"
+              class="w-full"
+              :rows="2"
             />
           </UFormField>
 
@@ -454,6 +611,61 @@ async function onDeactivate(doctor: DoctorDetail) {
               :label="form.isActive ? 'Aktif' : 'Nonaktif'"
             />
           </UFormField>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium">Kemampuan / Skill</span>
+              <UButton
+                icon="i-lucide-plus"
+                size="xs"
+                variant="soft"
+                label="Tambah Skill"
+                @click="addSkillRow"
+              />
+            </div>
+            <div
+              v-for="(skill, index) in form.skills"
+              :key="index"
+              class="flex items-end gap-2"
+            >
+              <UFormField
+                label="Nama Skill"
+                class="flex-1"
+              >
+                <UInput
+                  v-model="skill.skillName"
+                  class="w-full"
+                  placeholder="Ortodonti"
+                />
+              </UFormField>
+              <UFormField
+                label="Level"
+                class="w-32"
+              >
+                <USelect
+                  v-model="skill.proficiency"
+                  :items="[1, 2, 3, 4, 5].map(v => ({ label: PROFICIENCY_LABELS[v], value: v }))"
+                  class="w-full"
+                />
+              </UFormField>
+              <UFormField
+                label="Tahun"
+                class="w-20"
+              >
+                <UInput
+                  v-model.number="skill.yearsExperience"
+                  type="number"
+                  min="0"
+                />
+              </UFormField>
+              <UButton
+                icon="i-lucide-trash-2"
+                color="error"
+                variant="ghost"
+                @click="removeSkillRow(index)"
+              />
+            </div>
+          </div>
 
           <div class="space-y-2">
             <div class="flex items-center justify-between">

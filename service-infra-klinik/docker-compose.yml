@@ -48,6 +48,7 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-me}
       PAYMENT_SERVICE_URL: http://payment-service:8081
       NOTIFICATION_SERVICE_URL: http://notification-service:8082
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3100}
     depends_on:
       postgres:
         condition: service_healthy

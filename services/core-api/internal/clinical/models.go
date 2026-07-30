@@ -21,6 +21,7 @@ type OdontogramEntry struct {
 	ToothNumber int     `json:"toothNumber"`
 	Condition   string  `json:"condition"`
 	Notes       *string `json:"notes"`
+	PhotoURL    *string `json:"photoUrl"`
 }
 
 type ItemUsage struct {
@@ -43,6 +44,16 @@ type OdontogramEntryInput struct {
 	ToothNumber int     `json:"toothNumber"`
 	Condition   string  `json:"condition"`
 	Notes       *string `json:"notes"`
+	PhotoURL    *string `json:"photoUrl"`
+}
+
+// PatientOdontogramTimeline is one medical record's worth of odontogram
+// photos, ordered oldest-first, so the patient panel can show a
+// before/after comparison (e.g. braces progression) across visits.
+type PatientOdontogramTimeline struct {
+	MedicalRecordID string            `json:"medicalRecordId"`
+	CreatedAt       time.Time         `json:"createdAt"`
+	Odontogram      []OdontogramEntry `json:"odontogram"`
 }
 
 type ItemUsageInput struct {

@@ -3,6 +3,7 @@ package httpserver
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,6 +20,7 @@ type Dependencies struct {
 	DB                  *pgxpool.Pool
 	JWTAccessSecret     string
 	JWTAccessTTLMinutes int
+	AllowedOrigins      string
 }
 
 func New(deps Dependencies) *fiber.App {
@@ -29,7 +31,16 @@ func New(deps Dependencies) *fiber.App {
 
 	app.Use(recover.New())
 	app.Use(requestid.New())
-	app.Use(cors.New())
+	app.Use(helmet.New())
+	// Native clients (the Flutter app) aren't subject to CORS at all — this
+	// allowlist only matters for the browser-based admin panel, which is
+	// exactly why it must be a real allowlist and never "*" on an API that
+	// hands out JWTs.
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: deps.AllowedOrigins,
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+	}))
 
 	app.Get("/healthz", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok", "service": "core-api"})

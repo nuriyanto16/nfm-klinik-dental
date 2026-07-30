@@ -1,13 +1,25 @@
 <script setup lang="ts">
-import type { CreatePatientInput, Patient, Payment, Reservation, UpdatePatientInput } from '~/types/api'
+import type { EChartsOption } from 'echarts'
+import type { CreatePatientInput, MedicalRecord, PaginatedResponse, Patient, PatientOdontogramTimeline, PatientStats, Payment, Promo, Reservation, UpdatePatientInput } from '~/types/api'
 
 definePageMeta({ title: 'Pasien' })
 
-const { data: patients, status, refresh, error } = useApiFetch<Patient[]>('/patients')
+const page = ref(1)
+const pageSize = 10
+const search = ref('')
+const { data: patientsPage, status, refresh, error } = useApiFetch<PaginatedResponse<Patient>>(() => `/patients?page=${page.value}&pageSize=${pageSize}${search.value ? `&search=${encodeURIComponent(search.value)}` : ''}`)
+const patients = computed(() => patientsPage.value?.data ?? [])
+watch(search, () => {
+  page.value = 1
+})
+
 const { data: reservations } = useApiFetch<Reservation[]>('/reservations')
 const { data: payments } = useApiFetch<Payment[]>('/payments')
+const { data: promos } = useApiFetch<Promo[]>('/content/promos')
+const activePromos = computed(() => (promos.value ?? []).filter(p => p.isActive))
 
 const columns = [
+  { id: 'photo', header: '' },
   { accessorKey: 'fullName', header: 'Nama Pasien' },
   { accessorKey: 'rmNumber', header: 'No. RM' },
   { accessorKey: 'relation', header: 'Relasi' },
@@ -37,9 +49,50 @@ const detailReservations = computed(() => (reservations.value ?? []).filter(r =>
 const detailPayments = computed(() => (payments.value ?? []).filter(p => p.patientId === detailPatient.value?.id))
 const detailTotalPaid = computed(() => detailPayments.value.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0))
 
-function openDetail(patient: Patient) {
+const detailStats = ref<PatientStats | null>(null)
+const detailMedicalRecords = ref<MedicalRecord[]>([])
+const detailOdontogramTimeline = ref<PatientOdontogramTimeline[]>([])
+const detailLoading = ref(false)
+
+const beforePhoto = computed(() => detailOdontogramTimeline.value[0]?.odontogram?.[0]?.photoUrl)
+const afterPhoto = computed(() => {
+  const last = detailOdontogramTimeline.value[detailOdontogramTimeline.value.length - 1]
+  return last?.odontogram?.[0]?.photoUrl
+})
+const hasProgressPhotos = computed(() => detailOdontogramTimeline.value.length >= 2 && beforePhoto.value && afterPhoto.value && beforePhoto.value !== afterPhoto.value)
+
+const spendingOption = computed<EChartsOption>(() => ({
+  tooltip: { trigger: 'axis', valueFormatter: v => formatIDR(Number(v)) },
+  grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
+  xAxis: { type: 'category', data: (detailStats.value?.monthlySpending ?? []).map(m => m.period.slice(5)) },
+  yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatCompactIDR(v) }, splitLine: { lineStyle: { type: 'dashed' } } },
+  series: [{
+    type: 'bar',
+    data: (detailStats.value?.monthlySpending ?? []).map(m => m.amount),
+    itemStyle: { color: CHART_PRIMARY, borderRadius: [4, 4, 0, 0] },
+    barMaxWidth: 28
+  }]
+}))
+
+async function openDetail(patient: Patient) {
   detailPatient.value = patient
   showDetail.value = true
+  detailLoading.value = true
+  detailStats.value = null
+  detailMedicalRecords.value = []
+  detailOdontogramTimeline.value = []
+  try {
+    const [stats, records, timeline] = await Promise.all([
+      $fetch<PatientStats>(apiUrl(`/patients/${patient.id}/stats`)),
+      $fetch<MedicalRecord[]>(apiUrl(`/medical-records?patientId=${patient.id}`)),
+      $fetch<PatientOdontogramTimeline[]>(apiUrl(`/patients/${patient.id}/odontogram-timeline`))
+    ])
+    detailStats.value = stats
+    detailMedicalRecords.value = records
+    detailOdontogramTimeline.value = timeline
+  } finally {
+    detailLoading.value = false
+  }
 }
 function editFromDetail() {
   if (detailPatient.value) openEdit(detailPatient.value)
@@ -62,6 +115,7 @@ const form = reactive({
   email: '',
   phoneWa: '',
   city: '',
+  photoUrl: '',
   primaryAccountUserId: ''
 })
 
@@ -78,6 +132,7 @@ function openCreate() {
   form.email = ''
   form.phoneWa = ''
   form.city = ''
+  form.photoUrl = ''
   form.primaryAccountUserId = ''
   formError.value = ''
   showModal.value = true
@@ -91,6 +146,7 @@ function openEdit(patient: Patient) {
   form.dateOfBirth = patient.dateOfBirth ?? ''
   form.address = patient.address ?? ''
   form.rmNumber = patient.rmNumber ?? ''
+  form.photoUrl = patient.photoUrl ?? ''
   formError.value = ''
   showModal.value = true
 }
@@ -114,7 +170,8 @@ async function onSubmit() {
         gender: form.gender || null,
         dateOfBirth: form.dateOfBirth || null,
         address: form.address || null,
-        rmNumber: form.rmNumber || null
+        rmNumber: form.rmNumber || null,
+        photoUrl: form.photoUrl || null
       }
       await apiPut(`/patients/${editingId.value}`, payload as unknown as Record<string, unknown>)
     } else {
@@ -127,7 +184,8 @@ async function onSubmit() {
         primaryAccountUserId: isFamilyMember.value ? form.primaryAccountUserId : null,
         email: isFamilyMember.value ? null : (form.email || null),
         phoneWa: isFamilyMember.value ? null : (form.phoneWa || null),
-        city: isFamilyMember.value ? null : (form.city || null)
+        city: isFamilyMember.value ? null : (form.city || null),
+        photoUrl: form.photoUrl || null
       }
       await apiPost('/patients', payload as unknown as Record<string, unknown>)
     }
@@ -154,7 +212,7 @@ async function onDelete(patient: Patient) {
 
 <template>
   <UContainer class="py-6 space-y-6">
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between flex-wrap gap-3">
       <div>
         <h1 class="text-xl font-semibold">
           Pasien
@@ -163,11 +221,19 @@ async function onDelete(patient: Patient) {
           Termasuk anggota keluarga yang terhubung ke akun utama (relasi "Anak", dst). Klik baris untuk lihat detail lengkap.
         </p>
       </div>
-      <UButton
-        icon="i-lucide-plus"
-        label="Tambah Pasien"
-        @click="openCreate"
-      />
+      <div class="flex items-center gap-2">
+        <UInput
+          v-model="search"
+          icon="i-lucide-search"
+          placeholder="Cari nama / no. RM..."
+          class="w-56"
+        />
+        <UButton
+          icon="i-lucide-plus"
+          label="Tambah Pasien"
+          @click="openCreate"
+        />
+      </div>
     </div>
 
     <UAlert
@@ -179,67 +245,85 @@ async function onDelete(patient: Patient) {
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <SkeletonTableSkeleton
-      v-if="status === 'pending'"
-      :columns="7"
-    />
-    <UTable
-      v-else
-      :data="patients ?? []"
-      :columns="columns"
-      class="cursor-pointer"
-      @select="(_e, row) => openDetail(row.original)"
-    >
-      <template #rmNumber-cell="{ row }">
-        <span v-if="row.original.rmNumber">{{ row.original.rmNumber }}</span>
-        <UBadge
-          v-else
-          color="error"
-          variant="subtle"
-        >
-          Belum Terhubung
-        </UBadge>
-      </template>
-      <template #relation-cell="{ row }">
-        {{ relationLabel[row.original.relation] ?? row.original.relation }}
-      </template>
-      <template #createdAt-cell="{ row }">
-        {{ formatDateTime(row.original.createdAt) }}
-      </template>
-      <template #actions-cell="{ row }">
-        <div
-          class="flex justify-end gap-1"
-          @click.stop
-        >
-          <UButton
-            icon="i-lucide-eye"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            @click="openDetail(row.original)"
+    <UCard :ui="{ body: 'p-0 sm:p-0' }">
+      <SkeletonTableSkeleton
+        v-if="status === 'pending'"
+        :columns="8"
+      />
+      <UTable
+        v-else
+        :data="patients"
+        :columns="columns"
+        class="cursor-pointer"
+        @select="(_e, row) => openDetail(row.original)"
+      >
+        <template #photo-cell="{ row }">
+          <UAvatar
+            :src="row.original.photoUrl ?? undefined"
+            :text="initials(row.original.fullName)"
+            size="sm"
+            class="bg-primary-100 text-primary-700"
           />
-          <UButton
-            icon="i-lucide-pencil"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            @click="openEdit(row.original)"
-          />
-          <UButton
-            icon="i-lucide-trash-2"
-            size="xs"
+        </template>
+        <template #rmNumber-cell="{ row }">
+          <span v-if="row.original.rmNumber">{{ row.original.rmNumber }}</span>
+          <UBadge
+            v-else
             color="error"
-            variant="ghost"
-            @click="onDelete(row.original)"
-          />
-        </div>
-      </template>
-    </UTable>
+            variant="subtle"
+          >
+            Belum Terhubung
+          </UBadge>
+        </template>
+        <template #relation-cell="{ row }">
+          {{ relationLabel[row.original.relation] ?? row.original.relation }}
+        </template>
+        <template #createdAt-cell="{ row }">
+          {{ formatDateTime(row.original.createdAt) }}
+        </template>
+        <template #actions-cell="{ row }">
+          <div
+            class="flex justify-end gap-1"
+            @click.stop
+          >
+            <UButton
+              icon="i-lucide-eye"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="openDetail(row.original)"
+            />
+            <UButton
+              icon="i-lucide-pencil"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="openEdit(row.original)"
+            />
+            <UButton
+              icon="i-lucide-trash-2"
+              size="xs"
+              color="error"
+              variant="ghost"
+              @click="onDelete(row.original)"
+            />
+          </div>
+        </template>
+      </UTable>
+      <PaginationBar
+        v-if="patientsPage"
+        :page="patientsPage.page"
+        :total-pages="patientsPage.totalPages"
+        :total="patientsPage.total"
+        :page-size="patientsPage.pageSize"
+        @update:page="page = $event"
+      />
+    </UCard>
 
     <!-- Detail panel -->
     <USlideover
       v-model:open="showDetail"
-      :ui="{ content: 'max-w-md' }"
+      :ui="{ content: 'max-w-lg' }"
     >
       <template #body>
         <div
@@ -248,8 +332,9 @@ async function onDelete(patient: Patient) {
         >
           <div class="flex items-center gap-3">
             <UAvatar
+              :src="detailPatient.photoUrl ?? undefined"
               :text="initials(detailPatient.fullName)"
-              size="lg"
+              size="xl"
               class="bg-primary-100 text-primary-700"
             />
             <div>
@@ -283,6 +368,70 @@ async function onDelete(patient: Patient) {
               </div>
             </div>
           </div>
+
+          <template v-if="detailLoading">
+            <div class="grid grid-cols-3 gap-2">
+              <SkeletonStatCardSkeleton
+                v-for="i in 3"
+                :key="i"
+              />
+            </div>
+            <SkeletonChartSkeleton />
+          </template>
+          <template v-else-if="detailStats">
+            <div class="grid grid-cols-3 gap-2">
+              <UPageCard
+                :title="formatCompactIDR(detailStats.totalSpent)"
+                description="Total Belanja"
+              />
+              <UPageCard
+                :title="String(detailStats.visitsCount)"
+                description="Kunjungan Lunas"
+              />
+              <UPageCard
+                :title="`${detailStats.loyaltyPoints} pts`"
+                description="Poin Rewards"
+              />
+            </div>
+
+            <div>
+              <h4 class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+                Tren Belanja (6 Bulan)
+              </h4>
+              <ChartsEChart
+                :option="spendingOption"
+                height="180px"
+              />
+            </div>
+
+            <div v-if="hasProgressPhotos">
+              <h4 class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+                Progres Perawatan (Sebelum vs. Sesudah)
+              </h4>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <img
+                    :src="beforePhoto!"
+                    alt="Sebelum"
+                    class="w-full h-32 object-cover rounded-lg border border-default"
+                  >
+                  <p class="text-xs text-muted text-center mt-1">
+                    Sebelum
+                  </p>
+                </div>
+                <div>
+                  <img
+                    :src="afterPhoto!"
+                    alt="Sesudah"
+                    class="w-full h-32 object-cover rounded-lg border border-default"
+                  >
+                  <p class="text-xs text-muted text-center mt-1">
+                    Sesudah
+                  </p>
+                </div>
+              </div>
+            </div>
+          </template>
 
           <div>
             <h4 class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
@@ -332,6 +481,40 @@ async function onDelete(patient: Patient) {
                 {{ formatDateTime(detailPatient.createdAt) }}
               </dd>
             </dl>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+              Riwayat Rekam Medis ({{ detailMedicalRecords.length }})
+            </h4>
+            <div
+              v-if="!detailLoading && detailMedicalRecords.length === 0"
+              class="text-sm text-muted"
+            >
+              Belum ada rekam medis.
+            </div>
+            <ul
+              v-else
+              class="space-y-2"
+            >
+              <li
+                v-for="m in detailMedicalRecords.slice(0, 5)"
+                :key="m.id"
+                class="text-sm border-b border-default pb-2"
+              >
+                <div class="flex items-center justify-between">
+                  <p class="font-medium">
+                    {{ m.diagnosis ?? 'Tanpa diagnosis' }}
+                  </p>
+                  <p class="text-xs text-muted">
+                    {{ formatDateShort(m.createdAt) }}
+                  </p>
+                </div>
+                <p class="text-xs text-muted">
+                  {{ m.doctorName }}
+                </p>
+              </li>
+            </ul>
           </div>
 
           <div>
@@ -406,6 +589,29 @@ async function onDelete(patient: Patient) {
             </ul>
           </div>
 
+          <div v-if="activePromos.length">
+            <h4 class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+              Promo Aktif untuk Pasien
+            </h4>
+            <ul class="space-y-2">
+              <li
+                v-for="promo in activePromos.slice(0, 3)"
+                :key="promo.id"
+                class="text-sm border-b border-default pb-2"
+              >
+                <p class="font-medium">
+                  {{ promo.title }}
+                </p>
+                <p
+                  v-if="promo.discountType"
+                  class="text-xs text-muted"
+                >
+                  Diskon {{ promo.discountType === 'percentage' ? `${promo.discountValue}%` : formatIDR(promo.discountValue ?? 0) }}
+                </p>
+              </li>
+            </ul>
+          </div>
+
           <div class="flex gap-2 pt-2">
             <UButton
               icon="i-lucide-pencil"
@@ -472,6 +678,13 @@ async function onDelete(patient: Patient) {
               />
             </UFormField>
           </div>
+          <UFormField label="Foto (URL)">
+            <UInput
+              v-model="form.photoUrl"
+              class="w-full"
+              placeholder="https://..."
+            />
+          </UFormField>
           <UFormField label="Alamat">
             <UTextarea
               v-model="form.address"

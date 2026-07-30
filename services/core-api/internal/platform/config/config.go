@@ -17,6 +17,9 @@ type Config struct {
 	JWTAccessTTLMinutes int
 	PaymentServiceURL   string
 	NotificationSvcURL  string
+	// AllowedOrigins is a comma-separated CORS allowlist — the admin panel's
+	// own origin(s), never "*" for an API that issues auth tokens.
+	AllowedOrigins string
 }
 
 func Load() Config {
@@ -32,6 +35,7 @@ func Load() Config {
 		JWTAccessTTLMinutes: getEnvInt("JWT_ACCESS_TTL_MINUTES", 15),
 		PaymentServiceURL:   getEnv("PAYMENT_SERVICE_URL", "http://payment-service:8081"),
 		NotificationSvcURL:  getEnv("NOTIFICATION_SERVICE_URL", "http://notification-service:8082"),
+		AllowedOrigins:      getEnv("ALLOWED_ORIGINS", "http://localhost:3100,https://nfmtech.my.id"),
 	}
 }
 

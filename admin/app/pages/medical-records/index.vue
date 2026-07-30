@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { CreateMedicalRecordInput, DoctorDetail, InventoryItem, MedicalRecord, MedicalRecordDetail, Patient, Reservation } from '~/types/api'
 
-interface OdontogramFormRow { toothNumber: number, condition: string, notes: string }
+interface OdontogramFormRow { toothNumber: number, condition: string, notes: string, photoUrl: string }
 interface ItemUsageFormRow { inventoryItemId: string, quantity: number, notes: string }
 
 definePageMeta({ title: 'Rekam Medis' })
@@ -64,7 +64,7 @@ function openCreate() {
 }
 
 function addOdontogramRow() {
-  form.odontogram.push({ toothNumber: 11, condition: 'caries', notes: '' })
+  form.odontogram.push({ toothNumber: 11, condition: 'caries', notes: '', photoUrl: '' })
 }
 function removeOdontogramRow(i: number) {
   form.odontogram.splice(i, 1)
@@ -90,7 +90,7 @@ async function onSubmit() {
       staffId: form.staffId,
       diagnosis: form.diagnosis || null,
       treatmentNotes: form.treatmentNotes || null,
-      odontogram: form.odontogram.map(o => ({ ...o, notes: o.notes || null })),
+      odontogram: form.odontogram.map(o => ({ ...o, notes: o.notes || null, photoUrl: o.photoUrl || null })),
       itemsUsed: form.itemsUsed.map(u => ({ ...u, notes: u.notes || null }))
     }
     await apiPost('/medical-records', payload as unknown as Record<string, unknown>)
@@ -336,6 +336,16 @@ function itemName(id: string) {
                 <UInput
                   v-model="o.notes"
                   class="w-full"
+                />
+              </UFormField>
+              <UFormField
+                label="Foto (URL)"
+                class="flex-1"
+              >
+                <UInput
+                  v-model="o.photoUrl"
+                  class="w-full"
+                  placeholder="https://..."
                 />
               </UFormField>
               <UButton

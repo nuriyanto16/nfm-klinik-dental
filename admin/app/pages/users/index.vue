@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import type { CreateUserInput, StaffUser, UpdateUserInput } from '~/types/api'
+import type { CreateUserInput, PaginatedResponse, StaffUser, UpdateUserInput } from '~/types/api'
 
 definePageMeta({ title: 'User & Role' })
 
-const { data: users, status, refresh, error } = useApiFetch<StaffUser[]>('/users')
+const page = ref(1)
+const pageSize = 10
+const { data: usersPage, status, refresh, error } = useApiFetch<PaginatedResponse<StaffUser>>(() => `/users?page=${page.value}&pageSize=${pageSize}`)
+const users = computed(() => usersPage.value?.data ?? [])
 const { data: roles } = useApiFetch<string[]>('/roles')
 
 const roleLabel: Record<string, string> = {
@@ -134,51 +137,61 @@ async function onDeactivate(user: StaffUser) {
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <SkeletonTableSkeleton
-      v-if="status === 'pending'"
-      :columns="6"
-    />
-    <UTable
-      v-else
-      :data="users ?? []"
-      :columns="columns"
-    >
-      <template #role-cell="{ row }">
-        <UBadge
-          :color="roleColor[row.original.role] ?? 'neutral'"
-          variant="subtle"
-        >
-          {{ roleLabel[row.original.role] ?? row.original.role }}
-        </UBadge>
-      </template>
-      <template #isActive-cell="{ row }">
-        <UBadge
-          :color="row.original.isActive ? 'success' : 'neutral'"
-          variant="subtle"
-        >
-          {{ row.original.isActive ? 'Aktif' : 'Nonaktif' }}
-        </UBadge>
-      </template>
-      <template #actions-cell="{ row }">
-        <div class="flex justify-end gap-1">
-          <UButton
-            icon="i-lucide-pencil"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            @click="openEdit(row.original)"
-          />
-          <UButton
-            v-if="row.original.isActive"
-            icon="i-lucide-user-x"
-            size="xs"
-            color="error"
-            variant="ghost"
-            @click="onDeactivate(row.original)"
-          />
-        </div>
-      </template>
-    </UTable>
+    <UCard :ui="{ body: 'p-0 sm:p-0' }">
+      <SkeletonTableSkeleton
+        v-if="status === 'pending'"
+        :columns="6"
+      />
+      <UTable
+        v-else
+        :data="users"
+        :columns="columns"
+      >
+        <template #role-cell="{ row }">
+          <UBadge
+            :color="roleColor[row.original.role] ?? 'neutral'"
+            variant="subtle"
+          >
+            {{ roleLabel[row.original.role] ?? row.original.role }}
+          </UBadge>
+        </template>
+        <template #isActive-cell="{ row }">
+          <UBadge
+            :color="row.original.isActive ? 'success' : 'neutral'"
+            variant="subtle"
+          >
+            {{ row.original.isActive ? 'Aktif' : 'Nonaktif' }}
+          </UBadge>
+        </template>
+        <template #actions-cell="{ row }">
+          <div class="flex justify-end gap-1">
+            <UButton
+              icon="i-lucide-pencil"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="openEdit(row.original)"
+            />
+            <UButton
+              v-if="row.original.isActive"
+              icon="i-lucide-user-x"
+              size="xs"
+              color="error"
+              variant="ghost"
+              @click="onDeactivate(row.original)"
+            />
+          </div>
+        </template>
+      </UTable>
+      <PaginationBar
+        v-if="usersPage"
+        :page="usersPage.page"
+        :total-pages="usersPage.totalPages"
+        :total="usersPage.total"
+        :page-size="usersPage.pageSize"
+        @update:page="page = $event"
+      />
+    </UCard>
 
     <UModal
       v-model:open="showModal"

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import type { DoctorDetail, Patient, Payment, Treatment } from '~/types/api'
+import type { DoctorDetail, Patient, Payment, Promo, Treatment } from '~/types/api'
 
 const props = defineProps<{
   patients: Patient[]
   branches: { id: string, name: string }[]
   doctorsAdmin: DoctorDetail[]
   treatments: Treatment[]
+  promos: Promo[]
 }>()
 
 const emit = defineEmits<{ completed: [payment: Payment] }>()
@@ -31,6 +32,9 @@ const search = ref('')
 const activeCategory = ref('all')
 const cart = ref<CartLine[]>([])
 const discount = ref(0)
+const promoId = ref('')
+const activePromos = computed(() => props.promos.filter(p => p.isActive))
+const selectedPromo = computed(() => activePromos.value.find(p => p.id === promoId.value) ?? null)
 const paymentMethod = ref('cash')
 const cashReceived = ref(0)
 const processing = ref(false)
@@ -70,6 +74,12 @@ function removeLine(line: CartLine) {
 }
 
 const subtotal = computed(() => cart.value.reduce((sum, l) => sum + l.price * l.qty, 0))
+watch([selectedPromo, subtotal], ([promo, sub]) => {
+  if (!promo || !promo.discountType) return
+  discount.value = promo.discountType === 'percentage'
+    ? Math.round(sub * (promo.discountValue ?? 0) / 100)
+    : (promo.discountValue ?? 0)
+})
 const total = computed(() => Math.max(0, subtotal.value - discount.value))
 const change = computed(() => Math.max(0, cashReceived.value - total.value))
 const canPay = computed(() =>
@@ -83,6 +93,7 @@ const canPay = computed(() =>
 function resetForNewTransaction() {
   cart.value = []
   discount.value = 0
+  promoId.value = ''
   paymentMethod.value = 'cash'
   cashReceived.value = 0
   posError.value = ''
@@ -107,7 +118,9 @@ async function processPayment() {
       amount: total.value,
       depositAmount: total.value,
       paymentMethod: paymentMethod.value,
-      status: 'paid'
+      status: 'paid',
+      promoId: promoId.value || null,
+      discountAmount: discount.value
     })
     completedPayment.value = payment
     emit('completed', payment)
@@ -310,6 +323,13 @@ async function processPayment() {
             <span class="text-muted">Subtotal</span>
             <span class="tabular-nums">{{ formatIDR(subtotal) }}</span>
           </div>
+          <UFormField label="Promo">
+            <USelect
+              v-model="promoId"
+              :items="[{ label: 'Tanpa Promo', value: '' }, ...activePromos.map(p => ({ label: p.title, value: p.id }))]"
+              class="w-full"
+            />
+          </UFormField>
           <div class="flex justify-between items-center">
             <span class="text-muted">Diskon</span>
             <UInput
