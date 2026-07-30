@@ -1,0 +1,25 @@
+# Local development override: exposes every service directly on localhost
+# so you can hit them without a reverse proxy.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+services:
+  postgres:
+    ports: ["5432:5432"]
+
+  redis:
+    ports: ["6379:6379"]
+
+  core-api:
+    ports: ["8080:8080"]
+
+  payment-service:
+    ports: ["8081:8081"]
+
+  notification-service:
+    ports: ["8082:8082"]
+
+  admin-frontend:
+    # Host port 3000 is already taken locally by another project
+    # (esertifikasi-ui), so the admin panel is mapped to 3100 instead.
+    ports: ["3100:3000"]

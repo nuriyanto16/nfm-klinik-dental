@@ -1,0 +1,40 @@
+name: admin
+
+on:
+  push:
+    branches: [main]
+    paths: ["admin/**", ".github/workflows/admin.yml"]
+  pull_request:
+    paths: ["admin/**", ".github/workflows/admin.yml"]
+
+defaults:
+  run:
+    working-directory: admin
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: admin/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run typecheck
+      - run: pnpm run build
+
+  docker:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v6
+        with:
+          context: admin
+          push: false
+          tags: ghcr.io/nina-dental-care/admin-frontend:latest

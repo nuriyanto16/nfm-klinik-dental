@@ -1,0 +1,112 @@
+networks:
+  nina-net:
+
+services:
+  # postgres/redis use host bind mounts (./data/...) instead of named Docker
+  # volumes, so the data survives `docker compose down`, `docker rm`, and
+  # `docker volume prune` — it's a plain folder on disk, not Docker-managed
+  # state that a cleanup command could sweep away.
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-nina_dental}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [nina-net]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --appendonly yes
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [nina-net]
+
+  core-api:
+    build:
+      context: ../services/core-api
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      HTTP_PORT: "8080"
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-nina_dental}?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret-change-me}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-me}
+      PAYMENT_SERVICE_URL: http://payment-service:8081
+      NOTIFICATION_SERVICE_URL: http://notification-service:8082
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [nina-net]
+
+  payment-service:
+    build:
+      context: ../services/payment-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      HTTP_PORT: "8081"
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-nina_dental}?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      XENDIT_API_KEY: ${XENDIT_API_KEY:-}
+      XENDIT_WEBHOOK_VERIFICATION_TOKEN: ${XENDIT_WEBHOOK_VERIFICATION_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [nina-net]
+
+  notification-service:
+    build:
+      context: ../services/notification-service
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      HTTP_PORT: "8082"
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-nina_dental}?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      WA_GATEWAY_URL: ${WA_GATEWAY_URL:-}
+      WA_GATEWAY_TOKEN: ${WA_GATEWAY_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [nina-net]
+
+  admin-frontend:
+    build:
+      context: ../admin
+    restart: unless-stopped
+    environment:
+      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://localhost:8080/api/v1}
+    depends_on:
+      - core-api
+    networks: [nina-net]
+
+  # One-off migration runner: `docker compose run --rm migrate -path=/migrations
+  # -database "postgres://...@postgres:5432/..." up`. Not started by `up`
+  # (profile "tools" keeps it out of the default service set).
+  migrate:
+    image: migrate/migrate:v4.17.1
+    profiles: ["tools"]
+    volumes:
+      - ../services/core-api/migrations:/migrations
+    networks: [nina-net]

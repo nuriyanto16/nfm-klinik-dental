@@ -1,0 +1,58 @@
+# Production override: adds Traefik as the single public entrypoint (TLS via
+# Let's Encrypt) and labels the services that need to be reachable from the
+# internet. No host ports are published directly — only Traefik's 80/443.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Requires DNS A records for admin.${DOMAIN}, api.${DOMAIN} and pay.${DOMAIN}
+# pointing at this host, and ${ACME_EMAIL}/${DOMAIN} set in .env.
+#
+services:
+  traefik:
+    image: traefik:v3.1
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-certs:/letsencrypt
+    networks: [nina-net]
+
+  admin-frontend:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.admin.rule=Host(`admin.${DOMAIN}`)
+      - traefik.http.routers.admin.entrypoints=websecure
+      - traefik.http.routers.admin.tls.certresolver=letsencrypt
+      - traefik.http.services.admin.loadbalancer.server.port=3000
+
+  core-api:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.core-api.rule=Host(`api.${DOMAIN}`)
+      - traefik.http.routers.core-api.entrypoints=websecure
+      - traefik.http.routers.core-api.tls.certresolver=letsencrypt
+      - traefik.http.services.core-api.loadbalancer.server.port=8080
+
+  payment-service:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.payment-service.rule=Host(`pay.${DOMAIN}`)
+      - traefik.http.routers.payment-service.entrypoints=websecure
+      - traefik.http.routers.payment-service.tls.certresolver=letsencrypt
+      - traefik.http.services.payment-service.loadbalancer.server.port=8081
+
+volumes:
+  traefik-certs:

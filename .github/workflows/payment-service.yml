@@ -1,0 +1,36 @@
+name: payment-service
+
+on:
+  push:
+    branches: [main]
+    paths: ["services/payment-service/**", ".github/workflows/payment-service.yml"]
+  pull_request:
+    paths: ["services/payment-service/**", ".github/workflows/payment-service.yml"]
+
+defaults:
+  run:
+    working-directory: services/payment-service
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/payment-service/go.mod
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test ./... -race
+
+  docker:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v6
+        with:
+          context: services/payment-service
+          push: false
+          tags: ghcr.io/nina-dental-care/payment-service:latest

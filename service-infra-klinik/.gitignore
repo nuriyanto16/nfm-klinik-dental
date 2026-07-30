@@ -1,0 +1,3 @@
+# Postgres/Redis bind-mount data — real database files, never commit these.
+data/
+.env

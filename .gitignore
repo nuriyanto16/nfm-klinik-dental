@@ -1,0 +1,14 @@
+# Secrets — never commit
+VPS.md
+*.pem
+*.key
+
+# Editor/tooling local state
+.claude/
+.DS_Store
+.idea/
+.vscode/
+
+# Go build artifacts
+services/*/tmp/
+services/*/*.exe

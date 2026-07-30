@@ -1,0 +1,73 @@
+# Status
+
+## Selesai & diverifikasi end-to-end
+
+### Backend (core-api)
+
+Migrasi `000001`–`000008` (termasuk timezone Asia/Jakarta dan tabel inventaris alat/obat). Endpoint per domain:
+
+- **identity**: `/patients` (GET/POST/PUT/DELETE — termasuk family linking via `primaryAccountUserId`), `/users` (GET/POST/PUT/DELETE untuk staf non-dokter), `/roles`
+- **scheduling**: `/branches` (read), `/doctors` (read, aktif saja) + `/doctors/admin` (read, termasuk nonaktif) + `/doctors/:id` (detail) + POST/PUT/DELETE (CRUD lengkap termasuk cabang & jadwal mingguan), `/reservations` (GET dengan filter `branchId`/`status`/`from`/`to`, respons kini menyertakan `patientId`/`branchId`/`staffId`; POST untuk buat baru — `status` opsional di body, default `pending`, dipakai jalur POS untuk langsung `completed`), `/reservations/:id/status` (PATCH), `/reservation-statuses`
+- **billing**: `/treatments` (read), `/payments` (GET — respons kini menyertakan `reservationId`/`patientId`, POST untuk transaksi manual/tunai dari office), `/payments/:id/invoice` (data invoice siap cetak), `/inventory` (CRUD alat & obat), `/admin/dashboard*` (KPI + 4 chart), `/admin/reports/*` (summary, revenue-trend, by-payment-method untuk periode custom)
+- **clinical**: `/medical-records` (GET list/detail, POST create — append-only, termasuk odontogram & pemakaian alat/obat yang otomatis mengurangi stok dalam satu transaksi)
+- **content (CMS)**: `/content/article-categories`, `/content/articles`, `/content/promos`, `/content/testimonials`, `/content/videos` — CRUD penuh
+
+- **auth**: `POST /auth/login` (email+password staf, bcrypt, JWT HS256), `GET /auth/me` (validasi Bearer token)
+
+Semua endpoint data di atas (di luar `/auth/*`) **belum ada RBAC** — publik sementara sampai proteksi per-role dibangun di Fase 1. Login sendiri sudah nyata (bukan lagi stub) dan admin panel sudah mengunci semua halaman di belakang login (`middleware/auth.global.ts`).
+
+### Admin panel (Nuxt 3)
+
+**Semua 12 modul kini punya halaman nyata** (bukan lagi "coming soon" kecuali Notifikasi & Broadcast, yang menunggu integrasi WA gateway):
+
+- **Dashboard** — 6 KPI tile, 3 chart, 2 tabel data terbaru. Diaudit ulang: 100% dinamis dari data, tidak ada nilai hardcode.
+- **Reservasi & Antrian** — filter (cabang/status/tanggal), buat reservasi baru (pilih pasien/cabang/dokter/jadwal/perawatan), ubah status inline, **toggle tampilan List/Kalender** (kalender bulan custom, klik tanggal untuk filter list ke tanggal tsb)
+- **Pasien** — CRUD penuh, termasuk tambah anggota keluarga (relasi anak/pasangan/dll ke akun utama), **panel detail slideover** saat baris diklik (data pribadi + riwayat reservasi + riwayat pembayaran pasien tsb)
+- **Dokter & Jadwal** — CRUD penuh: akun, spesialisasi, cabang praktik (multi-select), jadwal mingguan (hari/cabang/jam, repeatable), nonaktifkan akun, **panel detail slideover** saat baris diklik (statistik, data praktik, jadwal mingguan, reservasi terbaru dokter tsb)
+- **Cabang**, **Perawatan & Harga** — read-only (belum diminta CRUD di fase ini)
+- **Rekam Medis** — buat entri baru (append-only): diagnosis, catatan tindakan, odontogram (opsional), **pemakaian alat/obat** (mengurangi stok otomatis), lihat detail
+- **Inventaris (Alat & Obat)** — modul baru: master data stok, kategori obat/alat, harga satuan, badge "Stok Menipis" saat di bawah batas reorder, CRUD penuh
+- **Billing & Rekonsiliasi** — **kasir POS penuh** ("Transaksi Baru (POS)", modal fullscreen): katalog perawatan searchable + filter kategori, keranjang dengan qty stepper, diskon, 4 tombol metode pembayaran cepat (Tunai/QRIS/Transfer/Kartu), kalkulator kembalian otomatis untuk tunai, layar sukses dengan tombol cetak invoice langsung. Plus "Bayar Reservasi" (jalur lama, untuk reservasi yang sudah dibuat lewat app/admin) dan **cetak invoice** (halaman print-friendly terpisah, `/billing/:id/invoice`)
+- **Laporan Keuangan** — modul baru: filter periode custom, 4 KPI, tren revenue harian, breakdown per metode pembayaran & per cabang
+- **CMS** — modul baru: 4 tab (Artikel + kategori, Promo, Testimoni, Video), CRUD penuh (gambar/video pakai URL, belum ada upload)
+- **User & Role** — CRUD penuh untuk staf non-dokter (perawat/admin cabang/finance/superadmin), password di-hash dengan bcrypt
+
+**Layout & tema**: sidebar dikelompokkan per section (Operasional/Klinis/Keuangan/Konten & Marketing/Sistem), navbar dengan judul halaman dinamis + notifikasi + color mode, logo gradient. **Login sudah nyata**: split-screen dengan panel branding (blob gradient + 3 bullet fitur), show/hide password, captcha matematika self-hosted, dan tersambung ke `POST /auth/login` sungguhan (JWT disimpan di cookie 30 hari, akun demo `admin@ninadentalcare.com` / `NinaDental#2026`). Semua halaman admin dikunci di belakang login lewat `middleware/auth.global.ts`; sidebar menampilkan nama & role user yang benar-benar login, tombol "Keluar" menghapus sesi. **Skeleton loading** (`components/skeleton/*`) terpasang di semua menu yang memuat data async (tabel, KPI, chart, kalender) menggantikan tampilan kosong/spinner.
+
+### Data dummy
+
+`services/core-api/seed/seed.sql` (idempotent, `make seed`): 2 cabang, 4 dokter, 6 pasien (1 anak/family member), 4 kategori + 13 treatment, 10 reservasi dasar (semua status) + ~40 reservasi & pembayaran historis tambahan tersebar di 30 hari terakhir (untuk chart tren dashboard yang realistis), 8 item inventaris (obat & alat), 3 rekam medis (dengan odontogram & pemakaian item), 3 kategori artikel + 3 artikel, 2 promo, 3 testimoni, 2 video.
+
+### Infra
+
+`service-infra-klinik/` — 6 container sehat (`postgres`, `redis`, `core-api`, `payment-service`, `notification-service`, `admin-frontend`), tanpa MinIO, tanpa Traefik di local, bind mount data Postgres/Redis. `Makefile`: `make up/down/logs/migrate-up/migrate-down/migrate-new/seed`.
+
+Perubahan lengkap & alasannya: lihat [`HISTORY.md`](../HISTORY.md).
+
+## Bug yang ditemukan & diperbaiki selama verifikasi (kumulatif)
+
+1. Admin Dockerfile tanpa `.dockerignore` → `COPY . .` menimpa `node_modules` container. Fix: tambah `.dockerignore`.
+2. Postgres default timezone UTC vs klinik WIB → query "hari ini" salah jam 00:00–06:59 WIB. Fix: migrasi `000007_set_timezone`.
+3. `seed.sql` tidak menghapus `scheduling.branches` sebelum insert ulang → re-run gagal. Fix: tambah statement DELETE.
+4. `CreatePayment`: parameter `$4` dipakai di dua konteks tipe berbeda (kolom enum + perbandingan `CASE WHEN`) → Postgres gagal infer tipe (SQLSTATE 42P08). Fix: cast eksplisit `::billing.payment_status`.
+5. `CreatePatient`: query `RETURNING` 10 kolom tapi `Scan` cuma 9 destinasi (kolom `address` terlewat) → error saat menambah anggota keluarga. Fix: sekaligus ketahuan `address` tidak pernah diekspos ke API/frontend sama sekali (form isi tapi tidak pernah tampil balik) — ditambahkan ke `Patient` struct, semua query, dan pre-fill form edit.
+6. Seed: indexing array 2D PL/pgSQL (`pairs[i]` pada `uuid[][]`) mengembalikan `NULL`, bukan "baris ke-i" → error not-null constraint saat generate data historis. Fix: ganti jadi dua array 1D paralel.
+7. Seed: variabel PL/pgSQL bertipe `text` dimasukkan ke kolom enum tanpa cast → error tipe. Fix: cast eksplisit `::billing.payment_status`.
+8. `MonthCalendar.vue`: nama class Tailwind dibentuk lewat template literal → tidak ter-generate oleh JIT scanner (chip status transparan). Fix: peta statis nama class per status.
+9. `useApiFetch('/reservations')` dipanggil 2x dengan argumen identik (list & kalender) → cache key `useFetch` bentrok, kedua ref saling menimpa. Fix: parameter `key` opsional di `useApiFetch`.
+
+## Belum
+
+- RBAC per-role di setiap endpoint data (saat ini semua endpoint di luar `/auth/*` masih publik meski login admin panel sudah nyata). Refresh-token rotation & expiry policy juga belum ada (token JWT tunggal, cookie 30 hari tetap).
+- Build APK/IPA mobile asli belum diverifikasi di mesin ini (butuh Android SDK / Xcode+CocoaPods).
+- Notifikasi & Broadcast — masih "coming soon" (butuh integrasi WA gateway pihak ketiga).
+- Cabang & Perawatan/Harga — masih read-only (CRUD belum diminta).
+- Upload file asli (foto/gambar/video) — masih pakai URL manual, keputusan object storage ditunda ke saat benar-benar dibutuhkan.
+
+## Langkah selanjutnya (urutan disarankan)
+
+1. Implementasi auth (`POST /api/v1/auth/register`, `/login`, `/refresh`) di `core-api` + RBAC middleware
+2. Sambungkan halaman login admin & mobile ke endpoint auth tersebut
+3. CRUD untuk Cabang & Perawatan/Harga (saat ini read-only)
+4. Integrasi WA gateway pihak ketiga untuk modul Notifikasi & Broadcast
+5. Pertimbangkan object storage (lihat docs/architecture.md §2) begitu upload file benar-benar dibutuhkan (mis. foto rontgen)
