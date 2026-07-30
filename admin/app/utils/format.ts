@@ -11,7 +11,8 @@ export function formatCompactIDR(amount: number): string {
 }
 
 export function formatDateShort(isoDate: string): string {
-  return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(new Date(`${isoDate}T00:00:00`))
+  const date = isoDate.includes('T') ? new Date(isoDate) : new Date(`${isoDate}T00:00:00`)
+  return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date)
 }
 
 export type BadgeColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'

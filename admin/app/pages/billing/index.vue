@@ -189,97 +189,121 @@ async function onSubmit() {
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <UCard>
-        <template #header>
-          <h2 class="font-medium">
-            Tren Revenue 14 Hari
-          </h2>
-        </template>
-        <SkeletonChartSkeleton v-if="!trend" />
-        <ChartsEChart
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+      <UCard
+        class="lg:col-span-2"
+        :ui="{ body: 'p-0 sm:p-0' }"
+      >
+        <SkeletonTableSkeleton
+          v-if="status === 'pending'"
+          :columns="8"
+        />
+        <UTable
           v-else
-          :option="trendOption"
+          :data="payments"
+          :columns="columns"
+          class="cursor-pointer"
+          @select="(_e, row) => navigateTo(`/billing/${row.original.id}`)"
+        >
+          <template #createdAt-cell="{ row }">
+            {{ formatDateTime(row.original.createdAt) }}
+          </template>
+          <template #amount-cell="{ row }">
+            {{ formatIDR(row.original.amount) }}
+          </template>
+          <template #paymentMethod-cell="{ row }">
+            {{ row.original.paymentMethod ? (methodLabel[row.original.paymentMethod] ?? row.original.paymentMethod) : '—' }}
+          </template>
+          <template #status-cell="{ row }">
+            <UBadge
+              :color="paymentStatusColor(row.original.status)"
+              variant="subtle"
+            >
+              {{ paymentStatusLabel(row.original.status) }}
+            </UBadge>
+          </template>
+          <template #providerReference-cell="{ row }">
+            <span class="font-mono text-xs">{{ row.original.providerReference ?? '—' }}</span>
+          </template>
+          <template #actions-cell="{ row }">
+            <div
+              class="flex justify-end gap-1"
+              @click.stop
+            >
+              <UButton
+                icon="i-lucide-eye"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                :to="`/billing/${row.original.id}`"
+              />
+              <UButton
+                icon="i-lucide-printer"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                :to="`/billing/${row.original.id}/invoice`"
+                target="_blank"
+              />
+            </div>
+          </template>
+        </UTable>
+        <PaginationBar
+          v-if="paymentsPage"
+          :page="paymentsPage.page"
+          :total-pages="paymentsPage.totalPages"
+          :total="paymentsPage.total"
+          :page-size="paymentsPage.pageSize"
+          @update:page="page = $event"
         />
       </UCard>
-      <UCard>
-        <template #header>
-          <h2 class="font-medium">
-            Metode Pembayaran (30 Hari)
-          </h2>
-        </template>
-        <SkeletonChartSkeleton v-if="!methodBreakdown" />
-        <ChartsEChart
-          v-else
-          :option="methodOption"
-        />
+
+      <!-- Compact summary panel -->
+      <UCard class="lg:sticky lg:top-4 space-y-4">
+        <div class="grid grid-cols-2 gap-2 text-center">
+          <div class="rounded-lg border border-default p-2">
+            <p class="text-sm font-semibold">
+              {{ formatCompactIDR((trend ?? []).reduce((s, d) => s + d.revenue, 0)) }}
+            </p>
+            <p class="text-[10px] text-muted">
+              Revenue 14 Hari
+            </p>
+          </div>
+          <div class="rounded-lg border border-default p-2">
+            <p class="text-sm font-semibold">
+              {{ (methodBreakdown ?? []).reduce((s, m) => s + m.count, 0) }}
+            </p>
+            <p class="text-[10px] text-muted">
+              Transaksi 30 Hari
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold text-muted uppercase tracking-wide mb-1">
+            Tren Revenue
+          </p>
+          <SkeletonChartSkeleton v-if="!trend" />
+          <ChartsEChart
+            v-else
+            :option="trendOption"
+            height="110px"
+          />
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold text-muted uppercase tracking-wide mb-1">
+            Metode Pembayaran
+          </p>
+          <SkeletonChartSkeleton v-if="!methodBreakdown" />
+          <ChartsEChart
+            v-else
+            :option="methodOption"
+            height="160px"
+          />
+        </div>
       </UCard>
     </div>
-
-    <UCard :ui="{ body: 'p-0 sm:p-0' }">
-      <SkeletonTableSkeleton
-        v-if="status === 'pending'"
-        :columns="8"
-      />
-      <UTable
-        v-else
-        :data="payments"
-        :columns="columns"
-        class="cursor-pointer"
-        @select="(_e, row) => navigateTo(`/billing/${row.original.id}`)"
-      >
-        <template #createdAt-cell="{ row }">
-          {{ formatDateTime(row.original.createdAt) }}
-        </template>
-        <template #amount-cell="{ row }">
-          {{ formatIDR(row.original.amount) }}
-        </template>
-        <template #paymentMethod-cell="{ row }">
-          {{ row.original.paymentMethod ? (methodLabel[row.original.paymentMethod] ?? row.original.paymentMethod) : '—' }}
-        </template>
-        <template #status-cell="{ row }">
-          <UBadge
-            :color="paymentStatusColor(row.original.status)"
-            variant="subtle"
-          >
-            {{ paymentStatusLabel(row.original.status) }}
-          </UBadge>
-        </template>
-        <template #providerReference-cell="{ row }">
-          <span class="font-mono text-xs">{{ row.original.providerReference ?? '—' }}</span>
-        </template>
-        <template #actions-cell="{ row }">
-          <div
-            class="flex justify-end gap-1"
-            @click.stop
-          >
-            <UButton
-              icon="i-lucide-eye"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              :to="`/billing/${row.original.id}`"
-            />
-            <UButton
-              icon="i-lucide-printer"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              :to="`/billing/${row.original.id}/invoice`"
-              target="_blank"
-            />
-          </div>
-        </template>
-      </UTable>
-      <PaginationBar
-        v-if="paymentsPage"
-        :page="paymentsPage.page"
-        :total-pages="paymentsPage.totalPages"
-        :total="paymentsPage.total"
-        :page-size="paymentsPage.pageSize"
-        @update:page="page = $event"
-      />
-    </UCard>
 
     <!-- POS checkout -->
     <UModal

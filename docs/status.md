@@ -4,35 +4,43 @@
 
 ### Backend (core-api)
 
-Migrasi `000001`–`000008` (termasuk timezone Asia/Jakarta dan tabel inventaris alat/obat). Endpoint per domain:
+Migrasi `000001`–`000009` (timezone Asia/Jakarta, inventaris alat/obat, dan pengayaan Fase terbaru: foto dokter/pasien, `staff_skills`, `billing.expenses`, promo diskon, odontogram photo). Endpoint per domain:
 
-- **identity**: `/patients` (GET/POST/PUT/DELETE — termasuk family linking via `primaryAccountUserId`), `/users` (GET/POST/PUT/DELETE untuk staf non-dokter), `/roles`
-- **scheduling**: `/branches` (read), `/doctors` (read, aktif saja) + `/doctors/admin` (read, termasuk nonaktif) + `/doctors/:id` (detail) + POST/PUT/DELETE (CRUD lengkap termasuk cabang & jadwal mingguan), `/reservations` (GET dengan filter `branchId`/`status`/`from`/`to`, respons kini menyertakan `patientId`/`branchId`/`staffId`; POST untuk buat baru — `status` opsional di body, default `pending`, dipakai jalur POS untuk langsung `completed`), `/reservations/:id/status` (PATCH), `/reservation-statuses`
-- **billing**: `/treatments` (read), `/payments` (GET — respons kini menyertakan `reservationId`/`patientId`, POST untuk transaksi manual/tunai dari office), `/payments/:id/invoice` (data invoice siap cetak), `/inventory` (CRUD alat & obat), `/admin/dashboard*` (KPI + 4 chart), `/admin/reports/*` (summary, revenue-trend, by-payment-method untuk periode custom)
-- **clinical**: `/medical-records` (GET list/detail, POST create — append-only, termasuk odontogram & pemakaian alat/obat yang otomatis mengurangi stok dalam satu transaksi)
-- **content (CMS)**: `/content/article-categories`, `/content/articles`, `/content/promos`, `/content/testimonials`, `/content/videos` — CRUD penuh
+- **identity**: `/patients` (GET paginated — search + family linking via `primaryAccountUserId` — /POST/PUT/DELETE), `/patients/:id/stats`, `/patients/:id/odontogram-timeline`, `/users` (CRUD paginated, staf non-dokter), `/roles`, `PUT /auth/me`, `POST /auth/change-password`
+- **scheduling**: `/branches` (read only), `/doctors` (read, aktif saja) + `/doctors/admin` (paginated, termasuk nonaktif + `bio`/`commissionRate`/`skills`) + `/doctors/:id` (detail) + `/doctors/:id/stats` + POST/PUT/DELETE (CRUD lengkap: cabang, jadwal mingguan, skill), `/reservations` (GET paginated dengan filter `branchId`/`status`/`from`/`to`/`patientId`; POST untuk buat baru), `/reservations/:id/status` (PATCH)
+- **billing**: `/treatments` + `/treatment-categories` (CRUD penuh + `/treatments/stats`), `/payments` (GET paginated dengan filter `patientId`, POST mendukung `promoId`/`discountAmount`, otomatis akumulasi `loyalty_points`), `/payments/:id/invoice`, `/inventory` (CRUD paginated), `/expenses` (CRUD biaya operasional), `/admin/dashboard*` (KPI + 4 agregat chart), `/admin/reports/*` (summary, revenue-trend, by-payment-method, commission-by-doctor, profit-report)
+- **clinical**: `/medical-records` (GET paginated list/detail, POST create — append-only, odontogram + foto progres + pemakaian alat/obat)
+- **content (CMS)**: `/content/article-categories`, `/content/articles`, `/content/promos` (+ `discountType`/`discountValue`), `/content/testimonials`, `/content/videos`, `/content/notification-templates` + `/content/notification-logs` + kirim broadcast (simulasi) — semua CRUD penuh, sengaja tanpa pagination (katalog kecil, dipakai bersama publik/mobile)
+- **auth**: `POST /auth/login` (rate-limited 10/menit), `GET /auth/me`
 
-- **auth**: `POST /auth/login` (email+password staf, bcrypt, JWT HS256), `GET /auth/me` (validasi Bearer token)
+**Pagination server-side backward-compatible**: paket `internal/platform/pagination` — hanya aktif kalau query `page`/`pageSize` dikirim; tanpa parameter itu tetap mengembalikan array polos (mobile app tidak perlu berubah). Diterapkan di Pasien/Dokter/Reservasi/Pembayaran/Inventaris/User.
 
-Semua endpoint data di atas (di luar `/auth/*`) **belum ada RBAC** — publik sementara sampai proteksi per-role dibangun di Fase 1. Login sendiri sudah nyata (bukan lagi stub) dan admin panel sudah mengunci semua halaman di belakang login (`middleware/auth.global.ts`).
+**Keamanan**: `apperr.Internal` (generic 500 + log server-side, tidak lagi membocorkan pesan error DB mentah), rate limiting login, `helmet.New()`, CORS allowlist (`ALLOWED_ORIGINS`). Diaudit: semua query pakai parameter binding pgx (tidak ada raw value diinterpolasi ke SQL), nol `v-html` di frontend.
+
+Semua endpoint data di atas (di luar `/auth/*`) **belum ada RBAC** — publik sementara sampai proteksi per-role dibangun di Fase 1. Login sendiri sudah nyata dan admin panel sudah mengunci semua halaman di belakang login (`middleware/auth.global.ts`).
 
 ### Admin panel (Nuxt 3)
 
-**Semua 12 modul kini punya halaman nyata** (bukan lagi "coming soon" kecuali Notifikasi & Broadcast, yang menunggu integrasi WA gateway):
+**14 halaman semuanya fungsional** (tidak ada lagi "coming soon"). Chart di seluruh panel pakai `vue-echarts`/`echarts` lewat wrapper `components/charts/EChart.vue` (menggantikan chart SVG/HTML manual dari round sebelumnya). Beberapa halaman kini memakai pola **master-detail** (tabel/list di kiri, panel ringkas persisten di kanan) mengikuti referensi visual yang diminta user, bukan lagi modal/slideover-on-click:
 
-- **Dashboard** — 6 KPI tile, 3 chart, 2 tabel data terbaru. Diaudit ulang: 100% dinamis dari data, tidak ada nilai hardcode.
-- **Reservasi & Antrian** — filter (cabang/status/tanggal), buat reservasi baru (pilih pasien/cabang/dokter/jadwal/perawatan), ubah status inline, **toggle tampilan List/Kalender** (kalender bulan custom, klik tanggal untuk filter list ke tanggal tsb)
-- **Pasien** — CRUD penuh, termasuk tambah anggota keluarga (relasi anak/pasangan/dll ke akun utama), **panel detail slideover** saat baris diklik (data pribadi + riwayat reservasi + riwayat pembayaran pasien tsb)
-- **Dokter & Jadwal** — CRUD penuh: akun, spesialisasi, cabang praktik (multi-select), jadwal mingguan (hari/cabang/jam, repeatable), nonaktifkan akun, **panel detail slideover** saat baris diklik (statistik, data praktik, jadwal mingguan, reservasi terbaru dokter tsb)
-- **Cabang**, **Perawatan & Harga** — read-only (belum diminta CRUD di fase ini)
-- **Rekam Medis** — buat entri baru (append-only): diagnosis, catatan tindakan, odontogram (opsional), **pemakaian alat/obat** (mengurangi stok otomatis), lihat detail
-- **Inventaris (Alat & Obat)** — modul baru: master data stok, kategori obat/alat, harga satuan, badge "Stok Menipis" saat di bawah batas reorder, CRUD penuh
-- **Billing & Rekonsiliasi** — **kasir POS penuh** ("Transaksi Baru (POS)", modal fullscreen): katalog perawatan searchable + filter kategori, keranjang dengan qty stepper, diskon, 4 tombol metode pembayaran cepat (Tunai/QRIS/Transfer/Kartu), kalkulator kembalian otomatis untuk tunai, layar sukses dengan tombol cetak invoice langsung. Plus "Bayar Reservasi" (jalur lama, untuk reservasi yang sudah dibuat lewat app/admin) dan **cetak invoice** (halaman print-friendly terpisah, `/billing/:id/invoice`)
-- **Laporan Keuangan** — modul baru: filter periode custom, 4 KPI, tren revenue harian, breakdown per metode pembayaran & per cabang
-- **CMS** — modul baru: 4 tab (Artikel + kategori, Promo, Testimoni, Video), CRUD penuh (gambar/video pakai URL, belum ada upload)
-- **User & Role** — CRUD penuh untuk staf non-dokter (perawat/admin cabang/finance/superadmin), password di-hash dengan bcrypt
+- **Dashboard** — 6 KPI tile + chart ECharts (tren revenue, status reservasi, revenue per cabang, top treatment), 2 tabel data terbaru
+- **Reservasi & Antrian** — filter (cabang/status/tanggal), toggle List/Kalender, panel ringkas **di kanan** (KPI total/menunggu + chart distribusi status) — dipindah dari full-width di atas tabel
+- **Pasien** — CRUD + foto, panel kanan **persisten** (bukan slideover): statistik belanja/kunjungan/loyalty + chart tren 6 bulan, foto progres odontogram sebelum/sesudah, rekam medis/reservasi/pembayaran/promo ringkas
+- **Dokter & Jadwal** — CRUD + foto, bio, komisi, skill (radar chart); panel detail slideover berisi `DoctorStats` (revenue, komisi, tren, top treatment)
+- **Billing & Transaksi** — kasir POS (dengan pilih promo & auto-hitung diskon), halaman detail transaksi terpisah (`/billing/:id`), panel kanan ringkas (2 KPI + 2 chart kecil: tren revenue, metode pembayaran)
+- **Cabang** — list kiri (dikelompokkan Aktif/Nonaktif) + detail kanan 4 tab (Profil, Dokter, Jadwal, Statistik); backend masih read-only (CRUD belum diminta)
+- **Perawatan & Harga** — CRUD penuh + panel statistik kanan (booking count/revenue per treatment, top treatment)
+- **Rekam Medis** — buat entri (append-only): diagnosis, odontogram + foto, pemakaian alat/obat
+- **Inventaris** — CRUD penuh, badge "Stok Menipis"
+- **Laporan Keuangan** — 4 tab (Ringkasan, Pembiayaan, Komisi Dokter, Keuntungan), chart ECharts, **export Excel**
+- **CMS** — 4 tab, CRUD penuh
+- **User & Role** — CRUD penuh, bcrypt
+- **Profil** — edit data diri + ganti password (halaman baru, sebelumnya belum berfungsi)
+- **Notifikasi & Broadcast** — CRUD template + kirim broadcast (simulasi, log tersimpan) + log pengiriman (halaman baru, sebelumnya "coming soon" — integrasi WA gateway sungguhan masih Fase 2)
 
-**Layout & tema**: sidebar dikelompokkan per section (Operasional/Klinis/Keuangan/Konten & Marketing/Sistem), navbar dengan judul halaman dinamis + notifikasi + color mode, logo gradient. **Login sudah nyata**: split-screen dengan panel branding (blob gradient + 3 bullet fitur), show/hide password, captcha matematika self-hosted, dan tersambung ke `POST /auth/login` sungguhan (JWT disimpan di cookie 30 hari, akun demo `admin@ninadentalcare.com` / `NinaDental#2026`). Semua halaman admin dikunci di belakang login lewat `middleware/auth.global.ts`; sidebar menampilkan nama & role user yang benar-benar login, tombol "Keluar" menghapus sesi. **Skeleton loading** (`components/skeleton/*`) terpasang di semua menu yang memuat data async (tabel, KPI, chart, kalender) menggantikan tampilan kosong/spinner.
+Semua halaman list (kecuali 4 tab CMS) pakai **pagination server-side** (`PaginationBar` + `PaginatedResponse<T>`).
+
+**Layout & tema**: sidebar dikelompokkan per section, navbar dinamis + notifikasi real (stok menipis + reservasi hari ini) + color mode, logo gradient. **Login**: split-screen, show/hide password, captcha matematika self-hosted, `POST /auth/login` (JWT cookie 30 hari, akun demo `admin@ninadentalcare.com` / `NinaDental#2026`). **Skeleton loading** di semua panel/list async.
 
 ### Mobile (Flutter)
 
@@ -81,21 +89,26 @@ Perubahan lengkap & alasannya: lihat [`HISTORY.md`](../HISTORY.md).
 11. Nitro server build admin-frontend crash "JavaScript heap out of memory" di VPS ber-RAM kecil (3.6GB, V8 default heap ceiling ketauan dari total RAM host) → fix `NODE_OPTIONS=--max-old-space-size=3072` di `admin/Dockerfile` + swap tambahan di VPS.
 12. Build 4 image docker sekaligus (`--build` paralel) di VPS shared ber-RAM 3.6GB sempat membuat **seluruh VPS OOM & reboot**. Fix: script deploy build satu-per-satu, dijalankan via `setsid nohup ... &disown` supaya tidak mati kalau SSH terputus.
 13. Redirect login admin panel kehilangan prefix path setelah di-reverse-proxy ke subpath (`/product/klinik/` → redirect ke `/login` bukan `/product/klinik/login`) → fix `app.baseURL` baru di `nuxt.config.ts`, overridable lewat `NUXT_APP_BASE_URL`. Sempat tidak berefek karena env var itu di-set di `.env` tapi tidak didaftarkan di `environment:` service `admin-frontend` pada `docker-compose.yml` (Compose tidak otomatis meneruskan seluruh isi `.env` ke container).
+14. `EmptyState.vue` dipakai (halaman Pasien) tapi tidak pernah dibuat filenya — baru ketahuan saat verifikasi build/curl redesain layout. Fix: dibuat.
+15. `formatDateShort` menambahkan `T00:00:00` ke semua input tanpa cek → `RangeError: Invalid time value` (500 SSR) saat dipanggil dengan timestamp ISO penuh (bukan tanggal saja). Fix: cek `includes('T')` dulu.
+16. Panel detail Pasien/Cabang kosong saat SSR karena pola `ref` + `watch(list, {immediate:true})` gagal memilih baris pertama sebelum microtask fetch-nya selesai. Fix: ganti ke `computed` yang menurunkan pilihan langsung dari data list saat render (dengan override manual untuk klik user).
 
 ## Belum
 
 - RBAC per-role di setiap endpoint data (saat ini semua endpoint di luar `/auth/*` masih publik meski login admin panel sudah nyata). Refresh-token rotation & expiry policy juga belum ada (token JWT tunggal, cookie 30 hari tetap).
 - Auth pasien (register/login dengan password) untuk mobile — saat ini "sesi" mobile cuma `patientId` tersimpan lokal tanpa password, lihat bagian Mobile di atas.
-- Notifikasi & Broadcast — masih "coming soon" (butuh integrasi WA gateway pihak ketiga).
-- Cabang & Perawatan/Harga — masih read-only (CRUD belum diminta).
+- Notifikasi & Broadcast — kirim broadcast masih simulasi (log ditulis langsung, belum ada integrasi WA gateway pihak ketiga sungguhan).
+- Cabang — masih read-only (CRUD belum diminta, hanya layout yang diredesain).
 - Upload file asli (foto/gambar/video) — masih pakai URL manual, keputusan object storage ditunda ke saat benar-benar dibutuhkan.
 - Flutter Web build untuk `https://nfmtech.my.id/product/klinik/ninadental` — disebut sebagai rencana publish tapi belum diminta eksplisit/belum dikerjakan.
 - Build iOS (IPA) belum diverifikasi di mesin ini (butuh Xcode+CocoaPods lengkap).
+- Mobile app belum disesuaikan dengan pengayaan backend terbaru (foto dokter/pasien, promo, dll) dan belum di-rebuild APK-nya sejak round ini — pending berikutnya.
 
 ## Langkah selanjutnya (urutan disarankan)
 
-1. Implementasi auth pasien (`POST /api/v1/auth/register`, `/login` khusus pasien) + RBAC middleware penuh untuk seluruh endpoint data
-2. CRUD untuk Cabang & Perawatan/Harga (saat ini read-only)
-3. Integrasi WA gateway pihak ketiga untuk modul Notifikasi & Broadcast
-4. Pertimbangkan object storage (lihat docs/architecture.md §2) begitu upload file benar-benar dibutuhkan (mis. foto rontgen)
-5. Flutter Web build + deploy ke `/product/klinik/ninadental` kalau memang dibutuhkan
+1. Update mobile app (Flutter) menyesuaikan endpoint/fitur baru dari round pengayaan ini, pastikan tidak ada yang error, rebuild APK
+2. Implementasi auth pasien (`POST /api/v1/auth/register`, `/login` khusus pasien) + RBAC middleware penuh untuk seluruh endpoint data
+3. CRUD untuk Cabang (saat ini read-only)
+4. Integrasi WA gateway pihak ketiga sungguhan untuk modul Notifikasi & Broadcast
+5. Pertimbangkan object storage (lihat docs/architecture.md §2) begitu upload file benar-benar dibutuhkan (mis. foto rontgen)
+6. Flutter Web build + deploy ke `/product/klinik/ninadental` kalau memang dibutuhkan
