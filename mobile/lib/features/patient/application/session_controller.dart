@@ -19,6 +19,33 @@ class SessionController extends AsyncNotifier<PatientSession?> {
     state = AsyncData(session);
   }
 
+  /// Finds a real, already-registered "self" patient by email or WhatsApp
+  /// number and adopts it as the session — there's no password check yet
+  /// (see class doc), so this only proves the identifier is a real account,
+  /// not that this specific person owns it.
+  Future<void> login(String identifier) async {
+    final normalized = identifier.trim().toLowerCase();
+    final digits = identifier.replaceAll(RegExp(r'\D'), '');
+    final all = await ref.read(patientRepositoryProvider).listAll();
+    final match = all.where((p) {
+      if (p.relation != 'self') return false;
+      if (p.email != null && p.email!.toLowerCase() == normalized) return true;
+      if (p.phoneWa != null && digits.isNotEmpty) {
+        final storedDigits = p.phoneWa!.replaceAll(RegExp(r'\D'), '');
+        return storedDigits.endsWith(digits) || digits.endsWith(storedDigits);
+      }
+      return false;
+    }).firstOrNull;
+
+    if (match == null) {
+      throw Exception('Akun tidak ditemukan. Silakan daftar terlebih dahulu.');
+    }
+
+    final session = PatientSession(patientId: match.id, fullName: match.fullName, phoneWa: match.phoneWa);
+    await ref.read(sessionStorageProvider).save(session);
+    state = AsyncData(session);
+  }
+
   Future<void> logout() async {
     await ref.read(sessionStorageProvider).clear();
     state = const AsyncData(null);

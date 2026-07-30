@@ -2,119 +2,195 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/widgets/async_value_view.dart';
-import '../../../core/storage/session_storage.dart';
+import '../../../core/theme/app_theme.dart';
 import '../application/session_controller.dart';
+import 'add_patient_sheet.dart';
+import 'connect_medical_record_sheet.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(sessionControllerProvider);
+    final session = ref.watch(sessionControllerProvider).value;
+
+    final fullName = session?.fullName ?? 'Nuriyanto';
+    final phone = session?.phoneWa ?? '087823339007';
+    const email = 'sayarhungs@gmail.com';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil')),
-      body: AsyncValueView<PatientSession?>(
-        value: session,
-        onRetry: () => ref.invalidate(sessionControllerProvider),
-        data: (s) => s == null ? const _GuestView() : _ProfileView(session: s),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.textDark,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home'),
+        ),
+        title: const Text('Profilku', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: AppColors.textMuted),
+            onPressed: () {
+              _showLogoutDialog(context, ref);
+            },
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _GuestView extends StatelessWidget {
-  const _GuestView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           children: [
-            Icon(Icons.person_outline, size: 56, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 16),
             Text(
-              'Anda belum punya profil pasien',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              textAlign: TextAlign.center,
+              fullName,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Lengkapi profil untuk bisa reservasi dan melihat riwayat kunjungan.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+            const SizedBox(height: 4),
+            Text(phone, style: const TextStyle(color: AppColors.textMuted, fontSize: 14)),
+            const Text(email, style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+            const SizedBox(height: 20),
+            // Membership Banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Color(0xFFEDF2F7),
+                    child: Icon(Icons.star_rounded, color: Colors.amber, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Silver Membership',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => context.push('/membership'),
+                    child: const Text(
+                      'Lihat Detail',
+                      style: TextStyle(color: AppColors.pink, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Action Buttons (Edit & Hubungkan Rekam Medis)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFCBD5E0)),
+                      foregroundColor: AppColors.textDark,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () => context.push('/profile/edit'),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text('Edit', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFCBD5E0)),
+                      foregroundColor: AppColors.textDark,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () => ConnectMedicalRecordSheet.show(context),
+                    icon: const Icon(Icons.link, size: 18),
+                    label: const Text('Hubungkan Rekam Medis', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            // Info List
+            _buildProfileInfoItem('Tanggal Lahir', '16 November 1990'),
+            _buildProfileInfoItem('Tempat Lahir', '-'),
+            _buildProfileInfoItem('Jenis Kelamin', 'Pria'),
+            _buildProfileInfoItem('Alamat', 'Jalan Belum Diisi'),
+            const SizedBox(height: 16),
+            // Quick Links: Asuransi & Tambah Pasien
+            ListTile(
+              leading: const Icon(Icons.shield_outlined, color: AppColors.primary),
+              title: const Text('Data Asuransi', style: TextStyle(fontWeight: FontWeight.bold)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/insurance'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.family_restroom, color: AppColors.primary),
+              title: const Text('Tambah Data Pasien / Keluarga', style: TextStyle(fontWeight: FontWeight.bold)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => AddPatientSheet.show(context),
             ),
             const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => context.push('/register'),
-              icon: const Icon(Icons.person_add_alt_1_outlined),
-              label: const Text('Lengkapi Profil'),
+            // Patient QR Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: const BorderSide(color: AppColors.pink, width: 1.5),
+                ),
+                onPressed: () => context.push('/qr-profile'),
+                icon: const Icon(Icons.qr_code_2_rounded, color: AppColors.pink),
+                label: const Text(
+                  'Patient QR',
+                  style: TextStyle(color: AppColors.pink, fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-}
 
-class _ProfileView extends ConsumerWidget {
-  const _ProfileView({required this.session});
-
-  final PatientSession session;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Center(
-          child: Column(
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: colorScheme.primaryContainer,
-                child: Icon(Icons.person, size: 36, color: colorScheme.onPrimaryContainer),
-              ),
-              const SizedBox(height: 12),
-              Text(session.fullName, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-              if (session.phoneWa != null) Text(session.phoneWa!, style: Theme.of(context).textTheme.bodyMedium),
-            ],
+  Widget _buildProfileInfoItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(color: AppColors.textDark, fontSize: 16, fontWeight: FontWeight.w600),
           ),
-        ),
-        const SizedBox(height: 24),
-        Card(
-          child: Column(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.calendar_month_outlined),
-                title: const Text('Riwayat Reservasi'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/reservations/history'),
-              ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              ListTile(
-                leading: const Icon(Icons.receipt_long_outlined),
-                title: const Text('Riwayat Pembayaran'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/payments/history'),
-              ),
-            ],
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Keluar'),
+        content: const Text('Apakah Anda yakin ingin keluar dari sesi aplikasi?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref.read(sessionControllerProvider.notifier).logout();
+              if (context.mounted) context.go('/home');
+            },
+            child: const Text('Keluar'),
           ),
-        ),
-        const SizedBox(height: 24),
-        OutlinedButton.icon(
-          onPressed: () async {
-            await ref.read(sessionControllerProvider.notifier).logout();
-          },
-          icon: const Icon(Icons.logout),
-          label: const Text('Keluar dari Profil Ini'),
-          style: OutlinedButton.styleFrom(foregroundColor: colorScheme.error, side: BorderSide(color: colorScheme.error)),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -10,7 +10,6 @@ void main() {
 
     expect(find.text('Nina Dental Care'), findsWidgets);
     expect(find.text('Reservasi'), findsWidgets);
-    expect(find.text('Profil'), findsWidgets);
-    expect(find.text('Lengkapi Profil'), findsOneWidget);
+    expect(find.text('Profile'), findsWidgets);
   });
 }

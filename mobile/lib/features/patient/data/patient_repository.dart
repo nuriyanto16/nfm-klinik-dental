@@ -14,6 +14,7 @@ class CreatePatientInput {
     this.email,
     this.phoneWa,
     this.city,
+    this.primaryAccountUserId,
   });
 
   final String fullName;
@@ -24,6 +25,7 @@ class CreatePatientInput {
   final String? email;
   final String? phoneWa;
   final String? city;
+  final String? primaryAccountUserId;
 
   Map<String, dynamic> toJson() => {
         'fullName': fullName,
@@ -34,6 +36,7 @@ class CreatePatientInput {
         'email': email,
         'phoneWa': phoneWa,
         'city': city,
+        'primaryAccountUserId': primaryAccountUserId,
       };
 }
 
@@ -45,6 +48,14 @@ class PatientRepository {
   Future<Patient> createPatient(CreatePatientInput input) async {
     final res = await _dio.post<Map<String, dynamic>>('/patients', data: input.toJson());
     return Patient.fromJson(res.data!);
+  }
+
+  /// Full patient list (no `page`/`pageSize` query params — core-api's
+  /// pagination is opt-in, so omitting them returns a plain array here
+  /// instead of the paginated envelope the admin panel uses).
+  Future<List<Patient>> listAll() async {
+    final res = await _dio.get<List<dynamic>>('/patients');
+    return (res.data ?? []).map((e) => Patient.fromJson(e as Map<String, dynamic>)).toList();
   }
 }
 

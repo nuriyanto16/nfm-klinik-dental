@@ -2,20 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../network/api_exception.dart';
+import 'skeleton_loader.dart';
 
-/// Renders an [AsyncValue] with consistent loading/error/empty states across
+/// Renders an [AsyncValue] with consistent loading (skeleton)/error/empty states across
 /// the app instead of every page hand-rolling its own `.when(...)`.
 class AsyncValueView<T> extends StatelessWidget {
   const AsyncValueView({
     super.key,
     required this.value,
     required this.data,
+    this.loading,
     this.onRetry,
     this.padding = const EdgeInsets.all(24),
   });
 
   final AsyncValue<T> value;
   final Widget Function(T data) data;
+  final Widget? loading;
   final VoidCallback? onRetry;
   final EdgeInsets padding;
 
@@ -23,10 +26,16 @@ class AsyncValueView<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return value.when(
       data: data,
-      loading: () => Padding(
-        padding: padding,
-        child: const Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          loading ??
+          Padding(
+            padding: padding,
+            child: SkeletonList(
+              itemBuilder: (_, _) => const SkeletonDoctorCard(),
+              itemCount: 4,
+              padding: EdgeInsets.zero,
+            ),
+          ),
       error: (err, stack) => Padding(
         padding: padding,
         child: Center(
