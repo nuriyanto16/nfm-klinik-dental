@@ -217,7 +217,7 @@ async function onDeactivate(doctor: DoctorDetail) {
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-6">
+  <div class="p-4 space-y-4 w-full max-w-none">
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-xl font-semibold">
@@ -754,5 +754,5 @@ async function onDeactivate(doctor: DoctorDetail) {
         </div>
       </template>
     </UModal>
-  </UContainer>
+  </div>
 </template>

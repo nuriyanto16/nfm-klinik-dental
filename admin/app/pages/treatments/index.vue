@@ -122,7 +122,7 @@ async function onDelete(treatment: Treatment) {
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-6">
+  <div class="p-4 space-y-4 w-full max-w-none">
     <div class="flex items-center justify-between flex-wrap gap-2">
       <div>
         <h1 class="text-xl font-semibold">
@@ -148,8 +148,8 @@ async function onDelete(treatment: Treatment) {
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div class="lg:col-span-2 space-y-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-8 xl:col-span-9 space-y-4">
         <UCard :ui="{ body: 'p-0 sm:p-0' }">
           <SkeletonTableSkeleton
             v-if="status === 'pending'"
@@ -197,7 +197,7 @@ async function onDelete(treatment: Treatment) {
       </div>
 
       <!-- Right-side stats panel -->
-      <div class="space-y-4">
+      <div class="lg:col-span-4 xl:col-span-3 space-y-4">
         <template v-if="statsStatus === 'pending'">
           <SkeletonStatCardSkeleton
             v-for="i in 2"
@@ -346,5 +346,5 @@ async function onDelete(treatment: Treatment) {
         </div>
       </template>
     </UModal>
-  </UContainer>
+  </div>
 </template>

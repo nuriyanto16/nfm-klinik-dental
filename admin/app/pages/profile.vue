@@ -79,7 +79,7 @@ async function onChangePassword() {
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-6 max-w-2xl">
+  <div class="p-4 space-y-4 w-full max-w-none">
     <div>
       <h1 class="text-xl font-semibold">
         Profil Saya
@@ -214,5 +214,5 @@ async function onChangePassword() {
         />
       </form>
     </UCard>
-  </UContainer>
+  </div>
 </template>

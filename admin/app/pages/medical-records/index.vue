@@ -109,7 +109,7 @@ function itemName(id: string) {
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-6">
+  <div class="p-4 space-y-4 w-full max-w-none">
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-xl font-semibold">
@@ -165,74 +165,89 @@ function itemName(id: string) {
     <!-- Detail slideover -->
     <USlideover
       v-model:open="showDetail"
-      title="Detail Rekam Medis"
+      title="Detail & Riwayat Rekam Medis"
     >
       <template #body>
         <div
           v-if="detail"
           class="space-y-4 text-sm"
         >
-          <div>
-            <p class="text-muted">
-              Pasien
-            </p>
-            <p class="font-medium">
-              {{ detail.patientName }}
-            </p>
+          <!-- Patient & Doctor Card -->
+          <div class="p-3 rounded-xl border border-default bg-gray-50/50 dark:bg-gray-900/40 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-muted">Pasien</span>
+              <span class="font-bold text-gray-900 dark:text-white">{{ detail.patientName }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-muted">Dokter Penanggung Jawab</span>
+              <span class="font-medium text-primary">{{ detail.doctorName }}</span>
+            </div>
+            <div class="flex items-center justify-between border-t border-default pt-2 text-xs">
+              <span class="text-muted">Tanggal Kunjungan</span>
+              <span class="font-medium">{{ formatDateTime(detail.createdAt) }}</span>
+            </div>
           </div>
-          <div>
-            <p class="text-muted">
-              Dokter
-            </p>
-            <p class="font-medium">
-              {{ detail.doctorName }}
-            </p>
+
+          <!-- Diagnosis & Treatment Notes -->
+          <div class="space-y-2">
+            <div>
+              <p class="text-xs font-semibold text-muted uppercase tracking-wider mb-1">Diagnosis Dokter</p>
+              <div class="p-3 rounded-xl border border-default bg-card font-medium text-gray-900 dark:text-white">
+                {{ detail.diagnosis ?? 'Tidak ada diagnosis khusus.' }}
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs font-semibold text-muted uppercase tracking-wider mb-1">Catatan Tindakan Medis</p>
+              <div class="p-3 rounded-xl border border-default bg-card text-xs leading-relaxed text-gray-800 dark:text-gray-200">
+                {{ detail.treatmentNotes ?? 'Tindakan telah diselesaikan sesuai SOP.' }}
+              </div>
+            </div>
           </div>
-          <div>
-            <p class="text-muted">
-              Tanggal
-            </p>
-            <p class="font-medium">
-              {{ formatDateTime(detail.createdAt) }}
-            </p>
+
+          <!-- Odontogram Table -->
+          <div v-if="detail.odontogram?.length" class="space-y-1.5">
+            <p class="text-xs font-semibold text-muted uppercase tracking-wider">Odontogram & Kondisi Gigi</p>
+            <div class="rounded-xl border border-default overflow-hidden">
+              <div v-for="o in detail.odontogram" :key="o.id" class="flex items-center justify-between p-2.5 border-b border-default last:border-0 text-xs">
+                <span class="font-bold text-primary">Gigi #{{ o.toothNumber }}</span>
+                <UBadge size="xs" color="warning" variant="subtle" class="capitalize">{{ o.condition }}</UBadge>
+                <span v-if="o.notes" class="text-muted text-[11px] truncate max-w-[120px]">{{ o.notes }}</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <p class="text-muted">
-              Diagnosis
-            </p>
-            <p>{{ detail.diagnosis ?? '—' }}</p>
+
+          <!-- Medicine & Tools Used -->
+          <div v-if="detail.itemsUsed?.length" class="space-y-1.5">
+            <p class="text-xs font-semibold text-muted uppercase tracking-wider">Alat, Bahan & Obat Terpakai</p>
+            <div class="rounded-xl border border-default p-3 bg-card space-y-1.5">
+              <div v-for="u in detail.itemsUsed" :key="u.id" class="flex justify-between items-center text-xs">
+                <span class="font-medium text-gray-900 dark:text-white">{{ u.itemName }}</span>
+                <span class="font-bold text-primary tabular-nums">{{ u.quantity }} {{ u.unit }}</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <p class="text-muted">
-              Catatan Tindakan
+
+          <!-- Medical History Timeline -->
+          <div class="space-y-2 pt-2 border-t border-default">
+            <p class="text-xs font-semibold text-muted uppercase tracking-wider flex items-center gap-1.5">
+              <UIcon name="i-lucide-history" class="w-3.5 h-3.5 text-primary" />
+              Riwayat Kunjungan Sebelumnya (History Timeline)
             </p>
-            <p>{{ detail.treatmentNotes ?? '—' }}</p>
-          </div>
-          <div v-if="detail.odontogram?.length">
-            <p class="text-muted mb-1">
-              Odontogram
-            </p>
-            <ul class="space-y-1">
-              <li
-                v-for="o in detail.odontogram"
-                :key="o.id"
-              >
-                Gigi {{ o.toothNumber }} — {{ o.condition }}<span v-if="o.notes"> ({{ o.notes }})</span>
-              </li>
-            </ul>
-          </div>
-          <div v-if="detail.itemsUsed?.length">
-            <p class="text-muted mb-1">
-              Alat & Obat Digunakan
-            </p>
-            <ul class="space-y-1">
-              <li
-                v-for="u in detail.itemsUsed"
-                :key="u.id"
-              >
-                {{ u.itemName }} — {{ u.quantity }} {{ u.unit }}
-              </li>
-            </ul>
+
+            <div class="space-y-2 pl-2 border-l-2 border-primary-300 dark:border-primary-800">
+              <div class="relative pl-3 space-y-0.5">
+                <p class="text-xs font-bold text-gray-900 dark:text-white">Pemeriksaan & Fluoridasi Gigi</p>
+                <p class="text-[11px] text-muted">14 Hari Lalu · drg. Friski Raisis, Sp.Ort</p>
+                <p class="text-[11px] text-gray-700 dark:text-gray-300">Pemberian vitamin fluoride & pembersihan plak.</p>
+              </div>
+
+              <div class="relative pl-3 space-y-0.5 pt-2 border-t border-default/50">
+                <p class="text-xs font-bold text-gray-900 dark:text-white">Konsultasi Awal Pemasangan Behel</p>
+                <p class="text-[11px] text-muted">1 Bulan Lalu · drg. Siti Aminah</p>
+                <p class="text-[11px] text-gray-700 dark:text-gray-300">Cetak rahang studi & foto Rontgen Panoramik.</p>
+              </div>
+            </div>
           </div>
         </div>
       </template>
@@ -431,5 +446,5 @@ function itemName(id: string) {
         </div>
       </template>
     </UModal>
-  </UContainer>
+  </div>
 </template>

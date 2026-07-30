@@ -97,7 +97,7 @@ const branchCompareOption = computed<EChartsOption>(() => ({
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-4">
+  <div class="p-4 space-y-4 w-full max-w-none">
     <div>
       <h1 class="text-xl font-semibold">
         Cabang
@@ -354,5 +354,5 @@ const branchCompareOption = computed<EChartsOption>(() => ({
         </template>
       </UCard>
     </div>
-  </UContainer>
+  </div>
 </template>

@@ -10,6 +10,33 @@ const { data: testimonials, status: testimonialsStatus, refresh: refreshTestimon
 const { data: videos, status: videosStatus, refresh: refreshVideos } = useApiFetch<Video[]>('/content/videos')
 const { data: doctorsAdmin } = useApiFetch<DoctorDetail[]>('/doctors/admin')
 
+const DUMMY_ARTICLES: Article[] = [
+  { id: 'art-1', categoryId: 'cat-1', categoryName: 'Ortodonti', title: 'Kapan Harus Behel Gigi? Kenali 5 Tanda Utama Ini!', slug: 'kapan-harus-behel', coverImageUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800&auto=format&fit=crop&q=80', body: 'Gigi berjejal, gigitan tidak rata, atau rahang tidak simetris...', publishedAt: '2026-07-28T10:00:00Z', createdAt: '2026-07-28T10:00:00Z' },
+  { id: 'art-2', categoryId: 'cat-2', categoryName: 'Tips Kesehatan', title: '5 Kebiasaan Sehari-hari yang Tanpa Disadari Merusak Enamel Gigi', slug: '5-kebiasaan-perusak-enamel', coverImageUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800&auto=format&fit=crop&q=80', body: 'Minum soda berlebihan, menggigit kuku...', publishedAt: '2026-07-25T10:00:00Z', createdAt: '2026-07-25T10:00:00Z' },
+  { id: 'art-3', categoryId: 'cat-3', categoryName: 'Nina Kidz', title: 'Program Nina Kidz: Menjaga Gigi Anak Sehat & Bebas Karies Sejak Dini', slug: 'program-nina-kidz', coverImageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&auto=format&fit=crop&q=80', body: 'Nina Kidz adalah program pemeriksaan gigi anak...', publishedAt: '2026-07-23T10:00:00Z', createdAt: '2026-07-23T10:00:00Z' },
+  { id: 'art-4', categoryId: 'cat-1', categoryName: 'Perawatan Gigi', title: 'Prosedur Bleaching Gigi Instant: Rahasia Senyum Cerah Cemerlang', slug: 'prosedur-bleaching-gigi', coverImageUrl: 'https://images.unsplash.com/photo-1571772996211-2f02c9727629?w=800&auto=format&fit=crop&q=80', body: 'Bleaching gigi instant 60 menit...', publishedAt: '2026-07-20T10:00:00Z', createdAt: '2026-07-20T10:00:00Z' }
+]
+
+const DUMMY_PROMOS: Promo[] = [
+  { id: 'pro-1', title: 'Promo Scaling 6-in-1 Super Clean', bannerImageUrl: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800&auto=format&fit=crop&q=80', description: 'Paket scaling lengkap pembersihan karang gigi + polishing + fluoridasi hanya Rp149.000.', startsAt: '2026-07-01T00:00:00Z', endsAt: '2026-08-31T23:59:59Z', isActive: true, discountType: 'fixed', discountValue: 50000 },
+  { id: 'pro-2', title: 'Diskon Pemasangan Behel Metal 10%', bannerImageUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800&auto=format&fit=crop&q=80', description: 'Diskon 10% untuk pemasangan behel metal konvensional via aplikasi.', startsAt: '2026-07-05T00:00:00Z', endsAt: '2026-08-15T23:59:59Z', isActive: true, discountType: 'percentage', discountValue: 10 }
+]
+
+const DUMMY_TESTIMONIALS: Testimonial[] = [
+  { id: 'tes-1', patientName: 'Budi Santoso', doctorName: 'drg. Friski Raisis, Sp.Ort', photoUrl: null, rating: 5, quote: 'Pelayanan ramah, klinik sangat bersih dan dokter komunikatif! Tambal giginya rapi dan gak sakit sama sekali.', createdAt: '2026-07-26T14:20:00Z' },
+  { id: 'tes-2', patientName: 'Siti Aminah', doctorName: 'drg. Siti Aminah', photoUrl: null, rating: 5, quote: 'Behel anak saya ditangani dengan sabar, dokter anak di Nina Kidz sangat ramah.', createdAt: '2026-07-24T09:15:00Z' }
+]
+
+const DUMMY_VIDEOS: Video[] = [
+  { id: 'vid-1', title: 'SERU ABISSS GRAND OPENING NINA DENTAL CARE!', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://images.unsplash.com/photo-1629909615184-74f495363b67?w=800&auto=format&fit=crop&q=80', publishedAt: '2026-07-15T12:00:00Z' },
+  { id: 'vid-2', title: 'Edukasi: Cara Sikat Gigi yang Benar Mencegah Karang', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800&auto=format&fit=crop&q=80', publishedAt: '2026-07-22T08:30:00Z' }
+]
+
+const displayArticles = computed(() => (articles.value && articles.value.length > 0) ? articles.value : DUMMY_ARTICLES)
+const displayPromos = computed(() => (promos.value && promos.value.length > 0) ? promos.value : DUMMY_PROMOS)
+const displayTestimonials = computed(() => (testimonials.value && testimonials.value.length > 0) ? testimonials.value : DUMMY_TESTIMONIALS)
+const displayVideos = computed(() => (videos.value && videos.value.length > 0) ? videos.value : DUMMY_VIDEOS)
+
 const tabs = [
   { label: 'Artikel', value: 'articles', slot: 'articles' as const },
   { label: 'Promo', value: 'promos', slot: 'promos' as const },
@@ -191,7 +218,7 @@ async function deleteVideo(v: Video) {
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-6">
+  <div class="p-4 space-y-4 w-full max-w-none">
     <div>
       <h1 class="text-xl font-semibold">
         CMS
@@ -233,7 +260,7 @@ async function deleteVideo(v: Video) {
           />
           <UTable
             v-else
-            :data="articles ?? []"
+            :data="displayArticles"
             :columns="[
               { accessorKey: 'title', header: 'Judul' },
               { accessorKey: 'categoryName', header: 'Kategori' },
@@ -277,7 +304,7 @@ async function deleteVideo(v: Video) {
           />
           <UTable
             v-else
-            :data="promos ?? []"
+            :data="displayPromos"
             :columns="[
               { accessorKey: 'title', header: 'Judul' },
               { accessorKey: 'startsAt', header: 'Periode' },
@@ -327,7 +354,7 @@ async function deleteVideo(v: Video) {
           />
           <UTable
             v-else
-            :data="testimonials ?? []"
+            :data="displayTestimonials"
             :columns="[
               { accessorKey: 'patientName', header: 'Pasien' },
               { accessorKey: 'doctorName', header: 'Dokter' },
@@ -370,7 +397,7 @@ async function deleteVideo(v: Video) {
           />
           <UTable
             v-else
-            :data="videos ?? []"
+            :data="displayVideos"
             :columns="[
               { accessorKey: 'title', header: 'Judul' },
               { accessorKey: 'videoUrl', header: 'URL' },
@@ -707,5 +734,5 @@ async function deleteVideo(v: Video) {
         </div>
       </template>
     </UModal>
-  </UContainer>
+  </div>
 </template>

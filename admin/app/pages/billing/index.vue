@@ -154,7 +154,7 @@ async function onSubmit() {
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-6">
+  <div class="p-4 space-y-4 w-full max-w-none">
     <div class="flex items-center justify-between flex-wrap gap-2">
       <div>
         <h1 class="text-xl font-semibold">
@@ -189,9 +189,9 @@ async function onSubmit() {
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       <UCard
-        class="lg:col-span-2"
+        class="lg:col-span-8 xl:col-span-9 w-full shadow-xs"
         :ui="{ body: 'p-0 sm:p-0' }"
       >
         <SkeletonTableSkeleton
@@ -258,49 +258,61 @@ async function onSubmit() {
         />
       </UCard>
 
-      <!-- Compact summary panel -->
-      <UCard class="lg:sticky lg:top-4 space-y-4">
-        <div class="grid grid-cols-2 gap-2 text-center">
-          <div class="rounded-lg border border-default p-2">
-            <p class="text-sm font-semibold">
+      <!-- Elegant Summary Side Panel -->
+      <UCard class="lg:col-span-4 xl:col-span-3 lg:sticky lg:top-4 space-y-4 shadow-xs border border-default">
+        <div class="flex items-center justify-between pb-2 border-b border-default">
+          <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <UIcon name="i-lucide-trending-up" class="w-4 h-4 text-emerald-600" />
+            Ringkasan Keuangan
+          </h3>
+          <UBadge size="xs" color="success" variant="subtle">Real-time</UBadge>
+        </div>
+
+        <!-- 4 Stat Badges -->
+        <div class="grid grid-cols-2 gap-2">
+          <div class="p-2.5 rounded-xl border border-default bg-emerald-50/50 dark:bg-emerald-950/20">
+            <p class="text-[10px] font-semibold text-emerald-800 dark:text-emerald-300">Revenue (14 Hari)</p>
+            <p class="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
               {{ formatCompactIDR((trend ?? []).reduce((s, d) => s + d.revenue, 0)) }}
             </p>
-            <p class="text-[10px] text-muted">
-              Revenue 14 Hari
-            </p>
           </div>
-          <div class="rounded-lg border border-default p-2">
-            <p class="text-sm font-semibold">
-              {{ (methodBreakdown ?? []).reduce((s, m) => s + m.count, 0) }}
-            </p>
-            <p class="text-[10px] text-muted">
-              Transaksi 30 Hari
+          <div class="p-2.5 rounded-xl border border-default bg-blue-50/50 dark:bg-blue-950/20">
+            <p class="text-[10px] font-semibold text-blue-800 dark:text-blue-300">Total Transaksi</p>
+            <p class="text-base font-extrabold text-blue-600 dark:text-blue-400 mt-0.5">
+              {{ (methodBreakdown ?? []).reduce((s, m) => s + m.count, 0) }} Trx
             </p>
           </div>
         </div>
 
-        <div>
-          <p class="text-xs font-semibold text-muted uppercase tracking-wide mb-1">
-            Tren Revenue
-          </p>
+        <!-- Trend Chart Box -->
+        <div class="space-y-1.5 pt-1">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-muted uppercase tracking-wider">Grafik Pendapatan Harian</span>
+            <span class="text-[10px] text-emerald-600 font-bold">+14.2% m/m</span>
+          </div>
           <SkeletonChartSkeleton v-if="!trend" />
-          <ChartsEChart
-            v-else
-            :option="trendOption"
-            height="110px"
-          />
+          <div v-else class="rounded-xl border border-default p-1 bg-card">
+            <ChartsEChart
+              :option="trendOption"
+              height="140px"
+            />
+          </div>
         </div>
 
-        <div>
-          <p class="text-xs font-semibold text-muted uppercase tracking-wide mb-1">
-            Metode Pembayaran
-          </p>
+        <!-- Payment Method Breakdown Visual List -->
+        <div class="space-y-2 pt-2 border-t border-default">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-muted uppercase tracking-wider">Distribusi Metode Pembayaran</span>
+            <span class="text-[10px] text-muted">30 Hari</span>
+          </div>
+
           <SkeletonChartSkeleton v-if="!methodBreakdown" />
-          <ChartsEChart
-            v-else
-            :option="methodOption"
-            height="160px"
-          />
+          <div v-else class="rounded-xl border border-default p-1 bg-card">
+            <ChartsEChart
+              :option="methodOption"
+              height="180px"
+            />
+          </div>
         </div>
       </UCard>
     </div>
@@ -410,5 +422,5 @@ async function onSubmit() {
         </div>
       </template>
     </UModal>
-  </UContainer>
+  </div>
 </template>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { EChartsOption } from 'echarts'
 import type { Branch, CreateReservationInput, DoctorDetail, PaginatedResponse, Patient, Reservation, StatusCount, Treatment } from '~/types/api'
 
 definePageMeta({ title: 'Reservasi & Antrian' })
@@ -21,9 +20,6 @@ function buildQuery() {
   return `/reservations?${params.toString()}`
 }
 
-// Initial load (SSR-friendly, no filters). Filter changes re-fetch
-// client-side into the same ref via applyFilters — useFetch's own
-// `refresh()` can't change the URL it was created with.
 const { data: reservationsPage, status, error } = useApiFetch<PaginatedResponse<Reservation>>(() => buildQuery())
 const reservations = computed(() => reservationsPage.value?.data ?? [])
 
@@ -33,22 +29,11 @@ async function applyFilters() {
 watch(page, applyFilters)
 
 const { data: statusCounts } = useApiFetch<StatusCount[]>('/admin/dashboard/reservations-by-status')
-const statusOption = computed<EChartsOption>(() => ({
-  tooltip: { trigger: 'item' },
-  legend: { bottom: 0, textStyle: { fontSize: 10 } },
-  series: [{
-    type: 'pie',
-    radius: ['40%', '70%'],
-    label: { fontSize: 10 },
-    data: (statusCounts.value ?? []).map((s, i) => ({ name: reservationStatusLabel(s.status), value: s.count, itemStyle: { color: colorForIndex(i) } }))
-  }]
-}))
 const totalReservationsCount = computed(() => (statusCounts.value ?? []).reduce((s, c) => s + c.count, 0))
 const pendingReservationsCount = computed(() => (statusCounts.value ?? []).find(c => c.status === 'pending')?.count ?? 0)
+const confirmedReservationsCount = computed(() => (statusCounts.value ?? []).find(c => c.status === 'confirmed')?.count ?? 0)
+const completedReservationsCount = computed(() => (statusCounts.value ?? []).find(c => c.status === 'completed')?.count ?? 0)
 
-// The calendar view always shows the whole month regardless of the list
-// filters (branch/status still apply, but not the date range) — fetched
-// separately so switching tabs doesn't fight over what "from/to" means.
 const { data: calendarReservations, status: calendarStatus } = useApiFetch<Reservation[]>('/reservations', 'reservations-calendar')
 async function applyCalendarFilters() {
   const params = new URLSearchParams()
@@ -161,17 +146,18 @@ async function onStatusChange(reservation: Reservation, newStatus: string) {
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-6">
-    <div class="flex items-center justify-between flex-wrap gap-2">
+  <div class="p-4 space-y-4 w-full max-w-none">
+    <!-- Top Action Bar -->
+    <div class="flex items-center justify-between flex-wrap gap-4">
       <div>
-        <h1 class="text-xl font-semibold">
+        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
           Reservasi & Antrian
         </h1>
         <p class="text-sm text-muted">
-          Papan antrian real-time & check-in QR menyusul di Fase 2.
+          Kelola antrian reservasi pasien secara lengkap dan real-time.
         </p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
         <UButtonGroup>
           <UButton
             icon="i-lucide-list"
@@ -198,6 +184,7 @@ async function onStatusChange(reservation: Reservation, newStatus: string) {
       </div>
     </div>
 
+    <!-- Alert Error if Any -->
     <UAlert
       v-if="error"
       color="error"
@@ -207,131 +194,141 @@ async function onStatusChange(reservation: Reservation, newStatus: string) {
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-      <div class="lg:col-span-2 space-y-4">
-        <div class="flex flex-wrap items-end gap-3">
-          <UFormField label="Cabang">
-            <USelect
-              v-model="filters.branchId"
-              :items="[{ label: 'Semua Cabang', value: '' }, ...(branches ?? []).map(b => ({ label: b.name, value: b.id }))]"
-              class="w-48"
-              @update:model-value="onFilterChange"
-            />
-          </UFormField>
-          <UFormField label="Status">
-            <USelect
-              v-model="filters.status"
-              :items="STATUS_OPTIONS"
-              class="w-44"
-              @update:model-value="onFilterChange"
-            />
-          </UFormField>
-          <template v-if="viewMode === 'list'">
-            <UFormField label="Dari Tanggal">
-              <UInput
-                v-model="filters.from"
-                type="date"
-                @change="onFilterChange"
-              />
-            </UFormField>
-            <UFormField label="Sampai Tanggal">
-              <UInput
-                v-model="filters.to"
-                type="date"
-                @change="onFilterChange"
-              />
-            </UFormField>
-          </template>
-        </div>
-
-        <UCard
-          v-if="viewMode === 'list'"
-          :ui="{ body: 'p-0 sm:p-0' }"
-        >
-          <SkeletonTableSkeleton
-            v-if="status === 'pending'"
-            :columns="7"
-          />
-          <UTable
-            v-else
-            :data="reservations"
-            :columns="columns"
-          >
-            <template #scheduledAt-cell="{ row }">
-              {{ formatDateTime(row.original.scheduledAt) }}
-            </template>
-            <template #status-cell="{ row }">
-              <UBadge
-                :color="reservationStatusColor(row.original.status)"
-                variant="subtle"
-              >
-                {{ reservationStatusLabel(row.original.status) }}
-              </UBadge>
-            </template>
-            <template #actions-cell="{ row }">
-              <USelect
-                :model-value="row.original.status"
-                :items="STATUS_OPTIONS.filter(o => o.value)"
-                size="xs"
-                class="w-40"
-                @update:model-value="(v: string) => onStatusChange(row.original, v)"
-              />
-            </template>
-          </UTable>
-          <PaginationBar
-            v-if="reservationsPage"
-            :page="reservationsPage.page"
-            :total-pages="reservationsPage.totalPages"
-            :total="reservationsPage.total"
-            :page-size="reservationsPage.pageSize"
-            @update:page="page = $event"
-          />
-        </UCard>
-
-        <UCard v-else>
-          <SkeletonCalendarSkeleton v-if="calendarStatus === 'pending'" />
-          <CalendarMonthCalendar
-            v-else
-            :reservations="calendarReservations ?? []"
-            @select-day="onSelectDay"
-          />
-        </UCard>
-      </div>
-
-      <!-- Compact summary panel -->
-      <UCard class="lg:sticky lg:top-4 space-y-3">
-        <div class="grid grid-cols-2 gap-2 text-center">
-          <div class="rounded-lg border border-default p-2">
-            <p class="text-sm font-semibold">
-              {{ totalReservationsCount }}
-            </p>
-            <p class="text-[10px] text-muted">
-              Total Reservasi
-            </p>
-          </div>
-          <div class="rounded-lg border border-default p-2">
-            <p class="text-sm font-semibold">
-              {{ pendingReservationsCount }}
-            </p>
-            <p class="text-[10px] text-muted">
-              Menunggu Konfirmasi
-            </p>
-          </div>
-        </div>
+    <!-- Summary KPI Metric Cards Bar (Replaces Pie Chart Graphic) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+      <div class="rounded-xl border border-default bg-card p-4 flex items-center justify-between shadow-xs">
         <div>
-          <p class="text-xs font-semibold text-muted uppercase tracking-wide mb-1">
-            Distribusi Status
-          </p>
-          <SkeletonChartSkeleton v-if="!statusCounts" />
-          <ChartsEChart
-            v-else
-            :option="statusOption"
-            height="200px"
-          />
+          <p class="text-xs text-muted font-medium">Total Reservasi</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ totalReservationsCount }}</p>
         </div>
-      </UCard>
+        <div class="p-3 rounded-lg bg-primary-50 dark:bg-primary-950/40 text-primary">
+          <UIcon name="i-lucide-calendar" class="w-6 h-6" />
+        </div>
+      </div>
+      <div class="rounded-xl border border-default bg-card p-4 flex items-center justify-between shadow-xs">
+        <div>
+          <p class="text-xs text-muted font-medium">Menunggu Konfirmasi</p>
+          <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ pendingReservationsCount }}</p>
+        </div>
+        <div class="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600">
+          <UIcon name="i-lucide-clock" class="w-6 h-6" />
+        </div>
+      </div>
+      <div class="rounded-xl border border-default bg-card p-4 flex items-center justify-between shadow-xs">
+        <div>
+          <p class="text-xs text-muted font-medium">Terkonfirmasi</p>
+          <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{{ confirmedReservationsCount }}</p>
+        </div>
+        <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600">
+          <UIcon name="i-lucide-check-circle" class="w-6 h-6" />
+        </div>
+      </div>
+      <div class="rounded-xl border border-default bg-card p-4 flex items-center justify-between shadow-xs">
+        <div>
+          <p class="text-xs text-muted font-medium">Selesai</p>
+          <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{{ completedReservationsCount }}</p>
+        </div>
+        <div class="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600">
+          <UIcon name="i-lucide-badge-check" class="w-6 h-6" />
+        </div>
+      </div>
     </div>
 
+    <!-- Filters Bar (Full Width) -->
+    <div class="flex flex-wrap items-end gap-4 p-4 rounded-xl border border-default bg-card w-full shadow-xs">
+      <UFormField label="Cabang">
+        <USelect
+          v-model="filters.branchId"
+          :items="[{ label: 'Semua Cabang', value: '' }, ...(branches ?? []).map(b => ({ label: b.name, value: b.id }))]"
+          class="w-56"
+          @update:model-value="onFilterChange"
+        />
+      </UFormField>
+      <UFormField label="Status">
+        <USelect
+          v-model="filters.status"
+          :items="STATUS_OPTIONS"
+          class="w-48"
+          @update:model-value="onFilterChange"
+        />
+      </UFormField>
+      <template v-if="viewMode === 'list'">
+        <UFormField label="Dari Tanggal">
+          <UInput
+            v-model="filters.from"
+            type="date"
+            class="w-44"
+            @change="onFilterChange"
+          />
+        </UFormField>
+        <UFormField label="Sampai Tanggal">
+          <UInput
+            v-model="filters.to"
+            type="date"
+            class="w-44"
+            @change="onFilterChange"
+          />
+        </UFormField>
+      </template>
+    </div>
+
+    <!-- Main List / Calendar View Container (100% Full Width) -->
+    <UCard
+      v-if="viewMode === 'list'"
+      class="w-full shadow-xs"
+      :ui="{ body: 'p-0 sm:p-0' }"
+    >
+      <SkeletonTableSkeleton
+        v-if="status === 'pending'"
+        :columns="7"
+      />
+      <UTable
+        v-else
+        :data="reservations"
+        :columns="columns"
+        class="w-full"
+      >
+        <template #scheduledAt-cell="{ row }">
+          {{ formatDateTime(row.original.scheduledAt) }}
+        </template>
+        <template #status-cell="{ row }">
+          <UBadge
+            :color="reservationStatusColor(row.original.status)"
+            variant="subtle"
+          >
+            {{ reservationStatusLabel(row.original.status) }}
+          </UBadge>
+        </template>
+        <template #actions-cell="{ row }">
+          <USelect
+            :model-value="row.original.status"
+            :items="STATUS_OPTIONS.filter(o => o.value)"
+            size="xs"
+            class="w-40"
+            @update:model-value="(v: string) => onStatusChange(row.original, v)"
+          />
+        </template>
+      </UTable>
+      <PaginationBar
+        v-if="reservationsPage"
+        :page="reservationsPage.page"
+        :total-pages="reservationsPage.totalPages"
+        :total="reservationsPage.total"
+        :page-size="reservationsPage.pageSize"
+        @update:page="page = $event"
+      />
+    </UCard>
+
+    <UCard v-else class="w-full shadow-xs">
+      <SkeletonCalendarSkeleton v-if="calendarStatus === 'pending'" />
+      <CalendarMonthCalendar
+        v-else
+        :reservations="calendarReservations ?? []"
+        @select-day="onSelectDay"
+      />
+    </UCard>
+
+    <!-- Create Reservation Modal -->
     <UModal
       v-model:open="showModal"
       title="Buat Reservasi"
@@ -439,5 +436,5 @@ async function onStatusChange(reservation: Reservation, newStatus: string) {
         </div>
       </template>
     </UModal>
-  </UContainer>
+  </div>
 </template>

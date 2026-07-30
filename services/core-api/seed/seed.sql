@@ -289,25 +289,27 @@ UPDATE billing.inventory_items SET stock_quantity = stock_quantity - 1 WHERE id 
 INSERT INTO content.article_categories (id, name) VALUES
   ('b0000000-0000-0000-0000-000000000001', 'Perawatan Gigi'),
   ('b0000000-0000-0000-0000-000000000002', 'Tips Kesehatan'),
-  ('b0000000-0000-0000-0000-000000000003', 'Info Klinik');
+  ('b0000000-0000-0000-0000-000000000003', 'Ortodonti'),
+  ('b0000000-0000-0000-0000-000000000004', 'Nina Kidz');
 
 INSERT INTO content.articles (category_id, title, slug, cover_image_url, body, published_at) VALUES
-  ('b0000000-0000-0000-0000-000000000001', 'Kapan Harus Behel? Kenali Tanda-tandanya', 'kapan-harus-behel', NULL, 'Gigi berjejal, gigitan tidak rata, atau rahang tidak simetris bisa jadi tanda kamu butuh behel. Konsultasikan dengan dokter gigi spesialis ortodonti untuk rencana perawatan yang tepat.', now() - interval '10 days'),
-  ('b0000000-0000-0000-0000-000000000002', '5 Kebiasaan Sehari-hari Perusak Enamel Gigi', '5-kebiasaan-perusak-enamel', NULL, 'Minum soda berlebihan, menggigit kuku, dan sikat gigi terlalu keras adalah beberapa kebiasaan yang perlahan merusak enamel gigi tanpa disadari.', now() - interval '4 days'),
-  ('b0000000-0000-0000-0000-000000000003', 'Program Nina Kidz: Gigi Sehat Sejak Dini', 'program-nina-kidz', NULL, 'Nina Kidz adalah program pemeriksaan gigi anak dengan pendekatan ramah anak, termasuk vitamin gigi dan fluoride treatment untuk mencegah karies sejak dini.', now() - interval '1 days');
+  ('b0000000-0000-0000-0000-000000000003', 'Kapan Harus Behel Gigi? Kenali 5 Tanda Utama Ini!', 'kapan-harus-behel', 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800&auto=format&fit=crop&q=80', 'Gigi berjejal, gigitan tidak rata, atau rahang tidak simetris bisa jadi tanda kamu butuh behel. Konsultasikan dengan dokter gigi spesialis ortodonti di Nina Dental Care untuk rencana perawatan yang tepat.', now() - interval '2 days'),
+  ('b0000000-0000-0000-0000-000000000002', '5 Kebiasaan Sehari-hari yang Tanpa Disadari Merusak Enamel Gigi', '5-kebiasaan-perusak-enamel', 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800&auto=format&fit=crop&q=80', 'Minum soda berlebihan, menggigit kuku, dan sikat gigi terlalu keras adalah beberapa kebiasaan yang perlahan merusak enamel gigi tanpa disadari.', now() - interval '5 days'),
+  ('b0000000-0000-0000-0000-000000000004', 'Program Nina Kidz: Menjaga Gigi Anak Sehat & Bebas Karies Sejak Dini', 'program-nina-kidz', 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&auto=format&fit=crop&q=80', 'Nina Kidz adalah program pemeriksaan gigi anak dengan pendekatan ramah anak, termasuk vitamin gigi dan fluoride treatment untuk mencegah karies sejak dini.', now() - interval '7 days'),
+  ('b0000000-0000-0000-0000-000000000001', 'Prosedur Bleaching Gigi Instant: Rahasia Senyum Cerah Cemerlang', 'prosedur-bleaching-gigi', 'https://images.unsplash.com/photo-1571772996211-2f02c9727629?w=800&auto=format&fit=crop&q=80', 'Bleaching (In-Office Whitening) adalah solusi tercepat untuk mencerahkan warna gigi hingga 4-8 tingkat lebih putih hanya dalam waktu 60 menit di klinik Nina Dental Care.', now() - interval '10 days');
 
 INSERT INTO content.promos (title, banner_image_url, description, starts_at, ends_at, is_active, discount_type, discount_value) VALUES
-  ('Promo Scaling 6-in-1', NULL, 'Paket scaling lengkap mulai Rp149.000, berlaku di semua cabang.', now() - interval '5 days', now() + interval '25 days', true, 'fixed', 50000),
-  ('Diskon Behel Metal 10%', NULL, 'Diskon 10% untuk pemasangan behel metal konvensional, khusus reservasi lewat aplikasi.', now() - interval '2 days', now() + interval '13 days', true, 'percentage', 10);
+  ('Promo Scaling 6-in-1 Super Clean', 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800&auto=format&fit=crop&q=80', 'Paket scaling lengkap pembersihan karang gigi + polishing + fluoridasi hanya Rp149.000, berlaku di cabang Soreang & Baleendah.', now() - interval '5 days', now() + interval '25 days', true, 'fixed', 50000),
+  ('Diskon Pemasangan Behel Metal 10%', 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800&auto=format&fit=crop&q=80', 'Diskon 10% untuk pemasangan behel metal konvensional, khusus reservasi online lewat aplikasi mobile.', now() - interval '2 days', now() + interval '13 days', true, 'percentage', 10);
 
 INSERT INTO content.testimonials (patient_name, staff_id, photo_url, rating, quote) VALUES
-  ('Budi Santoso', '21000000-0000-0000-0000-000000000002', NULL, 5, 'Pelayanan ramah, tambal giginya rapi dan gak sakit sama sekali!'),
-  ('Siti Aminah', '21000000-0000-0000-0000-000000000003', NULL, 5, 'Behel anak saya ditangani dengan sabar, drg. Siti sangat komunikatif.'),
-  ('Dewi Lestari', '21000000-0000-0000-0000-000000000002', NULL, 4, 'Scaling-nya bersih banget, cuma antriannya agak lama waktu itu.');
+  ('Budi Santoso', '21000000-0000-0000-0000-000000000002', NULL, 5, 'Pelayanan ramah, klinik sangat bersih dan dokter komunikatif! Tambal giginya rapi dan gak sakit sama sekali.'),
+  ('Siti Aminah', '21000000-0000-0000-0000-000000000003', NULL, 5, 'Behel anak saya ditangani dengan sabar, dokter anak di Nina Kidz sangat ramah sehingga anak tidak takut dokter gigi.'),
+  ('Dewi Lestari', '21000000-0000-0000-0000-000000000002', NULL, 5, 'Scaling-nya bersih banget, proses cepat dan reservasi lewat aplikasi sangat mempermudah tidak perlu antre lama.');
 
 INSERT INTO content.videos (title, video_url, thumbnail_url, published_at) VALUES
-  ('Tur Klinik Nina Dental Care Soreang', 'https://www.youtube.com/watch?v=example1', NULL, now() - interval '20 days'),
-  ('Edukasi: Cara Sikat Gigi yang Benar', 'https://www.youtube.com/watch?v=example2', NULL, now() - interval '7 days');
+  ('SERU ABISSS GRAND OPENING NINA DENTAL CARE!', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'https://images.unsplash.com/photo-1629909615184-74f495363b67?w=800&auto=format&fit=crop&q=80', now() - interval '20 days'),
+  ('Edukasi: Cara Sikat Gigi yang Benar Mencegah Karang', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800&auto=format&fit=crop&q=80', now() - interval '7 days');
 
 -- === Pembiayaan operasional (laporan keuntungan/pembiayaan) ===
 INSERT INTO billing.expenses (branch_id, category, description, amount, expense_date) VALUES

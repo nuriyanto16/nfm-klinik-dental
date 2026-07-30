@@ -79,7 +79,7 @@ const paymentColumns = [
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-6">
+  <div class="p-4 space-y-4 w-full max-w-none">
     <div>
       <h1 class="text-xl font-semibold">
         Dashboard
@@ -98,7 +98,7 @@ const paymentColumns = [
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <template v-if="summaryStatus === 'pending'">
         <SkeletonStatCardSkeleton
           v-for="i in 6"
@@ -257,5 +257,5 @@ const paymentColumns = [
         </UTable>
       </UCard>
     </div>
-  </UContainer>
+  </div>
 </template>

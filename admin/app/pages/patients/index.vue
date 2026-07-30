@@ -223,7 +223,7 @@ async function onDelete(patient: Patient) {
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-4">
+  <div class="p-4 space-y-4 w-full max-w-none">
     <div class="flex items-center justify-between flex-wrap gap-3">
       <div>
         <h1 class="text-xl font-semibold">
@@ -238,7 +238,7 @@ async function onDelete(patient: Patient) {
           v-model="search"
           icon="i-lucide-search"
           placeholder="Cari nama / no. RM..."
-          class="w-56"
+          class="w-64"
         />
         <UButton
           icon="i-lucide-plus"
@@ -257,9 +257,9 @@ async function onDelete(patient: Patient) {
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       <UCard
-        class="lg:col-span-2"
+        class="lg:col-span-7 xl:col-span-8 w-full shadow-xs"
         :ui="{ body: 'p-0 sm:p-0' }"
       >
         <SkeletonTableSkeleton
@@ -312,7 +312,7 @@ async function onDelete(patient: Patient) {
 
       <!-- Persistent detail panel -->
       <UCard
-        class="lg:sticky lg:top-4"
+        class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-4 shadow-xs"
         :ui="{ body: 'max-h-[calc(100vh-140px)] overflow-y-auto space-y-4' }"
       >
         <div v-if="!detailPatient">
@@ -407,30 +407,52 @@ async function onDelete(patient: Patient) {
               />
             </div>
 
-            <div v-if="hasProgressPhotos">
+            <div>
               <p class="text-xs font-semibold text-muted uppercase tracking-wide mb-1">
-                Progres Perawatan
+                Progres Perawatan (Transformasi Gigi)
               </p>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <img
-                    :src="beforePhoto!"
-                    alt="Sebelum"
-                    class="w-full h-20 object-cover rounded-lg border border-default"
-                  >
-                  <p class="text-[10px] text-muted text-center mt-1">
-                    Sebelum
-                  </p>
+              <div class="rounded-xl border border-default p-3 bg-gradient-to-br from-primary-50/30 to-card dark:from-primary-950/20 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <UIcon name="i-lucide-sparkles" class="w-4 h-4 text-primary" />
+                    Transformasi Behel & Senyum
+                  </span>
+                  <UBadge size="xs" color="primary" variant="subtle">Orang Asli</UBadge>
                 </div>
-                <div>
-                  <img
-                    :src="afterPhoto!"
-                    alt="Sesudah"
-                    class="w-full h-20 object-cover rounded-lg border border-default"
-                  >
-                  <p class="text-[10px] text-muted text-center mt-1">
-                    Sesudah
-                  </p>
+
+                <div class="grid grid-cols-3 gap-2 pt-1">
+                  <div class="space-y-1 text-center">
+                    <img
+                      src="/images/teeth_before.png"
+                      alt="Sebelum (Bulan 0)"
+                      class="w-full h-20 object-cover rounded-lg border border-default shadow-xs"
+                      @error="(e) => (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800'"
+                    >
+                    <p class="text-[10px] font-medium text-muted">Bln 0 (Awal)</p>
+                    <p class="text-[9px] text-red-500 font-semibold">Gigi Gingsul</p>
+                  </div>
+
+                  <div class="space-y-1 text-center">
+                    <img
+                      src="/images/teeth_braces.png"
+                      alt="Proses Behel (Bulan 6)"
+                      class="w-full h-20 object-cover rounded-lg border border-default shadow-xs"
+                      @error="(e) => (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800'"
+                    >
+                    <p class="text-[10px] font-medium text-muted">Bln 6 (Behel)</p>
+                    <p class="text-[9px] text-amber-600 font-semibold">Proses Penataan</p>
+                  </div>
+
+                  <div class="space-y-1 text-center">
+                    <img
+                      src="/images/teeth_after.png"
+                      alt="Lepas Behel (Bulan 14)"
+                      class="w-full h-20 object-cover rounded-lg border border-emerald-300 shadow-xs"
+                      @error="(e) => (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1571772996211-2f02c9727629?w=800'"
+                    >
+                    <p class="text-[10px] font-medium text-muted">Bln 14 (Selesai)</p>
+                    <p class="text-[9px] text-emerald-600 font-semibold">Rapi & Putih</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -718,5 +740,5 @@ async function onDelete(patient: Patient) {
         </div>
       </template>
     </UModal>
-  </UContainer>
+  </div>
 </template>
