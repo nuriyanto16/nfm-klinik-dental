@@ -217,9 +217,16 @@ Keunggulan Bleaching di Nina Dental Care:
               child: SizedBox(
                 height: 190,
                 width: double.infinity,
-                child: article.coverImageUrl != null
-                    ? CachedNetworkImage(imageUrl: article.coverImageUrl!, fit: BoxFit.cover)
-                    : Container(color: Colors.pink.shade100, child: const Icon(Icons.article, size: 48, color: AppColors.pink)),
+                child: CachedNetworkImage(
+                  imageUrl: (article.coverImageUrl != null && article.coverImageUrl!.startsWith('http'))
+                      ? article.coverImageUrl!
+                      : 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800',
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => CachedNetworkImage(
+                    imageUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800',
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ),
             Padding(
@@ -291,9 +298,16 @@ Keunggulan Bleaching di Nina Dental Care:
               child: SizedBox(
                 width: 90,
                 height: 90,
-                child: article.coverImageUrl != null
-                    ? CachedNetworkImage(imageUrl: article.coverImageUrl!, fit: BoxFit.cover)
-                    : Container(color: Colors.green.shade50, child: const Icon(Icons.article, color: AppColors.primary)),
+                child: CachedNetworkImage(
+                  imageUrl: (article.coverImageUrl != null && article.coverImageUrl!.startsWith('http'))
+                      ? article.coverImageUrl!
+                      : 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800',
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => CachedNetworkImage(
+                    imageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800',
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 14),

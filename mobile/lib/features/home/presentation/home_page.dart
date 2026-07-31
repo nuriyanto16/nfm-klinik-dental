@@ -770,13 +770,19 @@ class _HomePageState extends ConsumerState<HomePage> {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Container(
+                child: SizedBox(
                   height: 100,
                   width: double.infinity,
-                  color: Colors.grey.shade200,
-                  child: article.coverImageUrl != null
-                      ? CachedNetworkImage(imageUrl: article.coverImageUrl!, fit: BoxFit.cover)
-                      : const Icon(Icons.article_outlined, size: 36, color: Colors.grey),
+                  child: CachedNetworkImage(
+                    imageUrl: (article.coverImageUrl != null && article.coverImageUrl!.startsWith('http'))
+                        ? article.coverImageUrl!
+                        : 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800',
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) => CachedNetworkImage(
+                      imageUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
               ),
               Padding(
