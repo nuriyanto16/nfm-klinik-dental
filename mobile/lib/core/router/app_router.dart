@@ -86,5 +86,6 @@ final appRouter = GoRouter(
     ),
     GoRoute(path: '/payments/history', builder: (context, state) => const PaymentHistoryPage()),
     GoRoute(path: '/payment-history', builder: (context, state) => const PaymentHistoryPage()),
+    GoRoute(path: '/profile/edit', builder: (context, state) => const ProfilePage()),
   ],
 );

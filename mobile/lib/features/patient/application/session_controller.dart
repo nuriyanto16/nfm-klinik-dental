@@ -30,6 +30,17 @@ class SessionController extends AsyncNotifier<PatientSession?> {
     }
   }
 
+  Future<void> updateProfile({required String fullName, required String phoneWa}) async {
+    final current = state.value;
+    final updated = PatientSession(
+      patientId: current?.patientId ?? '31000000-0000-0000-0000-000000000001',
+      fullName: fullName,
+      phoneWa: phoneWa,
+    );
+    await ref.read(sessionStorageProvider).save(updated);
+    state = AsyncData(updated);
+  }
+
   /// Finds a real, already-registered "self" patient by email or WhatsApp
   /// number and adopts it as the session — there's no password check yet
   /// (see class doc), so this only proves the identifier is a real account,

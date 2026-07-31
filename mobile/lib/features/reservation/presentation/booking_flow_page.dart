@@ -495,7 +495,12 @@ class _BookingFlowPageState extends ConsumerState<BookingFlowPage> {
                   final isSelected = _selectedDoctor?.id == doctor.id;
 
                   return GestureDetector(
-                    onTap: () => setState(() => _selectedDoctor = doctor),
+                    onTap: () {
+                      setState(() {
+                        _selectedDoctor = doctor;
+                        _selectedTimeSlot = '09:00';
+                      });
+                    },
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(

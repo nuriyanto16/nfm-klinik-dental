@@ -7,6 +7,8 @@ import '../application/session_controller.dart';
 import 'add_patient_sheet.dart';
 import 'connect_medical_record_sheet.dart';
 
+import 'edit_profile_sheet.dart';
+
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
@@ -93,7 +95,7 @@ class ProfilePage extends ConsumerWidget {
                       foregroundColor: AppColors.textDark,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    onPressed: () => context.push('/profile/edit'),
+                    onPressed: () => EditProfileSheet.show(context),
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     label: const Text('Edit', style: TextStyle(fontWeight: FontWeight.w600)),
                   ),
