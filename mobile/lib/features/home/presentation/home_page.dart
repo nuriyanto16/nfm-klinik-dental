@@ -604,51 +604,87 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildPromoCard(Promo promo) {
+    final bannerUrl = (promo.bannerImageUrl != null && promo.bannerImageUrl!.isNotEmpty)
+        ? promo.bannerImageUrl!
+        : 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Container(
           decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
             gradient: const LinearGradient(
-              colors: [Color(0xFFEC407A), Color(0xFFAB47BC)],
+              colors: [Color(0xFFE91E63), Color(0xFF9C27B0)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20),
           ),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (promo.bannerImageUrl != null)
-                CachedNetworkImage(imageUrl: promo.bannerImageUrl!, fit: BoxFit.cover)
-              else
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.amber,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text('DITANGANI DOKTER SPESIALIS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+              CachedNetworkImage(
+                imageUrl: bannerUrl,
+                fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => Image.network(
+                  'https://picsum.photos/800/400?dental',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        promo.title,
-                        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      const Text('Konsultasi dokter spesialis + general checkup free!', style: TextStyle(color: Colors.white70, fontSize: 11)),
-                    ],
+                    ),
                   ),
                 ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.black.withValues(alpha: 0.8),
+                      Colors.black.withValues(alpha: 0.2),
+                      Colors.black.withValues(alpha: 0.7),
+                    ],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.amber,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text('PROMO SPESIAL HARI INI', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black)),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      promo.title,
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, height: 1.2),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      promo.description ?? 'Konsultasi dokter gratis & diskon khusus reservasi via aplikasi mobile!',
+                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -676,11 +712,17 @@ class _HomePageState extends ConsumerState<HomePage> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Container(
+            child: SizedBox(
               width: 60,
               height: 70,
-              color: Colors.grey.shade200,
-              child: const Icon(Icons.person, size: 36, color: Colors.grey),
+              child: CachedNetworkImage(
+                imageUrl: t.photoUrl ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300',
+                fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => Container(
+                  color: Colors.pink.shade50,
+                  child: const Icon(Icons.person, size: 36, color: AppColors.pink),
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -718,34 +760,79 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildEducationalVideoCard(int index) {
+    final videoTitles = [
+      'SERU ABISSS GRAND OPENING NINA DENTAL CARE!',
+      'Edukasi: Cara Sikat Gigi yang Benar Mencegah Karang Gigi',
+      'Tips Memilih Behel Metal vs Behel Transparan Sapphire'
+    ];
+    final videoImages = [
+      'https://images.unsplash.com/photo-1629909615184-74f495363b67?w=800',
+      'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800',
+      'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800'
+    ];
+
     return Container(
       width: 240,
       decoration: BoxDecoration(
-        color: Colors.green.shade100,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.green.shade200),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Stack(
+          fit: StackFit.expand,
           children: [
+            CachedNetworkImage(
+              imageUrl: videoImages[index % videoImages.length],
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) => Container(color: Colors.teal.shade800),
+            ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.pink.shade100,
-                borderRadius: BorderRadius.circular(8),
+                gradient: LinearGradient(
+                  colors: [Colors.black.withValues(alpha: 0.8), Colors.black.withValues(alpha: 0.2)],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
               ),
-              child: const Text('#EVENT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: AppColors.pink)),
             ),
-            const Text(
-              'SERU ABISSS GRAND OPENING NINA DENTAL CARE!',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.textDark),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            const Center(
+              child: CircleAvatar(
+                radius: 22,
+                backgroundColor: Colors.white70,
+                child: Icon(Icons.play_arrow, color: AppColors.primary, size: 28),
+              ),
             ),
-            const Text('TOTAL HADIAH RP 100JUTA!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.pink,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text('#EVENT & EDUKASI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.white)),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        videoTitles[index % videoTitles.length],
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.white),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      const Text('NINA DENTAL CARE OFFICIAL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.amber)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -753,7 +840,10 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildArticleCard(BuildContext context, Article article) {
-    final formattedDate = DateFormat('dd MMMM yyyy', 'id_ID').format(DateTime.now());
+    final formattedDate = DateFormat('dd MMMM yyyy', 'id_ID').format(article.publishedAt ?? DateTime.now());
+    final coverUrl = (article.coverImageUrl != null && article.coverImageUrl!.isNotEmpty)
+        ? article.coverImageUrl!
+        : 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800';
 
     return GestureDetector(
       onTap: () => context.push('/articles/${article.id}'),
@@ -764,24 +854,44 @@ class _HomePageState extends ConsumerState<HomePage> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: SizedBox(
-                  height: 100,
+                child: Container(
+                  height: 110,
                   width: double.infinity,
-                  child: CachedNetworkImage(
-                    imageUrl: (article.coverImageUrl != null && article.coverImageUrl!.startsWith('http'))
-                        ? article.coverImageUrl!
-                        : 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800',
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => CachedNetworkImage(
-                      imageUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800',
-                      fit: BoxFit.cover,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: coverUrl,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => Image.network(
+                          'https://picsum.photos/400/250?teeth',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Center(
+                            child: Icon(Icons.article_outlined, size: 40, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -799,7 +909,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            article.categoryName ?? 'Informasi',
+                            article.categoryName ?? 'Ortodonti',
                             style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary),
                           ),
                         ),
@@ -810,7 +920,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     const SizedBox(height: 6),
                     Text(
                       article.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
