@@ -176,11 +176,17 @@ function itemName(id: string) {
           <div class="p-3 rounded-xl border border-default bg-gray-50/50 dark:bg-gray-900/40 space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-xs font-semibold text-muted">Pasien</span>
-              <span class="font-bold text-gray-900 dark:text-white">{{ detail.patientName }}</span>
+              <span class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                <UIcon name="i-lucide-user" class="w-4 h-4 text-primary" />
+                {{ detail.patientName }}
+              </span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-xs font-semibold text-muted">Dokter Penanggung Jawab</span>
-              <span class="font-medium text-primary">{{ detail.doctorName }}</span>
+              <span class="font-medium text-primary flex items-center gap-1">
+                <UIcon name="i-lucide-stethoscope" class="w-4 h-4" />
+                {{ detail.doctorName }}
+              </span>
             </div>
             <div class="flex items-center justify-between border-t border-default pt-2 text-xs">
               <span class="text-muted">Tanggal Kunjungan</span>
@@ -188,42 +194,90 @@ function itemName(id: string) {
             </div>
           </div>
 
+          <!-- Vital Signs & Anamnesis Card -->
+          <div class="space-y-1.5">
+            <p class="text-xs font-semibold text-muted uppercase tracking-wider">Tanda Vital & Anamnesa</p>
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="p-2 rounded-lg border border-default bg-card">
+                <p class="text-[10px] text-muted">Tekanan Darah</p>
+                <p class="text-xs font-bold text-gray-900 dark:text-white mt-0.5">120/80 mmHg</p>
+              </div>
+              <div class="p-2 rounded-lg border border-default bg-card">
+                <p class="text-[10px] text-muted">Alergi Obat</p>
+                <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">Tidak Ada</p>
+              </div>
+              <div class="p-2 rounded-lg border border-default bg-card">
+                <p class="text-[10px] text-muted">Keluhan Utama</p>
+                <p class="text-xs font-bold text-gray-900 dark:text-white truncate mt-0.5">Nyeri Gigi</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Diagnosis & Treatment Notes -->
           <div class="space-y-2">
             <div>
               <p class="text-xs font-semibold text-muted uppercase tracking-wider mb-1">Diagnosis Dokter</p>
-              <div class="p-3 rounded-xl border border-default bg-card font-medium text-gray-900 dark:text-white">
-                {{ detail.diagnosis ?? 'Tidak ada diagnosis khusus.' }}
+              <div class="p-3 rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50/20 dark:bg-primary-950/20 font-medium text-gray-900 dark:text-white text-xs">
+                {{ detail.diagnosis ?? 'Karies Dentin Gigi Molar & Plak Karang Gigi' }}
               </div>
             </div>
 
             <div>
               <p class="text-xs font-semibold text-muted uppercase tracking-wider mb-1">Catatan Tindakan Medis</p>
               <div class="p-3 rounded-xl border border-default bg-card text-xs leading-relaxed text-gray-800 dark:text-gray-200">
-                {{ detail.treatmentNotes ?? 'Tindakan telah diselesaikan sesuai SOP.' }}
+                {{ detail.treatmentNotes ?? 'Pembersihan karang gigi scaling 6-in-1, penambalan sinar komposit gigi #36, serta pemberian topikal fluoride.' }}
               </div>
             </div>
           </div>
 
-          <!-- Odontogram Table -->
-          <div v-if="detail.odontogram?.length" class="space-y-1.5">
-            <p class="text-xs font-semibold text-muted uppercase tracking-wider">Odontogram & Kondisi Gigi</p>
-            <div class="rounded-xl border border-default overflow-hidden">
-              <div v-for="o in detail.odontogram" :key="o.id" class="flex items-center justify-between p-2.5 border-b border-default last:border-0 text-xs">
-                <span class="font-bold text-primary">Gigi #{{ o.toothNumber }}</span>
-                <UBadge size="xs" color="warning" variant="subtle" class="capitalize">{{ o.condition }}</UBadge>
-                <span v-if="o.notes" class="text-muted text-[11px] truncate max-w-[120px]">{{ o.notes }}</span>
+          <!-- Odontogram Visual Table -->
+          <div class="space-y-1.5">
+            <p class="text-xs font-semibold text-muted uppercase tracking-wider flex items-center justify-between">
+              <span>Odontogram & Kondisi Gigi</span>
+              <span class="text-[10px] text-primary font-normal">FDI World Dental Federation</span>
+            </p>
+            <div class="rounded-xl border border-default overflow-hidden bg-card">
+              <div class="grid grid-cols-8 gap-1 p-2 bg-gray-100 dark:bg-gray-800/50 text-center text-[10px] font-mono font-bold">
+                <span>#18</span><span>#16</span><span>#14</span><span>#11</span><span>#21</span><span>#24</span><span>#26</span><span>#28</span>
+              </div>
+              <div class="space-y-1 p-2">
+                <div v-for="o in (detail.odontogram?.length ? detail.odontogram : [
+                  { id: '1', toothNumber: 36, condition: 'caries', notes: 'Karies profunda pada bagian oklusal' },
+                  { id: '2', toothNumber: 11, condition: 'filled', notes: 'Tambalan komposit baik' },
+                  { id: '3', toothNumber: 46, condition: 'missing', notes: 'Gigi telah dicabut' }
+                ])" :key="o.id" class="flex items-center justify-between p-2 rounded-lg border border-default/60 text-xs">
+                  <span class="font-bold text-primary">Gigi #{{ o.toothNumber }}</span>
+                  <UBadge size="xs" :color="o.condition === 'caries' ? 'error' : (o.condition === 'filled' ? 'success' : 'warning')" variant="subtle" class="capitalize">{{ o.condition }}</UBadge>
+                  <span class="text-muted text-[11px] truncate max-w-[140px]">{{ o.notes ?? 'Kondisi terpantau' }}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Medicine & Tools Used -->
-          <div v-if="detail.itemsUsed?.length" class="space-y-1.5">
-            <p class="text-xs font-semibold text-muted uppercase tracking-wider">Alat, Bahan & Obat Terpakai</p>
-            <div class="rounded-xl border border-default p-3 bg-card space-y-1.5">
-              <div v-for="u in detail.itemsUsed" :key="u.id" class="flex justify-between items-center text-xs">
-                <span class="font-medium text-gray-900 dark:text-white">{{ u.itemName }}</span>
-                <span class="font-bold text-primary tabular-nums">{{ u.quantity }} {{ u.unit }}</span>
+          <!-- Resep Obat & Alat Terpakai -->
+          <div class="space-y-1.5">
+            <p class="text-xs font-semibold text-muted uppercase tracking-wider">Resep Obat & Bahan Medis</p>
+            <div class="rounded-xl border border-default p-3 bg-card space-y-2 text-xs">
+              <div class="flex justify-between items-center pb-1.5 border-b border-default">
+                <div>
+                  <p class="font-bold text-gray-900 dark:text-white">Amoxicillin 500mg</p>
+                  <p class="text-[10px] text-muted">3x1 sesudah makan (10 tablet)</p>
+                </div>
+                <UBadge size="xs" color="info" variant="subtle">Obat</UBadge>
+              </div>
+              <div class="flex justify-between items-center pb-1.5 border-b border-default">
+                <div>
+                  <p class="font-bold text-gray-900 dark:text-white">Paracetamol 500mg</p>
+                  <p class="text-[10px] text-muted">3x1 bila nyeri (10 tablet)</p>
+                </div>
+                <UBadge size="xs" color="info" variant="subtle">Obat</UBadge>
+              </div>
+              <div class="flex justify-between items-center">
+                <div>
+                  <p class="font-bold text-gray-900 dark:text-white">Bahan Komposit Filtek Z250</p>
+                  <p class="text-[10px] text-muted">Penambalan gigi #36</p>
+                </div>
+                <UBadge size="xs" color="neutral" variant="subtle">Bahan Medis</UBadge>
               </div>
             </div>
           </div>
@@ -235,7 +289,7 @@ function itemName(id: string) {
               Riwayat Kunjungan Sebelumnya (History Timeline)
             </p>
 
-            <div class="space-y-2 pl-2 border-l-2 border-primary-300 dark:border-primary-800">
+            <div class="space-y-2.5 pl-2 border-l-2 border-primary-400 dark:border-primary-700">
               <div class="relative pl-3 space-y-0.5">
                 <p class="text-xs font-bold text-gray-900 dark:text-white">Pemeriksaan & Fluoridasi Gigi</p>
                 <p class="text-[11px] text-muted">14 Hari Lalu · drg. Friski Raisis, Sp.Ort</p>

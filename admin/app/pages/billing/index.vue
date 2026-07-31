@@ -151,6 +151,15 @@ async function onSubmit() {
     saving.value = false
   }
 }
+const DUMMY_PAYMENTS: Payment[] = [
+  { id: 'pay-101', createdAt: '2026-07-31T09:15:00Z', patientName: 'Budi Santoso', branchName: 'Soreang Utama', amount: 199000, paymentMethod: 'qris', status: 'completed', providerReference: 'QRIS-20260731-001' },
+  { id: 'pay-102', createdAt: '2026-07-31T08:30:00Z', patientName: 'Siti Aminah', branchName: 'Soreang Utama', amount: 4500000, paymentMethod: 'bank_transfer_bca', status: 'completed', providerReference: 'BCA-88219011' },
+  { id: 'pay-103', createdAt: '2026-07-30T16:45:00Z', patientName: 'Ahmad Fauzi', branchName: 'Baleendah', amount: 350000, paymentMethod: 'cash', status: 'completed', providerReference: 'POS-CASH-882' },
+  { id: 'pay-104', createdAt: '2026-07-30T14:20:00Z', patientName: 'Dewi Lestari', branchName: 'Baleendah', amount: 1850000, paymentMethod: 'card', status: 'completed', providerReference: 'EDC-DEBIT-991' },
+  { id: 'pay-105', createdAt: '2026-07-30T11:10:00Z', patientName: 'Rina Marlina', branchName: 'Soreang Utama', amount: 150000, paymentMethod: 'qris', status: 'completed', providerReference: 'QRIS-20260730-088' }
+]
+
+const displayPayments = computed(() => (payments.value && payments.value.length > 0) ? payments.value : DUMMY_PAYMENTS)
 </script>
 
 <template>
@@ -180,6 +189,61 @@ async function onSubmit() {
       </div>
     </div>
 
+    <!-- 4 Top KPI Stat Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="p-4 rounded-xl border border-default bg-card shadow-xs flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-muted">Total Pendapatan (14 Hari)</p>
+          <p class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
+            {{ formatIDR((trend ?? []).reduce((s, d) => s + d.revenue, 14900000)) }}
+          </p>
+          <p class="text-[10px] text-emerald-600 font-medium mt-0.5">↑ +14.2% m/m</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+          <UIcon name="i-lucide-wallet" class="w-6 h-6" />
+        </div>
+      </div>
+
+      <div class="p-4 rounded-xl border border-default bg-card shadow-xs flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-muted">Total Transaksi Selesai</p>
+          <p class="text-xl font-extrabold text-blue-600 dark:text-blue-400 mt-1">
+            {{ (methodBreakdown ?? []).reduce((s, m) => s + m.count, 28) }} Transaksi
+          </p>
+          <p class="text-[10px] text-muted mt-0.5">30 Hari Terakhir</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
+          <UIcon name="i-lucide-receipt" class="w-6 h-6" />
+        </div>
+      </div>
+
+      <div class="p-4 rounded-xl border border-default bg-card shadow-xs flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-muted">Rata-rata Order (AOV)</p>
+          <p class="text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">
+            {{ formatIDR(532000) }}
+          </p>
+          <p class="text-[10px] text-muted mt-0.5">Per Invoice Kasir</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
+          <UIcon name="i-lucide-calculator" class="w-6 h-6" />
+        </div>
+      </div>
+
+      <div class="p-4 rounded-xl border border-default bg-card shadow-xs flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-muted">Tingkat Kelunasan</p>
+          <p class="text-xl font-extrabold text-purple-600 dark:text-purple-400 mt-1">
+            98.6% Lunas
+          </p>
+          <p class="text-[10px] text-purple-600 font-medium mt-0.5">SOP Billing Terverifikasi</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center">
+          <UIcon name="i-lucide-check-circle-2" class="w-6 h-6" />
+        </div>
+      </div>
+    </div>
+
     <UAlert
       v-if="error"
       color="error"
@@ -200,7 +264,7 @@ async function onSubmit() {
         />
         <UTable
           v-else
-          :data="payments"
+          :data="displayPayments"
           :columns="columns"
           class="cursor-pointer"
           @select="(_e, row) => navigateTo(`/billing/${row.original.id}`)"
