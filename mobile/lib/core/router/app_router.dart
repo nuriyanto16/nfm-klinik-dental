@@ -28,10 +28,13 @@ import '../../features/treatments/presentation/price_list_page.dart';
 final appRouter = GoRouter(
   initialLocation: '/',
   routes: [
+    // ─── Home & Auth ──────────────────────────────────────────────────────────
     GoRoute(path: '/', builder: (context, state) => const HomePage()),
     GoRoute(path: '/home', builder: (context, state) => const HomePage()),
     GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
     GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
+
+    // ─── Profile / Patient ────────────────────────────────────────────────────
     GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
     GoRoute(path: '/profile/edit', builder: (context, state) => const EditProfilePage()),
     GoRoute(path: '/qr-profile', builder: (context, state) => const QrProfilePage()),
@@ -39,7 +42,8 @@ final appRouter = GoRouter(
     GoRoute(path: '/reward', builder: (context, state) => const RewardPage()),
     GoRoute(path: '/notifications', builder: (context, state) => const NotificationPage()),
     GoRoute(path: '/insurance', builder: (context, state) => const InsurancePage()),
-    GoRoute(path: '/schedule', builder: (context, state) => const SchedulePage()),
+
+    // ─── Info Klinik ─────────────────────────────────────────────────────────
     GoRoute(path: '/branches', builder: (context, state) => const BranchesPage()),
     GoRoute(path: '/doctors', builder: (context, state) => const DoctorsPage()),
     GoRoute(
@@ -47,6 +51,8 @@ final appRouter = GoRouter(
       builder: (context, state) => DoctorDetailPage(doctorId: state.pathParameters['id']!),
     ),
     GoRoute(path: '/pricelist', builder: (context, state) => const PriceListPage()),
+
+    // ─── Konten & Promo ──────────────────────────────────────────────────────
     GoRoute(path: '/promos', builder: (context, state) => const PromosPage()),
     GoRoute(path: '/testimonials', builder: (context, state) => const TestimonialsPage()),
     GoRoute(path: '/videos', builder: (context, state) => const VideosPage()),
@@ -60,24 +66,24 @@ final appRouter = GoRouter(
         return ArticleDetailPage(
           article: Article(
             id: id,
-            title: 'Manfaat Perawatan Dental Care',
-            slug: 'manfaat-dental-care',
-            body: 'Perawatan gigi secara rutin di klinik Nina Dental Care sangat penting untuk menjaga kesehatan gusi, mencegah pembentukan karang gigi (tartar), serta menjaga penampilan senyum Anda tetap percaya diri.',
-            categoryName: 'Informasi',
+            title: 'Informasi Perawatan Gigi',
+            slug: 'informasi-perawatan',
+            body: 'Perawatan gigi secara rutin di klinik Nina Dental Care sangat penting untuk menjaga kesehatan gusi, mencegah pembentukan karang gigi, serta menjaga penampilan senyum tetap percaya diri. Konsultasikan kebutuhan gigi Anda dengan dokter kami hari ini!',
+            categoryName: 'Perawatan Gigi',
             publishedAt: DateTime.now(),
+            coverImageUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800',
           ),
         );
       },
     ),
-    GoRoute(
-      path: '/reservations/new',
-      builder: (context, state) => const BookingFlowPage(),
-    ),
-    GoRoute(
-      path: '/booking',
-      builder: (context, state) => const BookingFlowPage(),
-    ),
+
+    // ─── Reservasi ────────────────────────────────────────────────────────────
+    GoRoute(path: '/reservations/new', builder: (context, state) => const BookingFlowPage()),
+    GoRoute(path: '/booking', builder: (context, state) => const BookingFlowPage()),
+    GoRoute(path: '/schedule', builder: (context, state) => const SchedulePage()),
     GoRoute(path: '/reservations/history', builder: (context, state) => const SchedulePage()),
+
+    // ─── Pembayaran ───────────────────────────────────────────────────────────
     GoRoute(
       path: '/payment/checkout',
       builder: (context, state) => PaymentSelectionPage(
@@ -86,6 +92,5 @@ final appRouter = GoRouter(
     ),
     GoRoute(path: '/payments/history', builder: (context, state) => const PaymentHistoryPage()),
     GoRoute(path: '/payment-history', builder: (context, state) => const PaymentHistoryPage()),
-    GoRoute(path: '/profile/edit', builder: (context, state) => const ProfilePage()),
   ],
 );

@@ -417,7 +417,7 @@ async function onDelete(patient: Patient) {
                     <UIcon name="i-lucide-sparkles" class="w-4 h-4 text-primary" />
                     Transformasi Behel & Senyum
                   </span>
-                  <UBadge size="xs" color="primary" variant="subtle">Orang Asli</UBadge>
+                  <UBadge size="xs" color="success" variant="subtle">Progres Aktif</UBadge>
                 </div>
 
                 <div class="grid grid-cols-3 gap-2 pt-1">

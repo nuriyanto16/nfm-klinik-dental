@@ -52,12 +52,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_dob == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih tanggal lahir terlebih dahulu.')),
-      );
-      return;
-    }
+    // DOB is optional — if user skips, we leave it null (API accepts null)
+    // Previously this blocked registration with a confusing error.
 
     setState(() => _isLoading = true);
 
@@ -77,7 +73,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               relation: 'self',
               email: _emailCtrl.text.trim(),
               phoneWa: phone,
-              dateOfBirth: DateFormat('yyyy-MM-dd').format(_dob!),
+              dateOfBirth: _dob != null ? DateFormat('yyyy-MM-dd').format(_dob!) : null,
               gender: _gender,
               city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
             ),
@@ -280,7 +276,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             height: 20,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
-                        : const Text('Buat Password'),
+                        : const Text('Daftar Sekarang'),
                   ),
                 ),
                 const SizedBox(height: 24),

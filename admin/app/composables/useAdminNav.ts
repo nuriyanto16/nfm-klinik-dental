@@ -37,7 +37,8 @@ export function useAdminNav() {
     { label: 'Notifikasi & Broadcast', icon: 'i-lucide-send', to: '/notifications', phase: 2 },
 
     { type: 'label', label: 'Sistem' },
-    { label: 'User & Role', icon: 'i-lucide-shield-check', to: '/users', phase: 1 }
+    { label: 'User & Role', icon: 'i-lucide-shield-check', to: '/users', phase: 1 },
+    { label: 'Dokumentasi & Panduan', icon: 'i-lucide-book-open', to: '/docs', phase: 1 }
   ]
 
   return { items }
