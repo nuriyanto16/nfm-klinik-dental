@@ -501,6 +501,8 @@ async function onSubmit() {
                 </div>
               </td>
             </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- Pagination Bar -->
