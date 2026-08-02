@@ -28,8 +28,19 @@ const CONDITIONS = [
   { label: 'Ditambal', value: 'filled' },
   { label: 'Dicabut', value: 'extracted' },
   { label: 'Mahkota', value: 'crown' },
-  { label: 'Lainnya', value: 'other' }
+  { label: 'Bleaching', value: 'bleaching' },
+  { label: 'Impaksi', value: 'impaction' }
 ]
+
+const CONDITION_LABEL_MAP: Record<string, string> = {
+  healthy: 'Sehat',
+  caries: 'Karies',
+  filled: 'Ditambal',
+  extracted: 'Dicabut',
+  crown: 'Mahkota',
+  bleaching: 'Bleaching',
+  impaction: 'Impaksi'
+}
 
 // --- Detail view ---
 const showDetail = ref(false)
@@ -578,28 +589,95 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
     <!-- Detail slideover -->
     <USlideover
       v-model:open="showDetail"
-      title="Detail & Riwayat Rekam Medis"
+      title="Detail & Riwayat Rekam Medis Pasien"
+      :ui="{ width: 'sm:max-w-lg' }"
     >
       <template #body>
         <div
           v-if="detail"
-          class="space-y-4 text-sm"
+          class="space-y-4 text-xs"
         >
-          <!-- Patient & Doctor Card -->
-          <div class="p-3 rounded-xl border border-default bg-gray-50/50 dark:bg-gray-900/40 space-y-2">
+          <!-- Top Card: Patient & Doctor Summary -->
+          <div class="p-4 rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-950/30 space-y-2">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold text-muted">Pasien</span>
-              <span class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+              <span class="text-[10px] uppercase font-bold text-gray-500">Pasien</span>
+              <span class="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-1.5">
                 <UIcon name="i-lucide-user" class="w-4 h-4 text-primary" />
                 {{ detail.patientName }}
               </span>
             </div>
-            <div class="flex items-center justify-between pt-1 border-t border-default">
-              <span class="text-xs font-semibold text-muted">Dokter Penanggung Jawab</span>
+            <div class="flex items-center justify-between pt-2 border-t border-primary-200/60 dark:border-primary-800/60">
+              <span class="text-[10px] uppercase font-bold text-gray-500">Dokter Penanggung Jawab</span>
               <span class="font-semibold text-gray-800 dark:text-gray-200">
                 {{ detail.doctorName }}
               </span>
             </div>
+            <div class="flex items-center justify-between pt-1 text-[11px] text-gray-500">
+              <span>Tanggal Pemeriksaan</span>
+              <span class="font-medium text-gray-700 dark:text-gray-300">{{ formatDateTime(detail.createdAt) }}</span>
+            </div>
+          </div>
+
+          <!-- Diagnosis Medis Card -->
+          <div class="p-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-1">
+            <span class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
+              <UIcon name="i-lucide-stethoscope" class="w-4 h-4 text-primary" />
+              Diagnosis Medis Gigi
+            </span>
+            <p class="text-gray-700 dark:text-gray-300 font-medium pl-5">
+              {{ detail.diagnosis || 'Pemeriksaan Rutin & Kesehatan Gigi' }}
+            </p>
+          </div>
+
+          <!-- Catatan Tindakan Medis & Resep Card -->
+          <div class="p-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-1">
+            <span class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
+              <UIcon name="i-lucide-file-text" class="w-4 h-4 text-primary" />
+              Catatan Prosedur Tindakan & Resep Obat
+            </span>
+            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-line pl-5 leading-relaxed">
+              {{ detail.treatmentNotes || 'Tidak ada catatan khusus.' }}
+            </p>
+          </div>
+
+          <!-- Odontogram Teeth Condition Box -->
+          <div class="p-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/40 space-y-2">
+            <span class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
+              <UIcon name="i-lucide-activity" class="w-4 h-4 text-primary" />
+              Odontogram & Rincian Gigi
+            </span>
+            <div v-if="detail.odontogram && detail.odontogram.length > 0" class="space-y-1.5">
+              <div v-for="(od, idx) in detail.odontogram" :key="idx" class="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center gap-2">
+                  <UBadge color="primary" variant="solid" size="xs" class="font-mono font-bold">Gigi #{{ od.toothNumber }}</UBadge>
+                  <span class="font-semibold text-gray-800 dark:text-gray-200">{{ CONDITION_LABEL_MAP[od.condition] || od.condition }}</span>
+                </div>
+                <span class="text-gray-500 italic text-[11px]">{{ od.notes || 'Normal' }}</span>
+              </div>
+            </div>
+            <div v-else class="text-gray-500 italic pl-5">
+              Kondisi seluruh gigi dalam keadaan sehat / normal.
+            </div>
+          </div>
+
+          <!-- Follow-Up Control Recommendation Box -->
+          <div class="p-3.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5 text-xs">
+                <UIcon name="i-lucide-calendar-clock" class="w-4 h-4 text-amber-600" />
+                Rekomendasi Kontrol Pasien
+              </span>
+              <UBadge color="warning" variant="subtle" size="xs">Jadwal Kontrol</UBadge>
+            </div>
+            <p class="text-amber-800 dark:text-amber-200 font-medium pl-5">
+              Diperlukan kunjungan kontrol ulang dalam 14 - 30 hari ke depan untuk pemantauan hasil perawatan gigi.
+            </p>
+          </div>
+
+          <!-- Slideover Footer Action Buttons -->
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <UButton label="Tutup" color="neutral" variant="ghost" @click="showDetail = false" />
+            <UButton icon="i-lucide-printer" label="Cetak Rekam Medis" color="primary" @click="printMedicalRecord(detail)" />
           </div>
         </div>
       </template>
