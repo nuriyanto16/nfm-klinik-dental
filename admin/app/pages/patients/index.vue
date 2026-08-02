@@ -62,7 +62,8 @@ const RELATIONS = [
   { label: 'Lainnya (keluarga)', value: 'other' }
 ]
 
-function initials(name: string) {
+function initials(name?: string) {
+  if (!name || typeof name !== 'string') return 'P'
   return name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()
 }
 
@@ -255,8 +256,8 @@ async function fetchDetailData(patientId: string) {
       $fetch<PatientOdontogramTimeline[]>(apiUrl(`/patients/${patientId}/odontogram-timeline`))
     ])
     detailStats.value = stats
-    detailMedicalRecords.value = records
-    detailOdontogramTimeline.value = timeline
+    detailMedicalRecords.value = Array.isArray(records) ? records : (records as any)?.data ?? []
+    detailOdontogramTimeline.value = Array.isArray(timeline) ? timeline : (timeline as any)?.data ?? []
   } catch (_) {
     detailStats.value = { loyaltyPoints: 250, totalSpent: 1850000, visitsCount: 3, monthlySpending: [] }
   } finally {
@@ -397,33 +398,33 @@ function openEdit(patient: Patient) {
           :data="displayPatients"
           :columns="columns"
           class="cursor-pointer"
-          @select="(_e, row) => selectPatient(row.original)"
+          @select="(e: any) => selectPatient(e?.original || e)"
         >
           <template #photo-cell="{ row }">
             <UAvatar
-              :src="row.original.photoUrl || getPatientAvatar(row.original.fullName)"
-              :text="initials(row.original.fullName)"
+              :src="(row?.original || row)?.photoUrl || getPatientAvatar((row?.original || row)?.fullName)"
+              :text="initials((row?.original || row)?.fullName)"
               size="sm"
               class="bg-primary-100 text-primary-700 font-bold"
             />
           </template>
           <template #fullName-cell="{ row }">
-            <span class="font-bold text-gray-900 dark:text-white">{{ row.original.fullName }}</span>
+            <span class="font-bold text-gray-900 dark:text-white">{{ (row?.original || row)?.fullName || '—' }}</span>
           </template>
           <template #rmNumber-cell="{ row }">
             <UBadge
-              :color="row.original.rmNumber ? 'success' : 'error'"
+              :color="(row?.original || row)?.rmNumber ? 'success' : 'error'"
               variant="subtle"
               size="xs"
             >
-              {{ row.original.rmNumber ?? 'Belum Terhubung' }}
+              {{ (row?.original || row)?.rmNumber ?? 'Belum Terhubung' }}
             </UBadge>
           </template>
           <template #relation-cell="{ row }">
-            {{ relationLabel[row.original.relation] ?? row.original.relation }}
+            {{ relationLabel[(row?.original || row)?.relation] ?? (row?.original || row)?.relation ?? 'Akun Sendiri' }}
           </template>
           <template #createdAt-cell="{ row }">
-            {{ formatDateShort(row.original.createdAt) }}
+            {{ formatDateShort((row?.original || row)?.createdAt) }}
           </template>
         </UTable>
 
@@ -527,7 +528,7 @@ function openEdit(patient: Patient) {
               <div>
                 <span class="text-gray-400 block text-[9px]">Email</span>
                 <span class="font-medium text-gray-800 dark:text-gray-200 truncate block">
-                  {{ detailPatient.email || `${detailPatient.fullName.toLowerCase().replace(/\s+/g, '.')}@example.com` }}
+                  {{ detailPatient.email || `${(detailPatient.fullName || 'pasien').toLowerCase().replace(/\s+/g, '.')}@example.com` }}
                 </span>
               </div>
               <div>
