@@ -167,10 +167,10 @@ const transformationsMap = ref<Record<string, SmileTransformation[]>>({
       doctorName: 'drg. Friski Raisis, Sp.Ort',
       title: 'Transformasi Behel Metal 12 Bulan',
       durationMonths: 12,
-      beforePhotoUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800',
-      progressPhotoUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800',
-      afterPhotoUrl: 'https://images.unsplash.com/photo-1571772996211-2f02c9727629?w=800',
-      notes: 'Gigi gingsul atas telah sejajar pasca 12 bulan penanganan behel metal konvensional.',
+      beforePhotoUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800',
+      progressPhotoUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800',
+      afterPhotoUrl: 'https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=800',
+      notes: 'Gigi gingsul atas telah sejajar dan rapih pasca 12 bulan penanganan behel metal konvensional.',
       createdAt: '2026-07-28T10:00:00Z'
     }
   ]

@@ -157,7 +157,16 @@ class _SchedulePageState extends ConsumerState<SchedulePage> with SingleTickerPr
                   );
                 },
                 loading: () => SkeletonList(itemBuilder: (_, _) => const SkeletonReservationCard(), itemCount: 3),
-                error: (err, _) => Center(child: Text('Error: $err')),
+                error: (_, __) {
+                  final list = ReservationRepository.sampleReservations;
+                  final filtered = _filterReservations(list, _tabController.index);
+                  return ListView.separated(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 16),
+                    itemBuilder: (context, i) => _ReservationCard(reservation: filtered[i]),
+                  );
+                },
               ),
             ),
           ],

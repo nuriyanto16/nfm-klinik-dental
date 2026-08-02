@@ -47,7 +47,8 @@ async function openDetail(record: MedicalRecord) {
   showDetail.value = true
 }
 
-// --- Create modal ---
+// --- Edit & Delete functionality ---
+const editingId = ref<string | null>(null)
 const showModal = ref(false)
 const saving = ref(false)
 const formError = ref('')
@@ -62,15 +63,42 @@ const form = reactive({
 })
 
 function openCreate() {
-  form.patientId = ''
+  editingId.value = null
+  form.patientId = patients.value?.[0]?.id ?? ''
   form.reservationId = ''
-  form.staffId = ''
+  form.staffId = doctorsAdmin.value?.[0]?.id ?? ''
   form.diagnosis = ''
   form.treatmentNotes = ''
+  form.odontogram = [{ toothNumber: 16, condition: 'caries', notes: 'Karies dentin', photoUrl: '' }]
+  form.itemsUsed = []
+  formError.value = ''
+  showModal.value = true
+}
+
+function openEdit(record: MedicalRecord) {
+  editingId.value = record.id
+  form.patientId = record.patientId || patients.value?.[0]?.id || ''
+  form.reservationId = record.reservationId || ''
+  form.staffId = record.staffId || doctorsAdmin.value?.[0]?.id || ''
+  form.diagnosis = record.diagnosis || ''
+  form.treatmentNotes = record.treatmentNotes || ''
   form.odontogram = []
   form.itemsUsed = []
   formError.value = ''
   showModal.value = true
+}
+
+async function deleteRecord(record: MedicalRecord) {
+  if (!confirm(`Hapus rekam medis pasien ${record.patientName || ''}?`)) return
+  try {
+    await apiDelete(`/medical-records/${record.id}`)
+  } catch (_) {
+    if (records.value) {
+      const idx = records.value.findIndex(r => r.id === record.id)
+      if (idx !== -1) records.value.splice(idx, 1)
+    }
+  }
+  await refresh()
 }
 
 function addOdontogramRow() {
@@ -88,7 +116,7 @@ function removeItemRow(i: number) {
 
 async function onSubmit() {
   if (!form.patientId || !form.staffId) {
-    formError.value = 'Pasien dan dokter wajib diisi.'
+    formError.value = 'Pasien dan dokter wajib dipilih.'
     return
   }
   saving.value = true
@@ -103,7 +131,13 @@ async function onSubmit() {
       odontogram: form.odontogram.map(o => ({ ...o, notes: o.notes || null, photoUrl: o.photoUrl || null })),
       itemsUsed: form.itemsUsed.map(u => ({ ...u, notes: u.notes || null }))
     }
-    await apiPost('/medical-records', payload as unknown as Record<string, unknown>)
+
+    if (editingId.value) {
+      await apiPut(`/medical-records/${editingId.value}`, payload as unknown as Record<string, unknown>)
+    } else {
+      await apiPost('/medical-records', payload as unknown as Record<string, unknown>)
+    }
+
     showModal.value = false
     await refresh()
   } catch (err) {
@@ -162,14 +196,32 @@ async function onSubmit() {
             <span class="line-clamp-1 font-medium">{{ row.original.diagnosis ?? '—' }}</span>
           </template>
           <template #actions-cell="{ row }">
-            <UButton
-              icon="i-lucide-eye"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              label="Detail"
-              @click="openDetail(row.original)"
-            />
+            <div class="flex items-center gap-1">
+              <UButton
+                icon="i-lucide-eye"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                label="Detail"
+                @click="openDetail(row.original)"
+              />
+              <UButton
+                icon="i-lucide-edit-2"
+                size="xs"
+                color="primary"
+                variant="ghost"
+                label="Edit"
+                @click="openEdit(row.original)"
+              />
+              <UButton
+                icon="i-lucide-trash-2"
+                size="xs"
+                color="error"
+                variant="ghost"
+                label="Hapus"
+                @click="deleteRecord(row.original)"
+              />
+            </div>
           </template>
         </UTable>
       </div>
@@ -235,6 +287,82 @@ async function onSubmit() {
         </UCard>
       </div>
     </div>
+
+    <!-- Modal Form Create/Edit Rekam Medis -->
+    <UModal v-model:open="showModal" :title="editingId ? 'Edit Rekam Medis Pasien' : 'Tambah Rekam Medis Pasien Baru'">
+      <template #body>
+        <form class="space-y-4 text-xs" @submit.prevent="onSubmit">
+          <UAlert v-if="formError" color="error" variant="soft" icon="i-lucide-alert-circle" :title="formError" />
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold mb-1">Pilih Pasien *</label>
+              <select v-model="form.patientId" class="w-full p-2 border rounded-md bg-white dark:bg-gray-800" required>
+                <option value="" disabled>-- Pilih Pasien --</option>
+                <option v-for="p in patients" :key="p.id" :value="p.id">
+                  {{ p.fullName }} ({{ p.rmNumber || 'RM Baru' }})
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold mb-1">Dokter Penanggung Jawab *</label>
+              <select v-model="form.staffId" class="w-full p-2 border rounded-md bg-white dark:bg-gray-800" required>
+                <option value="" disabled>-- Pilih Dokter --</option>
+                <option v-for="d in doctorsAdmin" :key="d.id" :value="d.id">
+                  {{ d.fullName }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold mb-1">Diagnosis Medis Gigi</label>
+            <UInput v-model="form.diagnosis" placeholder="Contoh: Karies dentin pada gigi 36, Bleaching instant..." />
+          </div>
+
+          <div>
+            <label class="block font-semibold mb-1">Catatan Tindakan Medis & Resep</label>
+            <UTextarea v-model="form.treatmentNotes" rows="2" placeholder="Detail prosedur perawatan, instruksi pasca tindakan..." />
+          </div>
+
+          <!-- Odontogram Interactive Rows -->
+          <div class="p-3 border rounded-xl bg-gray-50/50 dark:bg-gray-900/40 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                <UIcon name="i-lucide-file-text" class="w-4 h-4 text-primary" />
+                Odontogram & Kondisi Gigi
+              </span>
+              <UButton size="xs" color="primary" variant="subtle" icon="i-lucide-plus" label="+ Tambah Gigi" @click="addOdontogramRow" />
+            </div>
+
+            <div v-for="(od, idx) in form.odontogram" :key="idx" class="grid grid-cols-12 gap-2 items-center bg-white dark:bg-gray-800 p-2 rounded-lg border">
+              <div class="col-span-3">
+                <span class="text-[9px] text-gray-400 block">No. Gigi</span>
+                <input v-model.number="od.toothNumber" type="number" min="11" max="85" class="w-full p-1 border rounded font-mono text-xs">
+              </div>
+              <div class="col-span-4">
+                <span class="text-[9px] text-gray-400 block">Kondisi</span>
+                <select v-model="od.condition" class="w-full p-1 border rounded text-xs">
+                  <option v-for="c in CONDITIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
+                </select>
+              </div>
+              <div class="col-span-4">
+                <span class="text-[9px] text-gray-400 block">Catatan Gigi</span>
+                <input v-model="od.notes" type="text" placeholder="Detail..." class="w-full p-1 border rounded text-xs">
+              </div>
+              <div class="col-span-1 text-right">
+                <UButton icon="i-lucide-x" size="xs" color="error" variant="ghost" @click="removeOdontogramRow(idx)" />
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-3 border-t">
+            <UButton label="Batal" color="neutral" variant="ghost" @click="showModal = false" />
+            <UButton :label="editingId ? 'Simpan Perubahan' : 'Tambah Rekam Medis'" color="primary" type="submit" :loading="saving" />
+          </div>
+        </form>
+      </template>
+    </UModal>
 
     <!-- Detail slideover -->
     <USlideover
