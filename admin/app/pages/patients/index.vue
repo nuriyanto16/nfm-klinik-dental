@@ -107,7 +107,7 @@ const detailPatient = computed<Patient>(() => {
   return list[0] ?? initialPatients[0]
 })
 
-const patientName = computed(() => detailPatient.value?.fullName ?? '')
+const patientName = computed(() => detailPatient.value?.fullName || '')
 
 const detailReservations = computed(() => (reservations.value ?? []).filter(r => r.patientId === detailPatient.value?.id))
 const detailPayments = computed(() => (payments.value ?? []).filter(p => p.patientId === detailPatient.value?.id))
@@ -115,23 +115,26 @@ const detailTotalPaid = computed(() => detailPayments.value.filter(p => p.status
 
 const detailTotalSpent = computed(() => {
   if (detailTotalPaid.value > 0) return detailTotalPaid.value
-  if (patientName.value.includes('Budi')) return 9600000
-  if (patientName.value.includes('Siti')) return 4500000
-  if (patientName.value.includes('Ahmad')) return 1850000
+  const name = patientName.value || ''
+  if (name.includes('Budi')) return 9600000
+  if (name.includes('Siti')) return 4500000
+  if (name.includes('Ahmad')) return 1850000
   return 2450000
 })
 
 const detailVisitsCount = computed(() => {
   if (detailReservations.value.length > 0) return detailReservations.value.length
-  if (patientName.value.includes('Budi')) return 10
-  if (patientName.value.includes('Siti')) return 5
+  const name = patientName.value || ''
+  if (name.includes('Budi')) return 10
+  if (name.includes('Siti')) return 5
   return 3
 })
 
 const detailLoyaltyPoints = computed(() => {
   if (detailStats.value?.loyaltyPoints) return detailStats.value.loyaltyPoints
-  if (patientName.value.includes('Budi')) return 145
-  if (patientName.value.includes('Siti')) return 80
+  const name = patientName.value || ''
+  if (name.includes('Budi')) return 145
+  if (name.includes('Siti')) return 80
   return 45
 })
 
@@ -228,7 +231,7 @@ const spendingOption = computed<EChartsOption>(() => {
   const months = ['03', '04', '05', '06', '07', '08']
   const amounts = (detailStats.value?.monthlySpending && detailStats.value.monthlySpending.length > 0)
     ? detailStats.value.monthlySpending.map(m => m.amount)
-    : (patientName.value.includes('Budi')
+    : ((patientName.value || '').includes('Budi')
         ? [0, 0, 0, 0, 9600000, 0]
         : [150000, 350000, 450000, 1850000, 2500000, 0])
 
