@@ -132,100 +132,109 @@ async function onSubmit() {
       />
     </div>
 
-    <!-- Panel Pasien Rekomendasi Kontrol Terdekat -->
-    <UCard class="bg-white dark:bg-gray-800 border-l-4 border-l-amber-500 shadow-xs">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <UIcon name="i-lucide-stethoscope" class="w-5 h-5 text-amber-500" />
-            <div>
-              <h2 class="font-bold text-sm text-gray-900 dark:text-white">
-                Rekomendasi Kontrol Pasien Dari Rekam Medis (Terdekat)
-              </h2>
-              <p class="text-xs text-gray-500">
-                Pasien yang memerlukan jadwal kontrol lanjutan (Kontrol Behel, Pasca Operasi/Cabut Gigi, atau Scaling 6 Bulan).
-              </p>
-            </div>
-          </div>
-          <UBadge color="amber" variant="subtle" size="xs">
-            {{ followUpList.length }} Pasien Perlu Kontrol
-          </UBadge>
-        </div>
-      </template>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div
-          v-for="fu in followUpList"
-          :key="fu.id"
-          class="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 space-y-2"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-xs text-gray-900 dark:text-white">{{ fu.patientName }}</span>
-              <UBadge color="gray" variant="outline" size="xs">{{ fu.rmNumber }}</UBadge>
-            </div>
-            <UBadge :color="fu.daysRemaining <= 1 ? 'red' : 'amber'" variant="soft" size="xs">
-              {{ fu.daysRemaining === 1 ? 'Besok Kontrol' : `${fu.daysRemaining} Hari Lagi` }}
-            </UBadge>
-          </div>
-
-          <div class="text-xs text-gray-600 dark:text-gray-300 space-y-0.5">
-            <div><span class="text-gray-400">Rekomendasi:</span> <b>{{ fu.controlReason }}</b></div>
-            <div><span class="text-gray-400">Tindakan Medis Sebelumnya:</span> {{ fu.treatmentName }}</div>
-            <div><span class="text-gray-400">Target Kontrol:</span> <span class="font-semibold text-primary">{{ fu.recommendedControlDate }}</span> ({{ fu.doctorName }})</div>
-          </div>
-
-          <div class="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-            <span class="text-[11px] font-mono text-gray-400">{{ fu.phoneWa }}</span>
-            <a
-              :href="getWhatsAppLink(fu)"
-              target="_blank"
-              class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
-              @click="markAsReminded(fu.id)"
-            >
-              <UIcon name="i-lucide-send" class="w-3.5 h-3.5" />
-              <span>{{ fu.status === 'REMINDED' ? 'Kirim Ulang WA' : 'Kirim Reminder WA' }}</span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </UCard>
-
-    <UAlert
-      v-if="error"
-      color="error"
-      variant="subtle"
-      icon="i-lucide-alert-triangle"
-      title="Gagal memuat data"
-      :description="`core-api belum bisa dihubungi: ${error.message}`"
-    />
-
-    <SkeletonTableSkeleton
-      v-if="status === 'pending'"
-      :columns="5"
-    />
-    <UTable
-      v-else
-      :data="records ?? []"
-      :columns="columns"
-    >
-      <template #createdAt-cell="{ row }">
-        {{ formatDateTime(row.original.createdAt) }}
-      </template>
-      <template #diagnosis-cell="{ row }">
-        <span class="line-clamp-1">{{ row.original.diagnosis ?? '—' }}</span>
-      </template>
-      <template #actions-cell="{ row }">
-        <UButton
-          icon="i-lucide-eye"
-          size="xs"
-          color="neutral"
-          variant="ghost"
-          label="Detail"
-          @click="openDetail(row.original)"
+    <!-- 2-Column Layout Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- Left Column: Medical Records Table -->
+      <div class="lg:col-span-7 xl:col-span-8 space-y-4">
+        <UAlert
+          v-if="error"
+          color="error"
+          variant="subtle"
+          icon="i-lucide-alert-triangle"
+          title="Gagal memuat data"
+          :description="`core-api belum bisa dihubungi: ${error.message}`"
         />
-      </template>
-    </UTable>
+
+        <SkeletonTableSkeleton
+          v-if="status === 'pending'"
+          :columns="5"
+        />
+        <UTable
+          v-else
+          :data="records ?? []"
+          :columns="columns"
+          class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs"
+        >
+          <template #createdAt-cell="{ row }">
+            {{ formatDateTime(row.original.createdAt) }}
+          </template>
+          <template #diagnosis-cell="{ row }">
+            <span class="line-clamp-1 font-medium">{{ row.original.diagnosis ?? '—' }}</span>
+          </template>
+          <template #actions-cell="{ row }">
+            <UButton
+              icon="i-lucide-eye"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              label="Detail"
+              @click="openDetail(row.original)"
+            />
+          </template>
+        </UTable>
+      </div>
+
+      <!-- Right Column: Panel Pasien Rekomendasi Kontrol Terdekat -->
+      <div class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-4">
+        <UCard class="bg-white dark:bg-gray-800 border-l-4 border-l-amber-500 shadow-xs">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-lucide-stethoscope" class="w-5 h-5 text-amber-500" />
+                <div>
+                  <h2 class="font-bold text-sm text-gray-900 dark:text-white">
+                    Rekomendasi Kontrol Pasien Dari Rekam Medis (Terdekat)
+                  </h2>
+                  <p class="text-[11px] text-gray-500">
+                    Pasien yang memerlukan jadwal kontrol lanjutan (Kontrol Behel, Pasca Operasi/Cabut Gigi, atau Scaling 6 Bulan).
+                  </p>
+                </div>
+              </div>
+              <UBadge color="amber" variant="subtle" size="xs">
+                {{ followUpList.length }} Pasien
+              </UBadge>
+            </div>
+          </template>
+
+          <div class="space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
+            <div
+              v-for="fu in followUpList"
+              :key="fu.id"
+              class="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 space-y-2"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-xs text-gray-900 dark:text-white">{{ fu.patientName }}</span>
+                  <UBadge color="neutral" variant="outline" size="xs">{{ fu.rmNumber }}</UBadge>
+                </div>
+                <UBadge :color="fu.daysRemaining <= 1 ? 'error' : 'warning'" variant="soft" size="xs">
+                  {{ fu.daysRemaining === 1 ? 'Besok Kontrol' : `${fu.daysRemaining} Hari Lagi` }}
+                </UBadge>
+              </div>
+
+              <div class="text-xs text-gray-600 dark:text-gray-300 space-y-0.5">
+                <div><span class="text-gray-400">Rekomendasi:</span> <b>{{ fu.controlReason }}</b></div>
+                <div><span class="text-gray-400">Tindakan Medis Sebelumnya:</span> {{ fu.treatmentName }}</div>
+                <div><span class="text-gray-400">Target Kontrol:</span> <span class="font-semibold text-primary">{{ fu.recommendedControlDate }}</span> ({{ fu.doctorName }})</div>
+              </div>
+
+              <div class="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                <span class="text-[11px] font-mono text-gray-400">{{ fu.phoneWa }}</span>
+                <a
+                  :href="getWhatsAppLink(fu)"
+                  target="_blank"
+                  class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                  @click="markAsReminded(fu.id)"
+                >
+                  <UIcon name="i-lucide-send" class="w-3.5 h-3.5" />
+                  <span>{{ fu.status === 'REMINDED' ? 'Kirim Ulang WA' : 'Kirim Reminder WA' }}</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </UCard>
+      </div>
+    </div>
 
     <!-- Detail slideover -->
     <USlideover

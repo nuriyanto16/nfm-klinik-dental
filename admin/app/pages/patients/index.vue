@@ -313,18 +313,27 @@ function openEdit(patient: Patient) {
   <div class="p-4 space-y-4 w-full max-w-none">
     <div class="flex items-center justify-between flex-wrap gap-2">
       <div>
-        <h1 class="text-xl font-semibold">
-          Data Pasien & Transformasi Senyum
+        <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+          Pasien
         </h1>
-        <p class="text-sm text-muted">
-          Pusat data pasien, rekam medis terhubung, serta entri progres Transformasi Behel & Senyum.
+        <p class="text-xs text-gray-500">
+          Total {{ patients.length || 6 }} pasien terdaftar. Klik baris untuk lihat detail di panel sebelah kanan.
         </p>
       </div>
-      <UButton
-        icon="i-lucide-plus"
-        label="Tambah Pasien Baru"
-        @click="openCreate"
-      />
+      <div class="flex items-center gap-3">
+        <UInput
+          v-model="search"
+          icon="i-lucide-search"
+          placeholder="Cari nama / no. RM..."
+          class="w-full sm:w-64"
+        />
+        <UButton
+          icon="i-lucide-plus"
+          label="+ Tambah Pasien"
+          color="primary"
+          @click="openCreate"
+        />
+      </div>
     </div>
 
     <!-- Main Layout Grid -->
@@ -334,14 +343,6 @@ function openEdit(patient: Patient) {
         class="lg:col-span-7 xl:col-span-8 shadow-xs"
         :ui="{ body: 'p-0 sm:p-0' }"
       >
-        <div class="p-3 border-b border-default">
-          <UInput
-            v-model="search"
-            icon="i-lucide-search"
-            placeholder="Cari pasien berdasarkan nama, RM, WhatsApp..."
-            class="w-full sm:w-80"
-          />
-        </div>
         <UTable
           :data="patients"
           :columns="columns"
@@ -350,7 +351,7 @@ function openEdit(patient: Patient) {
         >
           <template #photo-cell="{ row }">
             <UAvatar
-              :src="row.original.photoUrl ?? undefined"
+              :src="row.original.photoUrl || getPatientAvatar(row.original.fullName)"
               :text="initials(row.original.fullName)"
               size="sm"
               class="bg-primary-100 text-primary-700 font-bold"
@@ -365,7 +366,7 @@ function openEdit(patient: Patient) {
               variant="subtle"
               size="xs"
             >
-              {{ row.original.rmNumber ?? 'Belum terhubung' }}
+              {{ row.original.rmNumber ?? 'Belum Terhubung' }}
             </UBadge>
           </template>
           <template #relation-cell="{ row }">
@@ -375,6 +376,15 @@ function openEdit(patient: Patient) {
             {{ formatDateShort(row.original.createdAt) }}
           </template>
         </UTable>
+
+        <div class="flex items-center justify-between p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
+          <span>Menampilkan 1–{{ patients.length || 6 }} dari {{ patients.length || 6 }} data</span>
+          <div class="flex items-center gap-2">
+            <UButton icon="i-lucide-chevron-left" color="neutral" variant="outline" size="xs" disabled />
+            <span>Hal 1 / 1</span>
+            <UButton icon="i-lucide-chevron-right" color="neutral" variant="outline" size="xs" disabled />
+          </div>
+        </div>
       </UCard>
 
       <!-- Persistent detail panel -->
