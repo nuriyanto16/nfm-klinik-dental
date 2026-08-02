@@ -190,7 +190,7 @@ const methodLabel: Record<string, string> = {
           icon="i-lucide-printer"
           color="primary"
           label="Cetak Invoice PDF"
-          :to="`/product/klinik/billing/${paymentId}/invoice`"
+          :to="`/billing/${paymentId}/invoice`"
           target="_blank"
         />
       </div>
@@ -306,7 +306,7 @@ const methodLabel: Record<string, string> = {
             icon="i-lucide-printer"
             color="primary"
             label="Buka Invoice & Cetak PDF"
-            :to="`/product/klinik/billing/${paymentId}/invoice`"
+            :to="`/billing/${paymentId}/invoice`"
             target="_blank"
           />
         </div>

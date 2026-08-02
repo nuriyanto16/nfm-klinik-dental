@@ -564,7 +564,7 @@ function openEdit(patient: Patient) {
               <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider block">
                 REKAM MEDIS ({{ patientMedicalRecords.length }})
               </span>
-              <NuxtLink :to="`/product/klinik/medical-records?patientId=${detailPatient.id}`" class="text-[10px] text-primary font-semibold hover:underline">
+              <NuxtLink :to="`/medical-records?patientId=${detailPatient.id}`" class="text-[10px] text-primary font-semibold hover:underline">
                 Lihat Rekam Medis →
               </NuxtLink>
             </div>

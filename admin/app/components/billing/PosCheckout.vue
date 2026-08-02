@@ -217,7 +217,7 @@ async function processPayment() {
           icon="i-lucide-printer"
           label="Cetak Struk / Invoice"
           size="lg"
-          :to="`/product/klinik/billing/${completedPayment.id}/invoice`"
+          :to="`/billing/${completedPayment.id}/invoice`"
           target="_blank"
         />
         <UButton
