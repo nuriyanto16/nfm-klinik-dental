@@ -422,7 +422,7 @@ async function processPayment() {
               <UFormField label="Voucher / Promo">
                 <USelect
                   v-model="promoId"
-                  :items="[{ label: 'Tanpa Promo', value: '' }, ...activePromos.map(p => ({ label: p.title, value: p.id }))]"
+                  :items="[{ label: 'Tanpa Promo', value: 'none' }, ...activePromos.map(p => ({ label: p.title, value: p.id }))]"
                   class="w-full"
                   size="xs"
                 />

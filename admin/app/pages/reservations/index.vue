@@ -7,12 +7,12 @@ const viewMode = ref<'list' | 'calendar'>('list')
 const page = ref(1)
 const pageSize = 10
 
-const filters = reactive({ branchId: '', status: '', from: '', to: '' })
+const filters = reactive({ branchId: 'all', status: 'all', from: '', to: '' })
 
 function buildQuery() {
   const params = new URLSearchParams()
-  if (filters.branchId) params.set('branchId', filters.branchId)
-  if (filters.status) params.set('status', filters.status)
+  if (filters.branchId && filters.branchId !== 'all') params.set('branchId', filters.branchId)
+  if (filters.status && filters.status !== 'all') params.set('status', filters.status)
   if (filters.from) params.set('from', filters.from)
   if (filters.to) params.set('to', filters.to)
   params.set('page', String(page.value))
@@ -43,8 +43,8 @@ watch(() => reservationsPage.value?.data, (val) => {
 
 const filteredReservations = computed(() => {
   return localReservations.value.filter(r => {
-    if (filters.branchId && r.branchId !== filters.branchId) return false
-    if (filters.status && r.status !== filters.status) return false
+    if (filters.branchId && filters.branchId !== 'all' && r.branchId !== filters.branchId) return false
+    if (filters.status && filters.status !== 'all' && r.status !== filters.status) return false
     return true
   })
 })
@@ -68,8 +68,8 @@ const completedReservationsCount = computed(() => localReservations.value.filter
 const { data: calendarReservations, status: calendarStatus } = useApiFetch<Reservation[]>('/reservations', 'reservations-calendar')
 async function applyCalendarFilters() {
   const params = new URLSearchParams()
-  if (filters.branchId) params.set('branchId', filters.branchId)
-  if (filters.status) params.set('status', filters.status)
+  if (filters.branchId && filters.branchId !== 'all') params.set('branchId', filters.branchId)
+  if (filters.status && filters.status !== 'all') params.set('status', filters.status)
   const qs = params.toString()
   try {
     calendarReservations.value = await $fetch<Reservation[]>(apiUrl(qs ? `/reservations?${qs}` : '/reservations'))
@@ -120,7 +120,7 @@ const columns = [
 ]
 
 const STATUS_OPTIONS = [
-  { label: 'Semua Status', value: '' },
+  { label: 'Semua Status', value: 'all' },
   { label: 'Menunggu Konfirmasi', value: 'pending' },
   { label: 'Terkonfirmasi', value: 'confirmed' },
   { label: 'Pasien Check-In (Klinik)', value: 'checked_in' },
@@ -130,7 +130,7 @@ const STATUS_OPTIONS = [
   { label: 'Tidak Hadir (No Show)', value: 'no_show' }
 ]
 
-const STATUS_SELECT_ITEMS = STATUS_OPTIONS.filter(o => o.value !== '')
+const STATUS_SELECT_ITEMS = STATUS_OPTIONS.filter(o => o.value !== 'all')
 
 const STATUS_CONFIG: Record<string, { label: string, color: string, icon: string, nextStatus?: string, nextLabel?: string, nextColor: string }> = {
   pending: { label: 'Menunggu', color: 'amber', icon: 'i-lucide-clock', nextStatus: 'confirmed', nextLabel: 'Konfirmasi', nextColor: 'primary' },
@@ -366,7 +366,7 @@ async function onSubmit() {
       <UFormField label="Cabang">
         <USelect
           v-model="filters.branchId"
-          :items="[{ label: 'Semua Cabang', value: '' }, ...(branches ?? []).map(b => ({ label: b.name, value: b.id }))]"
+          :items="[{ label: 'Semua Cabang', value: 'all' }, ...(branches ?? []).map(b => ({ label: b.name, value: b.id }))]"
           class="w-56"
           @update:model-value="onFilterChange"
         />
