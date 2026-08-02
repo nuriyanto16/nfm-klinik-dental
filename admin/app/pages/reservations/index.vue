@@ -46,13 +46,15 @@ const filteredReservations = computed(() => {
   return list.filter(r => {
     if (filters.branchId && filters.branchId !== 'all') {
       const selectedBranch = (branches.value ?? []).find(b => b.id === filters.branchId)
+      const bName = selectedBranch?.name ?? ''
+      const rName = r.branchName ?? ''
       const matchId = r.branchId === filters.branchId
-      const matchName = selectedBranch && r.branchName && (
-        r.branchName.toLowerCase().includes(selectedBranch.name.toLowerCase()) ||
-        selectedBranch.name.toLowerCase().includes(r.branchName.toLowerCase()) ||
-        (selectedBranch.name.includes('Baleendah') && r.branchName.includes('Baleendah')) ||
-        (selectedBranch.name.includes('Soreang') && r.branchName.includes('Soreang'))
-      )
+      const matchName = Boolean(bName && rName && (
+        rName.toLowerCase().includes(bName.toLowerCase()) ||
+        bName.toLowerCase().includes(rName.toLowerCase()) ||
+        (bName.includes('Baleendah') && rName.includes('Baleendah')) ||
+        (bName.includes('Soreang') && rName.includes('Soreang'))
+      ))
       if (!matchId && !matchName) return false
     }
     if (filters.status && filters.status !== 'all' && r.status !== filters.status) return false
@@ -221,8 +223,13 @@ const doctorsForBranch = computed(() => {
   const all = displayDoctorsList.value
   if (!form.branchId) return all
   const filtered = all.filter(d => {
-    if (!d.branchIds || d.branchIds.length === 0) return true
-    return d.branchIds.includes(form.branchId) || d.branchNames?.some(n => n.includes(form.branchId))
+    if (!d) return false
+    const branchIds = Array.isArray(d.branchIds) ? d.branchIds : []
+    const branchNames = Array.isArray(d.branchNames) ? d.branchNames : []
+    if (branchIds.length === 0 && branchNames.length === 0) return true
+    const matchId = branchIds.includes(form.branchId)
+    const matchName = branchNames.some(n => typeof n === 'string' && Boolean(form.branchId && n.includes(form.branchId)))
+    return matchId || matchName
   })
   return filtered.length > 0 ? filtered : all
 })

@@ -35,7 +35,7 @@ const activeTab = ref('profil')
 const branchDoctors = computed(() => {
   const id = selectedBranch.value?.id
   if (!id) return []
-  return (doctorsAdmin.value ?? []).filter(d => d.branchIds?.includes(id))
+  return (doctorsAdmin.value ?? []).filter(d => Array.isArray(d.branchIds) && d.branchIds.includes(id))
 })
 
 const DAY_LABELS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jum\'at', 'Sabtu']

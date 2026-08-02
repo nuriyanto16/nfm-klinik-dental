@@ -130,7 +130,7 @@ const displayPayrolls = computed(() => {
   return payrolls.value.filter(p => {
     if (!search.value) return true
     const q = search.value.toLowerCase()
-    return p.fullName.toLowerCase().includes(q) || p.nip.toLowerCase().includes(q) || p.roleLabel.toLowerCase().includes(q)
+    return (p.fullName || '').toLowerCase().includes(q) || (p.nip || '').toLowerCase().includes(q) || (p.roleLabel || '').toLowerCase().includes(q)
   })
 })
 
