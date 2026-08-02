@@ -478,15 +478,23 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
     </div>
 
     <!-- Modal Form Create/Edit Rekam Medis -->
-    <UModal v-model:open="showModal" :title="editingId ? 'Edit Rekam Medis Pasien' : 'Tambah Rekam Medis Pasien Baru'">
+    <UModal
+      v-model:open="showModal"
+      :title="editingId ? 'Edit Rekam Medis Pasien' : 'Tambah Rekam Medis Pasien Baru'"
+      :ui="{ width: 'sm:max-w-2xl' }"
+    >
       <template #body>
         <form class="space-y-4 text-xs" @submit.prevent="onSubmit">
           <UAlert v-if="formError" color="error" variant="soft" icon="i-lucide-alert-circle" :title="formError" />
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block font-semibold mb-1">Pilih Pasien *</label>
-              <select v-model="form.patientId" class="w-full p-2 border rounded-md bg-white dark:bg-gray-800" required>
+              <label class="block font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Pilih Pasien *</label>
+              <select
+                v-model="form.patientId"
+                class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-medium focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                required
+              >
                 <option value="" disabled>-- Pilih Pasien --</option>
                 <option v-for="p in patients" :key="p.id" :value="p.id">
                   {{ p.fullName }} ({{ p.rmNumber || 'RM Baru' }})
@@ -494,8 +502,12 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
               </select>
             </div>
             <div>
-              <label class="block font-semibold mb-1">Dokter Penanggung Jawab *</label>
-              <select v-model="form.staffId" class="w-full p-2 border rounded-md bg-white dark:bg-gray-800" required>
+              <label class="block font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Dokter Penanggung Jawab *</label>
+              <select
+                v-model="form.staffId"
+                class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-medium focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                required
+              >
                 <option value="" disabled>-- Pilih Dokter --</option>
                 <option v-for="d in doctorsAdmin" :key="d.id" :value="d.id">
                   {{ d.fullName }}
@@ -505,39 +517,49 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
           </div>
 
           <div>
-            <label class="block font-semibold mb-1">Diagnosis Medis Gigi</label>
-            <UInput v-model="form.diagnosis" placeholder="Contoh: Karies dentin pada gigi 36, Bleaching instant..." />
+            <label class="block font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Diagnosis Medis Gigi</label>
+            <UInput
+              v-model="form.diagnosis"
+              placeholder="Contoh: Karies dentin pada gigi 36, Bleaching instant..."
+              class="w-full"
+              size="md"
+            />
           </div>
 
           <div>
-            <label class="block font-semibold mb-1">Catatan Tindakan Medis & Resep</label>
-            <UTextarea v-model="form.treatmentNotes" rows="2" placeholder="Detail prosedur perawatan, instruksi pasca tindakan..." />
+            <label class="block font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Catatan Tindakan Medis & Resep</label>
+            <UTextarea
+              v-model="form.treatmentNotes"
+              rows="3"
+              placeholder="Detail prosedur perawatan, instruksi pasca tindakan..."
+              class="w-full"
+            />
           </div>
 
           <!-- Odontogram Interactive Rows -->
-          <div class="p-3 border rounded-xl bg-gray-50/50 dark:bg-gray-900/40 space-y-2">
+          <div class="p-3.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/70 dark:bg-gray-900/40 space-y-2.5">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+              <span class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
                 <UIcon name="i-lucide-file-text" class="w-4 h-4 text-primary" />
                 Odontogram & Kondisi Gigi
               </span>
               <UButton size="xs" color="primary" variant="subtle" icon="i-lucide-plus" label="+ Tambah Gigi" @click="addOdontogramRow" />
             </div>
 
-            <div v-for="(od, idx) in form.odontogram" :key="idx" class="grid grid-cols-12 gap-2 items-center bg-white dark:bg-gray-800 p-2 rounded-lg border">
+            <div v-for="(od, idx) in form.odontogram" :key="idx" class="grid grid-cols-12 gap-2 items-center bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xs">
               <div class="col-span-3">
-                <span class="text-[9px] text-gray-400 block">No. Gigi</span>
-                <input v-model.number="od.toothNumber" type="number" min="11" max="85" class="w-full p-1 border rounded font-mono text-xs">
+                <span class="text-[9px] text-gray-400 font-medium block">No. Gigi</span>
+                <input v-model.number="od.toothNumber" type="number" min="11" max="85" class="w-full p-1.5 border rounded-md font-mono text-xs bg-transparent focus:ring-1 focus:ring-primary-500">
               </div>
               <div class="col-span-4">
-                <span class="text-[9px] text-gray-400 block">Kondisi</span>
-                <select v-model="od.condition" class="w-full p-1 border rounded text-xs">
+                <span class="text-[9px] text-gray-400 font-medium block">Kondisi Gigi</span>
+                <select v-model="od.condition" class="w-full p-1.5 border rounded-md text-xs bg-transparent focus:ring-1 focus:ring-primary-500">
                   <option v-for="c in CONDITIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
                 </select>
               </div>
               <div class="col-span-4">
-                <span class="text-[9px] text-gray-400 block">Catatan Gigi</span>
-                <input v-model="od.notes" type="text" placeholder="Detail..." class="w-full p-1 border rounded text-xs">
+                <span class="text-[9px] text-gray-400 font-medium block">Catatan Gigi</span>
+                <input v-model="od.notes" type="text" placeholder="Detail..." class="w-full p-1.5 border rounded-md text-xs bg-transparent focus:ring-1 focus:ring-primary-500">
               </div>
               <div class="col-span-1 text-right">
                 <UButton icon="i-lucide-x" size="xs" color="error" variant="ghost" @click="removeOdontogramRow(idx)" />
@@ -545,7 +567,7 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
             </div>
           </div>
 
-          <div class="flex justify-end gap-2 pt-3 border-t">
+          <div class="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
             <UButton label="Batal" color="neutral" variant="ghost" @click="showModal = false" />
             <UButton :label="editingId ? 'Simpan Perubahan' : 'Tambah Rekam Medis'" color="primary" type="submit" :loading="saving" />
           </div>
