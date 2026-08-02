@@ -138,6 +138,15 @@ async function onSubmit() {
       await apiPost('/medical-records', payload as unknown as Record<string, unknown>)
     }
 
+    showModal.value = false
+    await refresh()
+  } catch (err) {
+    formError.value = apiErrorMessage(err)
+  } finally {
+    saving.value = false
+  }
+}
+
 // --- Search, Filter & Pagination ---
 const search = ref('')
 const filterDoctor = ref('all')
