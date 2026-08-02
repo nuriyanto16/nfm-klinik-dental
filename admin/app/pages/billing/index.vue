@@ -30,6 +30,12 @@ const displayPayments = computed(() => {
   return initialPayments
 })
 
+const totalPages = computed(() => Math.ceil(displayPayments.value.length / pageSize) || 1)
+const paginatedPayments = computed(() => {
+  const start = (page.value - 1) * pageSize
+  return displayPayments.value.slice(start, start + pageSize)
+})
+
 const methodLabelMap: Record<string, string> = {
   bank_transfer_bca: 'Transfer BCA',
   bank_transfer_bni: 'Transfer BNI',
@@ -367,7 +373,7 @@ async function onSubmit() {
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr
-                v-for="item in displayPayments"
+                v-for="item in paginatedPayments"
                 :key="item.id"
                 class="hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors"
               >
@@ -424,6 +430,30 @@ async function onSubmit() {
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Pagination Footer Bar -->
+        <div class="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
+          <span>Menampilkan {{ paginatedPayments.length }} dari {{ displayPayments.length }} transaksi billing</span>
+          <div class="flex items-center gap-2">
+            <UButton
+              icon="i-lucide-chevron-left"
+              size="xs"
+              color="neutral"
+              variant="outline"
+              :disabled="page <= 1"
+              @click="page--"
+            />
+            <span class="font-semibold text-gray-900 dark:text-white">Hal {{ page }} / {{ totalPages }}</span>
+            <UButton
+              icon="i-lucide-chevron-right"
+              size="xs"
+              color="neutral"
+              variant="outline"
+              :disabled="page >= totalPages"
+              @click="page++"
+            />
+          </div>
         </div>
       </UCard>
 
