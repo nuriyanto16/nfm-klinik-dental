@@ -587,12 +587,29 @@ function openEdit(patient: Patient) {
             </div>
           </div>
 
-          <!-- Modul Entri Transformasi Behel & Senyum -->
+          <!-- Promo Aktif -->
+          <div class="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3 text-xs">
+            <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider block">
+              PROMO AKTIF
+            </span>
+            <div class="space-y-1 text-xs">
+              <div class="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-gray-800 dark:text-gray-200 font-medium flex items-center justify-between">
+                <span>Diskon Behel Metal 10%</span>
+                <UBadge color="primary" variant="soft" size="xs">Klaim</UBadge>
+              </div>
+              <div class="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-gray-800 dark:text-gray-200 font-medium flex items-center justify-between">
+                <span>Promo Scaling 6-in-1</span>
+                <UBadge color="primary" variant="soft" size="xs">Klaim</UBadge>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modul Entri Transformasi Gambar Gigi (Selfie Tidak Rapih -> Rapih) -->
           <div class="rounded-xl border border-default p-3 bg-gradient-to-br from-primary-50/40 to-card dark:from-primary-950/20 space-y-3 border-t border-gray-100 dark:border-gray-800 mt-2">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
                 <UIcon name="i-lucide-sparkles" class="w-4 h-4 text-primary" />
-                Transformasi Behel & Senyum
+                Transformasi Gambar Gigi (Awal -> Rapih)
               </span>
               <UButton
                 size="xs"
@@ -617,11 +634,11 @@ function openEdit(patient: Patient) {
                 </div>
                 <p class="text-[11px] text-gray-500">Dokter: {{ t.doctorName }}</p>
 
-                <!-- Grid 3 Foto: Sebelum, Proses, Sesudah -->
+                <!-- Grid 3 Foto: Sebelum (Tidak Rapih), Proses, Sesudah (Rapih) -->
                 <div class="grid grid-cols-3 gap-1.5 pt-1">
                   <div class="text-center space-y-1">
-                    <img :src="t.beforePhotoUrl" class="w-full h-16 object-cover rounded border border-gray-200">
-                    <span class="text-[9px] font-semibold text-gray-600 block">Awal (Sebelum)</span>
+                    <img :src="t.beforePhotoUrl" class="w-full h-16 object-cover rounded border border-red-300">
+                    <span class="text-[9px] font-semibold text-red-600 block">Awal (Tidak Rapih)</span>
                   </div>
                   <div class="text-center space-y-1">
                     <img :src="t.progressPhotoUrl" class="w-full h-16 object-cover rounded border border-amber-300">
@@ -629,7 +646,7 @@ function openEdit(patient: Patient) {
                   </div>
                   <div class="text-center space-y-1">
                     <img :src="t.afterPhotoUrl" class="w-full h-16 object-cover rounded border border-emerald-400">
-                    <span class="text-[9px] font-semibold text-emerald-600 block">Hasil (Akhir)</span>
+                    <span class="text-[9px] font-semibold text-emerald-600 block">Hasil (Gigi Rapih)</span>
                   </div>
                 </div>
                 <p class="text-[10px] italic text-gray-600 bg-gray-50 dark:bg-gray-900 p-1.5 rounded">{{ t.notes }}</p>
@@ -639,8 +656,8 @@ function openEdit(patient: Patient) {
             <!-- Default Empty Transformation State -->
             <div v-else class="text-center py-4 text-xs text-gray-500 bg-white/60 dark:bg-gray-900/40 rounded-lg">
               <UIcon name="i-lucide-smile" class="w-6 h-6 mx-auto text-primary mb-1" />
-              <p class="font-semibold text-gray-800 dark:text-gray-200">Belum ada entri transformasi gigi</p>
-              <p class="text-[10px] text-gray-400">Klik tombol "+ Entri Baru" di atas untuk menambahkan foto sebelum & sesudah perawatan behel/senyum.</p>
+              <p class="font-semibold text-gray-800 dark:text-gray-200">Belum ada foto selfie transformasi gigi</p>
+              <p class="text-[10px] text-gray-400">Klik "+ Entri Baru" untuk upload foto selfie gigi awal (tidak rapih) hingga hasil akhir (rapih).</p>
             </div>
           </div>
         </template>
