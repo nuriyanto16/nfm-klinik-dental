@@ -57,96 +57,11 @@ const patients = computed(() => {
 })
 watch(search, () => { page.value = 1 })
 
-// SSR-safe: never use a hardcoded index-based ID during SSR
-// We set this only on client (onMounted) to prevent hydration mismatches
-const selectedPatientId = ref<string | null>(null)
-
-const { data: reservations } = useApiFetch<any>('/reservations')
-const { data: payments } = useApiFetch<any>('/payments')
-
-const columns = [
-  { id: 'photo', header: '' },
-  { accessorKey: 'fullName', header: 'Nama Pasien' },
-  { accessorKey: 'rmNumber', header: 'No. RM' },
-  { accessorKey: 'relation', header: 'Relasi' },
-  { accessorKey: 'createdAt', header: 'Terdaftar' }
-]
-
-const relationLabel: Record<string, string> = {
-  self: 'Akun Sendiri',
-  child: 'Anak',
-  spouse: 'Pasangan',
-  parent: 'Orang Tua',
-  other: 'Lainnya'
-}
-const RELATIONS = [
-  { label: 'Akun Sendiri', value: 'self' },
-  { label: 'Anak', value: 'child' },
-  { label: 'Pasangan', value: 'spouse' },
-  { label: 'Orang Tua', value: 'parent' },
-  { label: 'Lainnya', value: 'other' }
-]
-
-function initials(name?: string) {
-  if (!name || typeof name !== 'string') return 'P'
-  return name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()
-}
-
-const patientAvatars: Record<string, string> = {
-  'Budi Santoso': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-  'Siti Aminah': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-  'Kayla Aminah': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-  'Ahmad Fauzi': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-  'Dewi Lestari': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-  'Rina Marlina': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80'
-}
-
-function getPatientAvatar(name?: string) {
-  if (!name) return ''
-  return patientAvatars[name] ?? ''
-}
-
-const initialPatients: Patient[] = [
-  { id: '31000000-0000-0000-0000-000000000001', fullName: 'Budi Santoso', phoneWa: '081234567890', email: 'budi.santoso@example.com', gender: 'male', dateOfBirth: '1990-05-15', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0001', relation: 'self', createdAt: '2026-07-01T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000002', fullName: 'Siti Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '1995-08-20', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0002', relation: 'self', createdAt: '2026-07-02T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000003', fullName: 'Kayla Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '2018-03-10', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0003', relation: 'child', createdAt: '2026-07-03T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000004', fullName: 'Ahmad Fauzi', phoneWa: '081311223344', email: 'ahmad.fauzi@example.com', gender: 'male', dateOfBirth: '1988-12-01', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0004', relation: 'self', createdAt: '2026-07-04T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000005', fullName: 'Dewi Lestari', phoneWa: '081355667788', email: 'dewi.lestari@example.com', gender: 'female', dateOfBirth: '1993-11-11', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0005', relation: 'self', createdAt: '2026-07-05T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000006', fullName: 'Rina Marlina', phoneWa: '081244556677', email: 'rina.marlina@example.com', gender: 'female', dateOfBirth: '1992-04-14', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0006', relation: 'self', createdAt: '2026-07-06T00:00:00Z' }
-]
-
-const localPatients = ref<Patient[]>([])
-
-const displayPatients = computed<Patient[]>(() => {
-  const apiList = patients.value
-  const all = apiList.length > 0 ? [...apiList, ...initialPatients.filter(ip => !apiList.some((ap: Patient) => ap.id === ip.id))] : initialPatients
-  const extra = localPatients.value.filter(lp => !all.some(p => p.id === lp.id))
-  return [...extra, ...all]
-})
-
-const CHART_PRIMARY = '#0284c7'
+// Selected patient state - initialized deterministically to match SSR and client
+const selectedPatientId = ref<string>(initialPatients[0].id)
 
 const detailPatient = computed<Patient | null>(() => {
-  if (!selectedPatientId.value) {
-    // During SSR or before mount, return null to avoid hydration mismatch
-    if (import.meta.server) return null
-    return displayPatients.value[0] ?? null
-  }
   return displayPatients.value.find(p => p.id === selectedPatientId.value) ?? displayPatients.value[0] ?? null
-})
-
-// Set the default selected patient only on client to avoid SSR mismatch
-onMounted(() => {
-  if (!selectedPatientId.value && displayPatients.value.length > 0) {
-    selectedPatientId.value = displayPatients.value[0].id
-  }
-})
-
-// Watch for patient list changes to keep selection valid
-watch(displayPatients, (list) => {
-  if (list.length > 0 && !selectedPatientId.value) {
-    selectedPatientId.value = list[0].id
-  }
 })
 
 const patientName = computed(() => detailPatient.value?.fullName ?? '')
@@ -894,26 +809,29 @@ function openWhatsApp(phone?: string) {
     <UModal
       v-model:open="showModal"
       :title="editingId ? 'Edit Data Pasien' : 'Tambah Pasien Baru'"
+      :ui="{ width: 'sm:max-w-lg' }"
     >
       <template #body>
         <form class="space-y-4" @submit.prevent="savePatient">
           <!-- Nama Lengkap -->
           <div>
-            <label class="block text-xs font-semibold mb-1">Nama Lengkap <span class="text-red-500">*</span></label>
-            <UInput
+            <label class="block text-xs font-semibold mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
+            <input
               v-model="form.fullName"
+              type="text"
               placeholder="Masukkan nama lengkap pasien"
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400"
               :disabled="saving"
-            />
+            >
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-2 gap-3">
             <!-- Relasi -->
             <div>
-              <label class="block text-xs font-semibold mb-1">Relasi</label>
+              <label class="block text-xs font-semibold mb-1.5">Relasi</label>
               <select
                 v-model="form.relation"
-                class="w-full p-2 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
                 :disabled="saving"
               >
                 <option v-for="rel in RELATIONS" :key="rel.value" :value="rel.value">
@@ -923,10 +841,10 @@ function openWhatsApp(phone?: string) {
             </div>
             <!-- Jenis Kelamin -->
             <div>
-              <label class="block text-xs font-semibold mb-1">Jenis Kelamin</label>
+              <label class="block text-xs font-semibold mb-1.5">Jenis Kelamin</label>
               <select
                 v-model="form.gender"
-                class="w-full p-2 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
                 :disabled="saving"
               >
                 <option v-for="g in genderOptions" :key="g.value" :value="g.value">
@@ -936,66 +854,74 @@ function openWhatsApp(phone?: string) {
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-2 gap-3">
             <!-- Tanggal Lahir -->
             <div>
-              <label class="block text-xs font-semibold mb-1">Tanggal Lahir</label>
-              <UInput
+              <label class="block text-xs font-semibold mb-1.5">Tanggal Lahir</label>
+              <input
                 v-model="form.dateOfBirth"
                 type="date"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 :disabled="saving"
-              />
+              >
             </div>
             <!-- No. RM -->
             <div>
-              <label class="block text-xs font-semibold mb-1">No. Rekam Medis (opsional)</label>
-              <UInput
+              <label class="block text-xs font-semibold mb-1.5">No. Rekam Medis <span class="text-gray-400 font-normal">(opsional)</span></label>
+              <input
                 v-model="form.rmNumber"
+                type="text"
                 placeholder="RM-2026-XXXX"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400"
                 :disabled="saving"
-              />
+              >
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-2 gap-3">
             <!-- WhatsApp -->
             <div>
-              <label class="block text-xs font-semibold mb-1">No. WhatsApp</label>
-              <UInput
+              <label class="block text-xs font-semibold mb-1.5">No. WhatsApp</label>
+              <input
                 v-model="form.phoneWa"
-                placeholder="08XXXXXXXXXX"
                 type="tel"
+                placeholder="08XXXXXXXXXX"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400"
                 :disabled="saving"
-              />
+              >
             </div>
             <!-- Email -->
             <div>
-              <label class="block text-xs font-semibold mb-1">Email (opsional)</label>
-              <UInput
+              <label class="block text-xs font-semibold mb-1.5">Email <span class="text-gray-400 font-normal">(opsional)</span></label>
+              <input
                 v-model="form.email"
-                placeholder="email@example.com"
                 type="email"
+                placeholder="email@example.com"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400"
                 :disabled="saving"
-              />
+              >
             </div>
           </div>
 
           <!-- Alamat -->
           <div>
-            <label class="block text-xs font-semibold mb-1">Alamat</label>
-            <UInput
+            <label class="block text-xs font-semibold mb-1.5">Alamat Lengkap</label>
+            <textarea
               v-model="form.address"
-              placeholder="Kota / Alamat pasien"
+              rows="3"
+              placeholder="Soreang, Bandung / Alamat domisili pasien..."
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400 resize-none"
               :disabled="saving"
             />
           </div>
 
-          <!-- Error -->
-          <div v-if="formError" class="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-600 dark:text-red-400">
+          <!-- Error Message -->
+          <div v-if="formError" class="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
+            <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
             {{ formError }}
           </div>
 
-          <div class="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div class="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
             <UButton
               label="Batal"
               color="neutral"
@@ -1008,6 +934,7 @@ function openWhatsApp(phone?: string) {
               color="primary"
               type="submit"
               :loading="saving"
+              icon="i-lucide-save"
             />
           </div>
         </form>
