@@ -2,7 +2,7 @@
 import type { EChartsOption } from 'echarts'
 import type { CreatePatientInput, MedicalRecord, PaginatedResponse, Patient, PatientOdontogramTimeline, PatientStats, Payment, Promo, Reservation, UpdatePatientInput } from '~/types/api'
 
-definePageMeta({ title: 'Pasien & Transformasi Senyum' })
+definePageMeta({ title: 'Pasien' })
 
 export interface SmileTransformation {
   id: string
@@ -16,6 +16,20 @@ export interface SmileTransformation {
   afterPhotoUrl: string
   notes: string
   createdAt: string
+}
+
+function onFileSelected(event: Event, callback: (url: string) => void) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const file = target.files[0]
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        callback(e.target.result as string)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
 }
 
 const page = ref(1)
@@ -633,8 +647,8 @@ function openEdit(patient: Patient) {
       </UCard>
     </div>
 
-    <!-- Modal Entri Transformasi Behel & Senyum Baru -->
-    <UModal v-model:open="showTransformationModal" title="Entri Transformasi Behel & Senyum Pasien">
+    <!-- Modal Entri Transformasi Behel Baru -->
+    <UModal v-model:open="showTransformationModal" title="Entri Transformasi Behel Pasien">
       <template #body>
         <form class="space-y-4" @submit.prevent="saveTransformation">
           <div>
@@ -658,23 +672,47 @@ function openEdit(patient: Patient) {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold mb-1">URL Foto Sebelum (Before / Bulan 0)</label>
-            <UInput v-model="transForm.beforeImageUrl" placeholder="https://images.unsplash.com/..." />
+            <label class="block text-xs font-semibold mb-1">Upload Foto Awal (Sebelum / Bulan 0)</label>
+            <div class="flex items-center gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                class="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
+                @change="(e) => onFileSelected(e, (url) => transForm.beforePhotoUrl = url)"
+              >
+              <img v-if="transForm.beforePhotoUrl" :src="transForm.beforePhotoUrl" class="w-12 h-12 object-cover rounded border border-gray-200 shrink-0">
+            </div>
           </div>
 
           <div>
-            <label class="block text-xs font-semibold mb-1">URL Foto Proses (Behel / Bulan 6)</label>
-            <UInput v-model="transForm.progressImageUrl" placeholder="https://images.unsplash.com/..." />
+            <label class="block text-xs font-semibold mb-1">Upload Foto Proses (Behel / Bulan 6)</label>
+            <div class="flex items-center gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                class="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
+                @change="(e) => onFileSelected(e, (url) => transForm.progressPhotoUrl = url)"
+              >
+              <img v-if="transForm.progressPhotoUrl" :src="transForm.progressPhotoUrl" class="w-12 h-12 object-cover rounded border border-amber-300 shrink-0">
+            </div>
           </div>
 
           <div>
-            <label class="block text-xs font-semibold mb-1">URL Foto Hasil Akhir (After / Senyum Rapi)</label>
-            <UInput v-model="transForm.afterImageUrl" placeholder="https://images.unsplash.com/..." />
+            <label class="block text-xs font-semibold mb-1">Upload Foto Hasil (Akhir / Sesudah)</label>
+            <div class="flex items-center gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                class="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
+                @change="(e) => onFileSelected(e, (url) => transForm.afterPhotoUrl = url)"
+              >
+              <img v-if="transForm.afterPhotoUrl" :src="transForm.afterPhotoUrl" class="w-12 h-12 object-cover rounded border border-emerald-400 shrink-0">
+            </div>
           </div>
 
           <div>
             <label class="block text-xs font-semibold mb-1">Catatan Diagnosa & Perubahan Estetis</label>
-            <UTextarea v-model="transForm.medicalNotes" rows="2" placeholder="Tingkat perbaikan gigitan (occlusion) & kerapihan gigi..." />
+            <UTextarea v-model="transForm.notes" rows="2" placeholder="Tingkat perbaikan gigitan (occlusion) & kerapihan gigi..." />
           </div>
 
           <div class="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">

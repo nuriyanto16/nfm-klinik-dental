@@ -41,6 +41,20 @@ watch(apiPromos, val => { if (val?.length) promos.value = [...val] }, { immediat
 watch(apiTestimonials, val => { if (val?.length) testimonials.value = [...val] }, { immediate: true })
 watch(apiVideos, val => { if (val?.length) videos.value = [...val] }, { immediate: true })
 
+function onFileSelected(event: Event, callback: (url: string) => void) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const file = target.files[0]
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        callback(e.target.result as string)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
 const activeTab = ref('articles')
 const tabs = [
   { label: 'Artikel & Edukasi', value: 'articles' },
@@ -292,8 +306,16 @@ function deletePromo(p: Promo) {
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold mb-1">URL Cover Foto</label>
-            <UInput v-model="articleForm.coverImageUrl" placeholder="https://images.unsplash.com/..." />
+            <label class="block text-xs font-semibold mb-1">Upload Cover Foto Artikel</label>
+            <div class="flex items-center gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                class="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
+                @change="(e) => onFileSelected(e, (url) => articleForm.coverImageUrl = url)"
+              >
+              <img v-if="articleForm.coverImageUrl" :src="articleForm.coverImageUrl" class="w-12 h-12 object-cover rounded border border-gray-200 shrink-0">
+            </div>
           </div>
           <div>
             <label class="block text-xs font-semibold mb-1">Isi Konten Artikel</label>
@@ -320,8 +342,16 @@ function deletePromo(p: Promo) {
             <UInput v-model.number="promoForm.discountValue" type="number" step="10000" />
           </div>
           <div>
-            <label class="block text-xs font-semibold mb-1">URL Gambar Banner</label>
-            <UInput v-model="promoForm.bannerImageUrl" placeholder="https://images.unsplash.com/..." />
+            <label class="block text-xs font-semibold mb-1">Upload Gambar Banner Promo</label>
+            <div class="flex items-center gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                class="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
+                @change="(e) => onFileSelected(e, (url) => promoForm.bannerImageUrl = url)"
+              >
+              <img v-if="promoForm.bannerImageUrl" :src="promoForm.bannerImageUrl" class="w-16 h-12 object-cover rounded border border-gray-200 shrink-0">
+            </div>
           </div>
           <div>
             <label class="block text-xs font-semibold mb-1">Keterangan Promo</label>
