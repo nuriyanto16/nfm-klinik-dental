@@ -126,9 +126,31 @@ const displayDoctorsList = computed<DoctorDetail[]>(() => {
   return initialDoctorsList
 })
 
+function getTreatmentsList(treatments: any): any[] {
+  if (!treatments) return []
+  if (Array.isArray(treatments)) return treatments
+  if (typeof treatments === 'string') {
+    try {
+      const parsed = JSON.parse(treatments)
+      if (Array.isArray(parsed)) return parsed
+      if (parsed && typeof parsed === 'object') return [parsed]
+    } catch {
+      return [{ name: treatments, price: 0 }]
+    }
+  }
+  if (typeof treatments === 'object') return [treatments]
+  return []
+}
+
+function getTreatmentsTotalPrice(treatments: any): number {
+  const list = getTreatmentsList(treatments)
+  return list.reduce((sum: number, t: any) => sum + getTreatmentPrice(t), 0)
+}
+
 function formatTreatmentsName(treatments: any): string {
-  if (Array.isArray(treatments) && treatments.length > 0) {
-    const names = treatments.map(t => typeof t === 'string' ? t : (t?.name || t?.title || '')).filter(Boolean)
+  const list = getTreatmentsList(treatments)
+  if (list.length > 0) {
+    const names = list.map(t => typeof t === 'string' ? t : (t?.name || t?.title || t?.treatmentName || '')).filter(Boolean)
     if (names.length > 0) return names.join(', ')
   }
   if (typeof treatments === 'string' && treatments.trim()) {
@@ -337,8 +359,9 @@ function printReservationTicket(item: Reservation) {
   const printWindow = window.open('', '_blank', 'width=750,height=850')
   if (!printWindow) return
 
-  const treatmentsHtml = Array.isArray(item.treatments) && item.treatments.length > 0
-    ? item.treatments.map(t => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #e2e8f0;"><span>${getTreatmentName(t)}</span><strong>Rp ${getTreatmentPrice(t).toLocaleString('id-ID')}</strong></div>`).join('')
+  const tList = getTreatmentsList(item.treatments)
+  const treatmentsHtml = tList.length > 0
+    ? tList.map(t => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #e2e8f0;"><span>${getTreatmentName(t)}</span><strong>Rp ${getTreatmentPrice(t).toLocaleString('id-ID')}</strong></div>`).join('')
     : '<div style="padding:6px 0;">Konsultasi & Pemeriksaan Gigi Umum</div>'
 
   printWindow.document.write(`
@@ -469,8 +492,10 @@ function printReservationTicket(item: Reservation) {
       </div>
     </div>
 
-    <!-- Summary KPI Cards Bar -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+    <!-- Dynamic Content Wrapped in ClientOnly to Avoid SSR Hydration Mismatch -->
+    <ClientOnly>
+      <!-- Summary KPI Cards Bar -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
       <div class="rounded-xl border border-default bg-card p-4 flex items-center justify-between shadow-xs">
         <div>
           <p class="text-xs text-muted font-medium">Total Reservasi</p>
@@ -704,6 +729,7 @@ function printReservationTicket(item: Reservation) {
         @select-day="onSelectDay"
       />
     </UCard>
+    </ClientOnly>
 
     <!-- Create Reservation Modal with Auto-Loaded Doctors -->
     <UModal
@@ -869,19 +895,19 @@ function printReservationTicket(item: Reservation) {
           <div class="p-3.5 border border-gray-200 dark:border-gray-700 rounded-xl space-y-2">
             <div class="flex items-center justify-between">
               <span class="font-bold text-gray-900 dark:text-white block text-xs">Layanan Perawatan Gigi</span>
-              <span v-if="detailReservation.treatments?.length" class="text-[10px] font-semibold text-primary-600 dark:text-primary-400">
-                Total: {{ formatIDR((detailReservation.treatments || []).reduce((sum: number, t: any) => sum + getTreatmentPrice(t), 0)) }}
+              <span v-if="getTreatmentsList(detailReservation.treatments).length > 0" class="text-[10px] font-semibold text-primary-600 dark:text-primary-400">
+                Total: {{ formatIDR(getTreatmentsTotalPrice(detailReservation.treatments)) }}
               </span>
             </div>
             <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-48 overflow-y-auto pr-1">
-              <div v-for="(t, idx) in (detailReservation.treatments || [])" :key="idx" class="py-2 flex items-center justify-between gap-2">
+              <div v-for="(t, idx) in getTreatmentsList(detailReservation.treatments)" :key="idx" class="py-2 flex items-center justify-between gap-2">
                 <div>
                   <p class="font-semibold text-gray-900 dark:text-white">{{ getTreatmentName(t) }}</p>
                   <p class="text-[10px] text-gray-400">{{ getTreatmentCategory(t) }}</p>
                 </div>
                 <p class="font-bold text-primary-600 dark:text-primary-400 shrink-0">{{ formatIDR(getTreatmentPrice(t)) }}</p>
               </div>
-              <div v-if="!detailReservation.treatments?.length" class="py-2 text-gray-500 italic">
+              <div v-if="getTreatmentsList(detailReservation.treatments).length === 0" class="py-2 text-gray-500 italic">
                 Konsultasi & Pemeriksaan Gigi Umum
               </div>
             </div>
