@@ -57,6 +57,10 @@ const patients = computed(() => {
 })
 watch(search, () => { page.value = 1 })
 
+// SSR-safe: never use a hardcoded index-based ID during SSR
+// We set this only on client (onMounted) to prevent hydration mismatches
+const selectedPatientId = ref<string | null>(null)
+
 const { data: reservations } = useApiFetch<any>('/reservations')
 const { data: payments } = useApiFetch<any>('/payments')
 
@@ -122,11 +126,27 @@ const displayPatients = computed<Patient[]>(() => {
 
 const CHART_PRIMARY = '#0284c7'
 
-// Selected patient state
-const selectedPatientId = ref<string>(initialPatients[0].id)
-
 const detailPatient = computed<Patient | null>(() => {
+  if (!selectedPatientId.value) {
+    // During SSR or before mount, return null to avoid hydration mismatch
+    if (import.meta.server) return null
+    return displayPatients.value[0] ?? null
+  }
   return displayPatients.value.find(p => p.id === selectedPatientId.value) ?? displayPatients.value[0] ?? null
+})
+
+// Set the default selected patient only on client to avoid SSR mismatch
+onMounted(() => {
+  if (!selectedPatientId.value && displayPatients.value.length > 0) {
+    selectedPatientId.value = displayPatients.value[0].id
+  }
+})
+
+// Watch for patient list changes to keep selection valid
+watch(displayPatients, (list) => {
+  if (list.length > 0 && !selectedPatientId.value) {
+    selectedPatientId.value = list[0].id
+  }
 })
 
 const patientName = computed(() => detailPatient.value?.fullName ?? '')
@@ -149,7 +169,7 @@ const detailTotalPaid = computed(() => {
 
 const detailTotalSpent = computed(() => {
   if (detailTotalPaid.value > 0) return detailTotalPaid.value
-  const name = patientName.value ?? ''
+  const name = typeof patientName.value === 'string' ? patientName.value : ''
   if (name.includes('Budi')) return 9600000
   if (name.includes('Siti')) return 4500000
   if (name.includes('Ahmad')) return 1850000
@@ -158,7 +178,7 @@ const detailTotalSpent = computed(() => {
 
 const detailVisitsCount = computed(() => {
   if (detailReservations.value.length > 0) return detailReservations.value.length
-  const name = patientName.value ?? ''
+  const name = typeof patientName.value === 'string' ? patientName.value : ''
   if (name.includes('Budi')) return 10
   if (name.includes('Siti')) return 5
   return 3
@@ -166,7 +186,7 @@ const detailVisitsCount = computed(() => {
 
 const detailLoyaltyPoints = computed(() => {
   if (detailStats.value?.loyaltyPoints) return detailStats.value.loyaltyPoints
-  const name = patientName.value ?? ''
+  const name = typeof patientName.value === 'string' ? patientName.value : ''
   if (name.includes('Budi')) return 145
   if (name.includes('Siti')) return 80
   return 45
@@ -263,9 +283,10 @@ const currentPatientTransformations = computed(() => {
 
 const spendingOption = computed<EChartsOption>(() => {
   const months = ['03', '04', '05', '06', '07', '08']
+  const safeName = typeof patientName.value === 'string' ? patientName.value : ''
   const amounts = (detailStats.value?.monthlySpending && detailStats.value.monthlySpending.length > 0)
     ? detailStats.value.monthlySpending.map(m => m.amount)
-    : ((patientName.value ?? '').includes('Budi')
+    : (safeName.includes('Budi')
         ? [0, 0, 0, 0, 9600000, 0]
         : [150000, 350000, 450000, 1850000, 2500000, 0])
 
@@ -587,11 +608,12 @@ function openWhatsApp(phone?: string) {
         class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-4 shadow-xs"
         :ui="{ body: 'max-h-[calc(100vh-140px)] overflow-y-auto space-y-4 p-4 sm:p-4' }"
       >
-        <div v-if="!detailPatient" class="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
-          <UIcon name="i-lucide-user-round" class="w-10 h-10" />
-          <p class="text-sm">Pilih pasien di daftar untuk melihat detail.</p>
-        </div>
-        <template v-else>
+        <ClientOnly>
+          <div v-if="!detailPatient" class="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
+            <UIcon name="i-lucide-user-round" class="w-10 h-10" />
+            <p class="text-sm">Pilih pasien di daftar untuk melihat detail.</p>
+          </div>
+          <template v-else>
           <!-- Header Profile info -->
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-3 min-w-0">
@@ -862,6 +884,7 @@ function openWhatsApp(phone?: string) {
             </div>
           </div>
         </template>
+        </ClientOnly>
       </UCard>
     </div>
 
