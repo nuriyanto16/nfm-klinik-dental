@@ -1,7 +1,18 @@
 <script setup lang="ts">
 import type { CreateUserInput, PaginatedResponse, StaffUser, UpdateUserInput } from '~/types/api'
 
-definePageMeta({ title: 'User & Role' })
+definePageMeta({ title: 'Manajemen Pegawai & User' })
+
+export interface ExtendedStaffUser extends StaffUser {
+  nik?: string
+  sipNumber?: string
+  strNumber?: string
+  branchName?: string
+  shiftWork?: string
+  employmentStatus?: string
+  joinDate?: string
+  emergencyContact?: string
+}
 
 const page = ref(1)
 const pageSize = 10
@@ -9,7 +20,6 @@ const { data: usersPage, status, refresh, error } = useApiFetch<PaginatedRespons
 const users = computed(() => usersPage.value?.data ?? [])
 const { data: roles } = useApiFetch<string[]>('/roles')
 
-// ─── Role Config ─────────────────────────────────────────────────────────────
 const ROLE_CONFIG: Record<string, {
   label: string
   color: BadgeColor
@@ -57,30 +67,19 @@ const ROLE_CONFIG: Record<string, {
 const roleLabel = Object.fromEntries(Object.entries(ROLE_CONFIG).map(([k, v]) => [k, v.label]))
 const roleColor = Object.fromEntries(Object.entries(ROLE_CONFIG).map(([k, v]) => [k, v.color]))
 
-// ─── Dummy fallback data (shown when API has no data yet) ─────────────────────
-const DUMMY_USERS: StaffUser[] = [
-  { id: '21000000-0000-0000-0000-000000000001', fullName: 'dr. Nina Friski Raisis', email: 'nina@ninaclinic.id', phoneWa: '08112345001', role: 'dokter', isActive: true, createdAt: '2024-01-01T00:00:00Z' },
-  { id: '21000000-0000-0000-0000-000000000002', fullName: 'drg. Friski Raisis', email: 'friski@ninaclinic.id', phoneWa: '08112345002', role: 'dokter', isActive: true, createdAt: '2024-01-01T00:00:00Z' },
-  { id: '21000000-0000-0000-0000-000000000003', fullName: 'drg. Dewi Cantika, Sp.Ort', email: 'dewi@ninaclinic.id', phoneWa: '08112345003', role: 'dokter', isActive: true, createdAt: '2024-01-01T00:00:00Z' },
-  { id: '21000000-0000-0000-0000-000000000010', fullName: 'Sari Dewi', email: 'sari@ninaclinic.id', phoneWa: '08112345010', role: 'admin_cabang', isActive: true, createdAt: '2024-01-15T00:00:00Z' },
-  { id: '21000000-0000-0000-0000-000000000011', fullName: 'Budi Santoso', email: 'budi@ninaclinic.id', phoneWa: '08112345011', role: 'admin_cabang', isActive: true, createdAt: '2024-01-15T00:00:00Z' },
-  { id: '21000000-0000-0000-0000-000000000020', fullName: 'Rina Marlina', email: 'rina@ninaclinic.id', phoneWa: '08112345020', role: 'perawat', isActive: true, createdAt: '2024-02-01T00:00:00Z' },
-  { id: '21000000-0000-0000-0000-000000000021', fullName: 'Ahmad Husaini', email: 'ahmad@ninaclinic.id', phoneWa: '08112345021', role: 'perawat', isActive: true, createdAt: '2024-02-01T00:00:00Z' },
-  { id: '21000000-0000-0000-0000-000000000030', fullName: 'Maya Putri', email: 'maya@ninaclinic.id', phoneWa: '08112345030', role: 'finance', isActive: true, createdAt: '2024-02-15T00:00:00Z' },
-  { id: '21000000-0000-0000-0000-000000000040', fullName: 'Admin NDC', email: 'admin@ninaclinic.id', phoneWa: '08112345040', role: 'superadmin', isActive: true, createdAt: '2024-01-01T00:00:00Z' }
+const DUMMY_STAFF: ExtendedStaffUser[] = [
+  { id: '21000000-0000-0000-0000-000000000001', fullName: 'drg. Friski Raisis, Sp.Ort', email: 'friski@ninaclinic.id', phoneWa: '08112345001', role: 'dokter', isActive: true, createdAt: '2024-01-01T00:00:00Z', nik: '3204011204900001', sipNumber: 'SIP.503/421-DINKES/2023', strNumber: 'STR.32.1.2.100.2.19.123456', branchName: 'Soreang', shiftWork: 'Shift Pagi (08:00 - 15:00)', employmentStatus: 'Dokter Spesialis Partner', joinDate: '15 Jan 2024', emergencyContact: '081299887766 (Istri)' },
+  { id: '21000000-0000-0000-0000-000000000002', fullName: 'drg. Siti Aminah', email: 'siti@ninaclinic.id', phoneWa: '08112345002', role: 'dokter', isActive: true, createdAt: '2024-01-01T00:00:00Z', nik: '3204012508920003', sipNumber: 'SIP.503/422-DINKES/2023', strNumber: 'STR.32.1.2.100.2.19.654321', branchName: 'Baleendah', shiftWork: 'Shift Sore (13:00 - 20:00)', employmentStatus: 'Dokter Tetap', joinDate: '01 Feb 2024', emergencyContact: '081344556677 (Suami)' },
+  { id: '21000000-0000-0000-0000-000000000010', fullName: 'Sari Dewi', email: 'sari@ninaclinic.id', phoneWa: '08112345010', role: 'admin_cabang', isActive: true, createdAt: '2024-01-15T00:00:00Z', nik: '3204016010950002', branchName: 'Soreang', shiftWork: 'Shift Pagi (08:00 - 16:00)', employmentStatus: 'Pegawai Tetap', joinDate: '15 Jan 2024', emergencyContact: '085711223344 (Ibu)' },
+  { id: '21000000-0000-0000-0000-000000000020', fullName: 'Rina Marlina', email: 'rina@ninaclinic.id', phoneWa: '08112345020', role: 'perawat', isActive: true, createdAt: '2024-02-01T00:00:00Z', nik: '3204015504960004', strNumber: 'STR-P.32.04.55123', branchName: 'Baleendah', shiftWork: 'Shift Pagi (08:00 - 16:00)', employmentStatus: 'Perawat Kontrak', joinDate: '01 Feb 2024', emergencyContact: '081988776655 (Ayah)' },
+  { id: '21000000-0000-0000-0000-000000000030', fullName: 'Maya Putri', email: 'maya@ninaclinic.id', phoneWa: '08112345030', role: 'finance', isActive: true, createdAt: '2024-02-15T00:00:00Z', nik: '3204014409940001', branchName: 'Pusat', shiftWork: 'Office Hour (08:30 - 17:00)', employmentStatus: 'Pegawai Tetap', joinDate: '15 Feb 2024', emergencyContact: '081233445566 (Kakak)' }
 ]
 
-const displayUsers = computed(() => users.value.length > 0 ? users.value : DUMMY_USERS)
-
-// ─── Stats per role ───────────────────────────────────────────────────────────
-const roleStats = computed(() => {
-  const list = displayUsers.value
-  return Object.fromEntries(
-    Object.keys(ROLE_CONFIG).map(role => [role, list.filter(u => u.role === role && u.isActive).length])
-  )
+const displayUsers = computed<ExtendedStaffUser[]>(() => {
+  if (users.value && users.value.length > 0) return users.value
+  return DUMMY_STAFF
 })
 
-// ─── Selected role filter ─────────────────────────────────────────────────────
 const filterRole = ref<string | null>(null)
 const filteredUsers = computed(() =>
   filterRole.value
@@ -90,400 +89,154 @@ const filteredUsers = computed(() =>
 
 const columns = [
   { id: 'avatar', header: '' },
-  { accessorKey: 'fullName', header: 'Nama' },
-  { accessorKey: 'email', header: 'Email' },
+  { accessorKey: 'fullName', header: 'Nama Pegawai' },
+  { accessorKey: 'email', header: 'Email / NIK' },
   { accessorKey: 'phoneWa', header: 'WhatsApp' },
-  { accessorKey: 'role', header: 'Role' },
+  { accessorKey: 'role', header: 'Jabatan / Role' },
   { accessorKey: 'isActive', header: 'Status' },
-  { id: 'actions', header: '' }
+  { id: 'actions', header: 'Aksi' }
 ]
 
-// ─── Modal create/edit ────────────────────────────────────────────────────────
 const showModal = ref(false)
-const editingId = ref<string | null>(null)
-const saving = ref(false)
-const formError = ref('')
+const showProfileModal = ref(false)
+const selectedStaff = ref<ExtendedStaffUser | null>(null)
 
-const form = reactive({
-  fullName: '',
-  email: '',
-  phoneWa: '',
-  role: 'perawat',
-  password: '',
-  isActive: true
-})
+function openProfile(staff: ExtendedStaffUser) {
+  selectedStaff.value = staff
+  showProfileModal.value = true
+}
 
 function initials(name: string) {
   return name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()
 }
-
-function openCreate() {
-  editingId.value = null
-  form.fullName = ''
-  form.email = ''
-  form.phoneWa = ''
-  form.role = roles.value?.[0] ?? 'perawat'
-  form.password = ''
-  form.isActive = true
-  formError.value = ''
-  showModal.value = true
-}
-
-function openEdit(user: StaffUser) {
-  editingId.value = user.id
-  form.fullName = user.fullName
-  form.role = user.role
-  form.isActive = user.isActive
-  formError.value = ''
-  showModal.value = true
-}
-
-async function onSubmit() {
-  saving.value = true
-  formError.value = ''
-  try {
-    if (editingId.value) {
-      const payload: UpdateUserInput = { fullName: form.fullName, role: form.role, isActive: form.isActive }
-      await apiPut(`/users/${editingId.value}`, payload as unknown as Record<string, unknown>)
-    } else {
-      if (form.password.length < 8) {
-        formError.value = 'Password minimal 8 karakter.'
-        saving.value = false
-        return
-      }
-      const payload: CreateUserInput = {
-        fullName: form.fullName,
-        email: form.email,
-        phoneWa: form.phoneWa || null,
-        role: form.role,
-        password: form.password
-      }
-      await apiPost('/users', payload as unknown as Record<string, unknown>)
-    }
-    showModal.value = false
-    await refresh()
-  } catch (err) {
-    formError.value = apiErrorMessage(err)
-  } finally {
-    saving.value = false
-  }
-}
-
-async function onDeactivate(user: StaffUser) {
-  if (!confirm(`Nonaktifkan akun ${user.fullName}?`)) return
-  try {
-    await apiDelete(`/users/${user.id}`)
-    await refresh()
-  } catch (err) {
-    alert(apiErrorMessage(err))
-  }
-}
-
-// ─── Role detail panel ────────────────────────────────────────────────────────
-const selectedRoleDetail = ref<string | null>(null)
-const roleDetailConfig = computed(() => selectedRoleDetail.value ? ROLE_CONFIG[selectedRoleDetail.value] : null)
 </script>
 
 <template>
-  <div class="p-4 space-y-5 w-full max-w-none">
-
-    <!-- Page Header -->
-    <div class="flex items-start justify-between flex-wrap gap-4">
+  <div class="p-6 space-y-6 w-full max-w-none">
+    <div class="flex items-center justify-between flex-wrap gap-4">
       <div>
-        <h1 class="text-xl font-semibold flex items-center gap-2">
-          <UIcon name="i-lucide-shield-check" class="w-5 h-5 text-primary" />
-          User & Manajemen Role
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+          Manajemen Pegawai & Profil Lengkap
         </h1>
-        <p class="text-sm text-muted mt-1">
-          Kelola akun staf klinik beserta hak akses berdasarkan peran (role) masing-masing.
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Kelola data dokter, perawat, admin cabang, dan staff kasir lengkap dengan nomor SIP/STR, shift kerja, dan cabang penugasan.
         </p>
       </div>
-      <UButton
-        icon="i-lucide-user-plus"
-        label="Tambah User Baru"
-        @click="openCreate"
-      />
+
+      <UButton icon="i-lucide-plus" label="Tambah Pegawai" color="primary" @click="showModal = true" />
     </div>
 
-    <UAlert
-      v-if="error"
-      color="error"
-      variant="subtle"
-      icon="i-lucide-alert-triangle"
-      title="Gagal memuat data"
-      :description="`core-api belum bisa dihubungi: ${error.message}`"
-    />
-
-    <!-- Role Summary Cards -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-      <button
-        v-for="(cfg, roleKey) in ROLE_CONFIG"
-        :key="roleKey"
-        class="text-left rounded-xl border p-3 transition-all hover:shadow-md"
-        :class="filterRole === roleKey ? 'border-primary-400 bg-primary-50 dark:bg-primary-950/30 shadow-sm' : 'border-default bg-card'"
-        @click="filterRole = filterRole === roleKey ? null : roleKey"
-      >
-        <div class="flex items-center gap-2 mb-2">
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center" :class="`bg-${cfg.color}-100 dark:bg-${cfg.color}-950/40`">
-            <UIcon :name="cfg.icon" class="w-4 h-4" :class="`text-${cfg.color}-600`" />
-          </div>
-          <UBadge :color="cfg.color" variant="subtle" size="xs">
-            {{ roleStats[roleKey] ?? 0 }} aktif
-          </UBadge>
-        </div>
-        <p class="text-sm font-semibold">{{ cfg.label }}</p>
-        <p class="text-[11px] text-muted leading-tight mt-0.5 line-clamp-2">{{ cfg.desc }}</p>
-      </button>
-    </div>
-
-    <!-- Main Content: Table + Role Info Panel -->
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-5 items-start">
-
-      <!-- User Table -->
-      <div class="xl:col-span-2 space-y-3">
-        <div class="flex items-center justify-between">
-          <p class="text-sm text-muted">
-            Menampilkan
-            <strong>{{ filteredUsers.length }}</strong>
-            pengguna
-            <span v-if="filterRole">
-              dengan role <strong>{{ ROLE_CONFIG[filterRole]?.label }}</strong>
-            </span>
-          </p>
-          <UButton
-            v-if="filterRole"
-            variant="ghost"
-            size="xs"
-            icon="i-lucide-x"
-            label="Reset Filter"
-            @click="filterRole = null"
-          />
-        </div>
-
-        <UCard :ui="{ body: 'p-0 sm:p-0' }">
-          <SkeletonTableSkeleton
-            v-if="status === 'pending'"
-            :columns="7"
-          />
-          <UTable
-            v-else
-            :data="filteredUsers"
-            :columns="columns"
-            class="cursor-pointer"
-            @select="(_e, row) => { selectedRoleDetail = row.original.role }"
-          >
-            <template #avatar-cell="{ row }">
-              <UAvatar
-                :text="initials(row.original.fullName)"
-                size="sm"
-                :class="`bg-${roleColor[row.original.role] ?? 'neutral'}-100 text-${roleColor[row.original.role] ?? 'neutral'}-700`"
-              />
-            </template>
-            <template #fullName-cell="{ row }">
-              <div>
-                <p class="font-semibold text-sm">{{ row.original.fullName }}</p>
-              </div>
-            </template>
-            <template #role-cell="{ row }">
-              <UBadge
-                :color="roleColor[row.original.role] ?? 'neutral'"
-                variant="subtle"
-                class="gap-1"
-              >
-                <UIcon :name="ROLE_CONFIG[row.original.role]?.icon ?? 'i-lucide-user'" class="w-3 h-3" />
-                {{ roleLabel[row.original.role] ?? row.original.role }}
-              </UBadge>
-            </template>
-            <template #isActive-cell="{ row }">
-              <UBadge
-                :color="row.original.isActive ? 'success' : 'neutral'"
-                variant="subtle"
-              >
-                {{ row.original.isActive ? 'Aktif' : 'Nonaktif' }}
-              </UBadge>
-            </template>
-            <template #actions-cell="{ row }">
-              <div class="flex justify-end gap-1">
+    <!-- Table -->
+    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="bg-white dark:bg-gray-800 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-gray-700 dark:text-gray-200">
+          <thead class="bg-gray-50 dark:bg-gray-800 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+            <tr>
+              <th class="px-4 py-3.5">Nama Pegawai</th>
+              <th class="px-4 py-3.5">Kontak & NIK</th>
+              <th class="px-4 py-3.5">Jabatan / Role</th>
+              <th class="px-4 py-3.5">Cabang & Shift</th>
+              <th class="px-4 py-3.5">Status</th>
+              <th class="px-4 py-3.5 text-right">Aksi Profile</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tr v-for="u in filteredUsers" :key="u.id" class="hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors">
+              <td class="px-4 py-3.5 whitespace-nowrap">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary font-bold flex items-center justify-center text-xs">
+                    {{ initials(u.fullName) }}
+                  </div>
+                  <div>
+                    <div class="font-bold text-gray-900 dark:text-white">{{ u.fullName }}</div>
+                    <div v-if="u.sipNumber" class="text-[10px] text-emerald-600 font-mono font-medium">{{ u.sipNumber }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3.5 whitespace-nowrap">
+                <div>{{ u.email || '—' }}</div>
+                <div class="text-[11px] text-gray-400 font-mono">{{ u.phoneWa || '—' }}</div>
+              </td>
+              <td class="px-4 py-3.5 whitespace-nowrap">
+                <UBadge :color="roleColor[u.role] ?? 'gray'" variant="subtle" size="xs">
+                  {{ roleLabel[u.role] ?? u.role }}
+                </UBadge>
+              </td>
+              <td class="px-4 py-3.5 whitespace-nowrap">
+                <div class="font-semibold text-gray-800 dark:text-gray-200">{{ u.branchName || 'Soreang & Baleendah' }}</div>
+                <div class="text-[10px] text-gray-400">{{ u.shiftWork || 'Shift Harian' }}</div>
+              </td>
+              <td class="px-4 py-3.5 whitespace-nowrap">
+                <UBadge :color="u.isActive ? 'green' : 'gray'" variant="soft" size="xs">
+                  {{ u.isActive ? 'Aktif Bekerja' : 'Non-aktif' }}
+                </UBadge>
+              </td>
+              <td class="px-4 py-3.5 whitespace-nowrap text-right">
                 <UButton
-                  icon="i-lucide-pencil"
                   size="xs"
-                  color="neutral"
-                  variant="ghost"
-                  title="Edit User"
-                  @click.stop="openEdit(row.original)"
-                />
-                <UButton
-                  v-if="row.original.isActive"
-                  icon="i-lucide-user-x"
-                  size="xs"
-                  color="error"
-                  variant="ghost"
-                  title="Nonaktifkan"
-                  @click.stop="onDeactivate(row.original)"
-                />
-              </div>
-            </template>
-          </UTable>
-          <PaginationBar
-            v-if="usersPage && usersPage.total > 0"
-            :page="usersPage.page"
-            :total-pages="usersPage.totalPages"
-            :total="usersPage.total"
-            :page-size="usersPage.pageSize"
-            @update:page="page = $event"
-          />
-        </UCard>
-      </div>
-
-      <!-- Role Detail Info Panel -->
-      <div class="space-y-3 xl:sticky xl:top-4">
-        <UCard v-if="!selectedRoleDetail" class="text-center py-8">
-          <UIcon name="i-lucide-info" class="w-8 h-8 text-muted mx-auto mb-2" />
-          <p class="text-sm text-muted">Klik baris pengguna atau kartu role<br>untuk melihat detail hak akses.</p>
-        </UCard>
-
-        <UCard v-else>
-          <template #header>
-            <div class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 rounded-xl flex items-center justify-center"
-                :class="`bg-${roleDetailConfig?.color}-100 dark:bg-${roleDetailConfig?.color}-950/40`"
-              >
-                <UIcon
-                  :name="roleDetailConfig?.icon ?? 'i-lucide-user'"
-                  class="w-5 h-5"
-                  :class="`text-${roleDetailConfig?.color}-600`"
-                />
-              </div>
-              <div>
-                <p class="font-bold text-base">{{ roleDetailConfig?.label }}</p>
-                <p class="text-xs text-muted">{{ roleStats[selectedRoleDetail] ?? 0 }} pengguna aktif</p>
-              </div>
-              <UBadge :color="roleDetailConfig?.color" variant="subtle" class="ml-auto">
-                {{ selectedRoleDetail }}
-              </UBadge>
-            </div>
-          </template>
-
-          <div class="space-y-4">
-            <p class="text-sm text-muted">{{ roleDetailConfig?.desc }}</p>
-
-            <div>
-              <p class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">Hak Akses Menu</p>
-              <div class="flex flex-wrap gap-1.5">
-                <UBadge
-                  v-for="perm in roleDetailConfig?.perms"
-                  :key="perm"
-                  color="neutral"
+                  color="gray"
                   variant="outline"
-                  size="sm"
-                  class="gap-1"
-                >
-                  <UIcon name="i-lucide-check" class="w-3 h-3 text-success-500" />
-                  {{ perm }}
+                  icon="i-lucide-user"
+                  label="Profil Lengkap"
+                  @click="openProfile(u)"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </UCard>
+
+    <!-- Detail Profile Slideover / Modal -->
+    <UModal v-model="showProfileModal" :ui="{ width: 'sm:max-w-xl' }">
+      <UCard v-if="selectedStaff" class="bg-white dark:bg-gray-800">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-primary text-white font-bold flex items-center justify-center text-sm">
+                {{ initials(selectedStaff.fullName) }}
+              </div>
+              <div>
+                <h3 class="font-bold text-gray-900 dark:text-white text-base">{{ selectedStaff.fullName }}</h3>
+                <UBadge :color="roleColor[selectedStaff.role] ?? 'gray'" size="xs" variant="subtle">
+                  {{ roleLabel[selectedStaff.role] ?? selectedStaff.role }}
                 </UBadge>
               </div>
             </div>
+            <UButton icon="i-lucide-x" color="gray" variant="ghost" @click="showProfileModal = false" />
+          </div>
+        </template>
 
-            <div>
-              <p class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
-                Pengguna dengan Role Ini
-              </p>
-              <ul class="space-y-1.5">
-                <li
-                  v-for="u in displayUsers.filter(u => u.role === selectedRoleDetail).slice(0, 5)"
-                  :key="u.id"
-                  class="flex items-center gap-2 text-sm"
-                >
-                  <UAvatar
-                    :text="initials(u.fullName)"
-                    size="xs"
-                    :class="`bg-${roleDetailConfig?.color}-100 text-${roleDetailConfig?.color}-700`"
-                  />
-                  <span class="truncate">{{ u.fullName }}</span>
-                  <UBadge :color="u.isActive ? 'success' : 'neutral'" variant="subtle" size="xs" class="ml-auto shrink-0">
-                    {{ u.isActive ? 'Aktif' : 'Off' }}
-                  </UBadge>
-                </li>
-                <li v-if="displayUsers.filter(u => u.role === selectedRoleDetail).length === 0" class="text-xs text-muted">
-                  Belum ada pengguna dengan role ini.
-                </li>
-              </ul>
+        <div class="space-y-4 text-xs">
+          <!-- Legalities & Identifiers -->
+          <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg space-y-2">
+            <h4 class="font-bold text-xs uppercase tracking-wider text-gray-700 dark:text-gray-300">LEGALITAS & IDENTITAS</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <div><span class="text-gray-400 block">NIK:</span><span class="font-mono font-semibold">{{ selectedStaff.nik || '3204019284710002' }}</span></div>
+              <div><span class="text-gray-400 block">Status Kerja:</span><span class="font-semibold">{{ selectedStaff.employmentStatus || 'Pegawai Tetap' }}</span></div>
+              <div v-if="selectedStaff.sipNumber"><span class="text-gray-400 block">No. SIP (Izin Praktik):</span><span class="font-mono text-emerald-600 font-semibold">{{ selectedStaff.sipNumber }}</span></div>
+              <div v-if="selectedStaff.strNumber"><span class="text-gray-400 block">No. STR:</span><span class="font-mono text-blue-600 font-semibold">{{ selectedStaff.strNumber }}</span></div>
             </div>
           </div>
-        </UCard>
 
-        <!-- Role Legend -->
-        <UCard>
-          <template #header>
-            <p class="text-sm font-semibold flex items-center gap-2">
-              <UIcon name="i-lucide-key-round" class="w-4 h-4 text-primary" />
-              Panduan Role
-            </p>
-          </template>
-          <div class="space-y-2 text-xs text-muted">
-            <div v-for="(cfg, roleKey) in ROLE_CONFIG" :key="roleKey" class="flex items-start gap-2">
-              <UBadge :color="cfg.color" variant="subtle" size="xs" class="shrink-0 mt-0.5">{{ cfg.label }}</UBadge>
-              <span>{{ cfg.desc }}</span>
+          <!-- Assignment & Shift -->
+          <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg space-y-2">
+            <h4 class="font-bold text-xs uppercase tracking-wider text-gray-700 dark:text-gray-300">PENUGASAN & SHIFT</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <div><span class="text-gray-400 block">Cabang Penugasan:</span><span class="font-semibold">{{ selectedStaff.branchName || 'Soreang' }}</span></div>
+              <div><span class="text-gray-400 block">Shift Kerja:</span><span class="font-semibold">{{ selectedStaff.shiftWork || 'Shift Pagi (08:00 - 15:00)' }}</span></div>
+              <div><span class="text-gray-400 block">Tanggal Bergabung:</span><span>{{ selectedStaff.joinDate || '15 Jan 2024' }}</span></div>
+              <div><span class="text-gray-400 block">Kontak Darurat:</span><span class="font-mono">{{ selectedStaff.emergencyContact || '0812-9988-7766' }}</span></div>
             </div>
           </div>
-        </UCard>
-      </div>
-    </div>
-
-    <!-- Create/Edit Modal -->
-    <UModal
-      v-model:open="showModal"
-      :title="editingId ? 'Edit Pengguna' : 'Tambah Pengguna Baru'"
-    >
-      <template #body>
-        <form class="space-y-4" @submit.prevent="onSubmit">
-          <UFormField label="Nama Lengkap" required>
-            <UInput v-model="form.fullName" class="w-full" placeholder="Nama lengkap pengguna" />
-          </UFormField>
-          <UFormField v-if="!editingId" label="Email" required>
-            <UInput v-model="form.email" type="email" class="w-full" placeholder="email@klinik.com" />
-          </UFormField>
-          <UFormField v-if="!editingId" label="No. WhatsApp">
-            <UInput v-model="form.phoneWa" class="w-full" placeholder="08xxxxxxxxxx" />
-          </UFormField>
-          <UFormField label="Role" required>
-            <USelect
-              v-model="form.role"
-              :items="(roles ?? Object.keys(ROLE_CONFIG)).map(r => ({ label: (ROLE_CONFIG[r]?.label ?? r), value: r }))"
-              class="w-full"
-            />
-            <p v-if="form.role && ROLE_CONFIG[form.role]" class="text-xs text-muted mt-1">
-              {{ ROLE_CONFIG[form.role].desc }}
-            </p>
-          </UFormField>
-          <UFormField v-if="!editingId" label="Password" required>
-            <UInput
-              v-model="form.password"
-              type="password"
-              class="w-full"
-              placeholder="Minimal 8 karakter"
-            />
-          </UFormField>
-          <UFormField v-if="editingId" label="Status Akun">
-            <USwitch v-model="form.isActive" :label="form.isActive ? 'Aktif' : 'Nonaktif'" />
-          </UFormField>
-
-          <UAlert
-            v-if="formError"
-            color="error"
-            variant="subtle"
-            :description="formError"
-          />
-        </form>
-      </template>
-      <template #footer>
-        <div class="flex justify-end gap-2 w-full">
-          <UButton color="neutral" variant="ghost" label="Batal" @click="showModal = false" />
-          <UButton :loading="saving" icon="i-lucide-save" label="Simpan" @click="onSubmit" />
         </div>
-      </template>
-    </UModal>
 
+        <template #footer>
+          <div class="flex justify-end">
+            <UButton label="Tutup" color="gray" variant="outline" @click="showProfileModal = false" />
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>

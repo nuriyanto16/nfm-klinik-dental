@@ -37,7 +37,10 @@ final List<Article> _fallbackArticles = [
 final List<Promo> _fallbackPromos = [
   const Promo(
     id: 'pro-1',
-    title: 'Promo Scaling 6-in-1 Super Clean',
+    title: 'Diskon Scaling 6-in-1 Super Clean',
+    voucherCode: 'SCALING50K',
+    discountValue: 50000,
+    discountType: 'fixed',
     bannerImageUrl: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800',
     description: 'Paket scaling lengkap pembersihan karang gigi + polishing + fluoridasi hanya Rp149.000.',
     isActive: true,
@@ -45,8 +48,21 @@ final List<Promo> _fallbackPromos = [
   const Promo(
     id: 'pro-2',
     title: 'Diskon Pemasangan Behel Metal 10%',
+    voucherCode: 'BEHEL10',
+    discountValue: 10,
+    discountType: 'percentage',
     bannerImageUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800',
-    description: 'Diskon 10% untuk pemasangan behel metal konvensional via aplikasi.',
+    description: 'Diskon 10% untuk pemasangan behel metal konvensional via aplikasi mobile.',
+    isActive: true,
+  ),
+  const Promo(
+    id: 'pro-3',
+    title: 'Voucher New Patient Senyum Sehat',
+    voucherCode: 'SMILESEHAT',
+    discountValue: 30000,
+    discountType: 'fixed',
+    bannerImageUrl: 'https://images.unsplash.com/photo-1571772996211-2f02c9727629?w=800',
+    description: 'Potongan Rp 30.000 khusus pasien baru pertama kali berkunjung ke Nina Dental Care.',
     isActive: true,
   ),
 ];

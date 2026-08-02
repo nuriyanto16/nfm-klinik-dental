@@ -88,6 +88,7 @@ final appRouter = GoRouter(
       path: '/payment/checkout',
       builder: (context, state) => PaymentSelectionPage(
         reservationId: state.uri.queryParameters['reservationId'],
+        amount: double.tryParse(state.uri.queryParameters['amount'] ?? '') ?? 199000.0,
       ),
     ),
     GoRoute(path: '/payments/history', builder: (context, state) => const PaymentHistoryPage()),

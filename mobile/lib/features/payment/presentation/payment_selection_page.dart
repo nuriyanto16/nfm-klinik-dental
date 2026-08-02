@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -240,7 +241,7 @@ class _PaymentSelectionPageState extends State<PaymentSelectionPage> {
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.pop(context);
+              context.go('/schedule');
             },
             child: const Text('Selesai'),
           ),

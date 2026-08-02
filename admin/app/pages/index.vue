@@ -12,6 +12,8 @@ const { data: topTreatments, status: topTreatmentsStatus } = useApiFetch<Treatme
 const { data: reservations, status: reservationsStatus } = useApiFetch<Reservation[]>('/reservations')
 const { data: payments, status: paymentsStatus } = useApiFetch<Payment[]>('/payments')
 
+const { followUpList, markAsReminded, getWhatsAppLink } = useFollowUpPatients()
+
 const kpis = computed(() => [
   { label: 'Reservasi Hari Ini', value: summary.value?.reservationsToday ?? '—', icon: 'i-lucide-calendar-check', hint: 'Semua cabang' },
   { label: 'Revenue Hari Ini', value: summary.value ? formatIDR(summary.value.revenueToday) : '—', icon: 'i-lucide-banknote', hint: 'Status lunas' },
@@ -98,55 +100,136 @@ const paymentColumns = [
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <template v-if="summaryStatus === 'pending'">
-        <SkeletonStatCardSkeleton
-          v-for="i in 6"
-          :key="i"
-        />
-      </template>
-      <UPageCard
+    <!-- KPI Row -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div
         v-for="kpi in kpis"
-        v-else
         :key="kpi.label"
-        :title="String(kpi.value)"
-        :description="kpi.label"
-        :icon="kpi.icon"
+        class="p-3 rounded-xl border border-default bg-card shadow-xs flex flex-col justify-between"
       >
-        <template #footer>
-          <span class="text-xs text-muted">{{ kpi.hint }}</span>
-        </template>
-      </UPageCard>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-muted font-medium">{{ kpi.label }}</span>
+          <UIcon
+            :name="kpi.icon"
+            class="w-4 h-4 text-primary"
+          />
+        </div>
+        <div class="mt-2">
+          <SkeletonTextSkeleton
+            v-if="summaryStatus === 'pending'"
+            class="h-7 w-20"
+          />
+          <p
+            v-else
+            class="text-lg font-bold text-gray-900 dark:text-white"
+          >
+            {{ kpi.value }}
+          </p>
+          <span class="text-[10px] text-muted">{{ kpi.hint }}</span>
+        </div>
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <UCard>
+    <!-- Panel Pasien Rekomendasi Kontrol & Tindak Lanjut -->
+    <UCard class="bg-white dark:bg-gray-800 border-l-4 border-l-amber-500 shadow-xs">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-lucide-bell-ring" class="w-5 h-5 text-amber-500 animate-pulse" />
+            <div>
+              <h2 class="font-bold text-sm text-gray-900 dark:text-white">
+                Rekomendasi Kontrol Pasien & Tindak Lanjut Terdekat
+              </h2>
+              <p class="text-xs text-gray-500">
+                Daftar pasien yang terdeteksi dari riwayat medis perlu melakukan jadwal kontrol dalam beberapa hari ke depan.
+              </p>
+            </div>
+          </div>
+          <UBadge color="amber" variant="subtle" size="xs">
+            {{ followUpList.length }} Pasien Siap Dikontak
+          </UBadge>
+        </div>
+      </template>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div
+          v-for="fu in followUpList"
+          :key="fu.id"
+          class="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 space-y-2"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-xs text-gray-900 dark:text-white">{{ fu.patientName }}</span>
+              <UBadge color="gray" variant="outline" size="xs">{{ fu.rmNumber }}</UBadge>
+            </div>
+            <UBadge :color="fu.daysRemaining <= 1 ? 'red' : 'amber'" variant="soft" size="xs">
+              {{ fu.daysRemaining === 1 ? 'Besok Kontrol' : `${fu.daysRemaining} Hari Lagi` }}
+            </UBadge>
+          </div>
+
+          <div class="text-xs text-gray-600 dark:text-gray-300 space-y-0.5">
+            <div><span class="text-gray-400">Rekomendasi:</span> <b>{{ fu.controlReason }}</b></div>
+            <div><span class="text-gray-400">Treatment Sebelumnya:</span> {{ fu.treatmentName }}</div>
+            <div><span class="text-gray-400">Tgl Kontrol Terdekat:</span> <span class="font-semibold text-primary">{{ fu.recommendedControlDate }}</span> ({{ fu.doctorName }})</div>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+            <span class="text-[11px] font-mono text-gray-400">{{ fu.phoneWa }}</span>
+            <a
+              :href="getWhatsAppLink(fu)"
+              target="_blank"
+              class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+              @click="markAsReminded(fu.id)"
+            >
+              <UIcon name="i-lucide-send" class="w-3.5 h-3.5" />
+              <span>{{ fu.status === 'REMINDED' ? 'Kirim Ulang WA' : 'Kirim Reminder WA' }}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </UCard>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <UCard class="lg:col-span-8">
         <template #header>
-          <h2 class="font-medium">
-            Revenue 14 Hari Terakhir
-          </h2>
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-medium text-sm">
+                Revenue 14 Hari Terakhir
+              </h2>
+              <p class="text-xs text-muted">
+                Trend pendapatan harian gabungan cabang
+              </p>
+            </div>
+          </div>
         </template>
         <SkeletonChartSkeleton v-if="trendStatus === 'pending'" />
         <ChartsEChart
           v-else
           :option="trendOption"
+          height="220px"
         />
       </UCard>
 
-      <UCard>
+      <UCard class="lg:col-span-4">
         <template #header>
-          <h2 class="font-medium">
-            Reservasi per Status
-          </h2>
+          <div class="flex items-center justify-between">
+            <h2 class="font-medium text-sm">
+              Status Reservasi
+            </h2>
+          </div>
         </template>
         <SkeletonChartSkeleton v-if="statusCountsStatus === 'pending'" />
         <ChartsEChart
           v-else
           :option="statusOption"
+          height="220px"
         />
       </UCard>
     </div>
 
+    <!-- Additional Charts -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <UCard>
         <template #header>
@@ -175,6 +258,7 @@ const paymentColumns = [
       </UCard>
     </div>
 
+    <!-- Recent Tables Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <UCard>
         <template #header>

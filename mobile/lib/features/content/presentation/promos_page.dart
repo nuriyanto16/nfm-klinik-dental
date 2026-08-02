@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,12 +16,15 @@ class PromosPage extends ConsumerWidget {
     final promosAsync = ref.watch(promoListProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textDark,
         elevation: 0,
-        title: const Text('Promo Spesial Nina Dental Care', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text(
+          'Promo & Voucher Spesial',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
       ),
       body: promosAsync.when(
         data: (promos) {
@@ -34,6 +38,8 @@ class PromosPage extends ConsumerWidget {
             separatorBuilder: (_, _) => const SizedBox(height: 16),
             itemBuilder: (context, i) {
               final promo = promos[i];
+              final code = promo.voucherCode ?? 'PROMO${i + 1}';
+
               return Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -53,19 +59,19 @@ class PromosPage extends ConsumerWidget {
                     // Banner Box
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                      child: Container(
+                      child: SizedBox(
                         height: 160,
                         width: double.infinity,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFFEC407A), Color(0xFFAB47BC)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
                         child: promo.bannerImageUrl != null
                             ? CachedNetworkImage(imageUrl: promo.bannerImageUrl!, fit: BoxFit.cover)
-                            : Padding(
+                            : Container(
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [Color(0xFF0284C7), Color(0xFF2563EB)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
                                 padding: const EdgeInsets.all(20),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,10 +100,32 @@ class PromosPage extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            promo.title,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  promo.title,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark),
+                                ),
+                              ),
+                              if (promo.discountValue != null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFDCFCE7),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    promo.discountType == 'percentage'
+                                        ? 'Hemat ${promo.discountValue!.toInt()}%'
+                                        : 'Hemat Rp ${(promo.discountValue! / 1000).toInt()}k',
+                                    style: const TextStyle(color: Color(0xFF166534), fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                            ],
                           ),
+
                           if (promo.description != null) ...[
                             const SizedBox(height: 6),
                             Text(
@@ -105,18 +133,65 @@ class PromosPage extends ConsumerWidget {
                               style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                             ),
                           ],
+
                           const SizedBox(height: 14),
+
+                          // Voucher Code Box
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFCBD5E1)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.confirmation_number_outlined, size: 18, color: AppColors.pink),
+                                    const SizedBox(width: 8),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('KODE VOUCHER', style: TextStyle(fontSize: 9, color: AppColors.textMuted, fontWeight: FontWeight.bold)),
+                                        Text(code, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.textDark)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                TextButton.icon(
+                                  onPressed: () {
+                                    Clipboard.setData(ClipboardData(text: code));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Kode Voucher "$code" berhasil disalin!'),
+                                        backgroundColor: AppColors.pink,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.copy_rounded, size: 14, color: AppColors.pink),
+                                  label: const Text('Salin Kode', style: TextStyle(color: AppColors.pink, fontWeight: FontWeight.bold, fontSize: 12)),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 14),
+
                           SizedBox(
                             width: double.infinity,
                             child: FilledButton(
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.pink,
                                 padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                               onPressed: () {
                                 context.push('/reservations/new');
                               },
-                              child: const Text('Gunakan Promo & Reservasi'),
+                              child: const Text('Gunakan Voucher & Reservasi', style: TextStyle(fontWeight: FontWeight.bold)),
                             ),
                           ),
                         ],

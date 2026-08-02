@@ -30,14 +30,17 @@ export function useAdminNav() {
 
     { type: 'label', label: 'Keuangan' },
     { label: 'Billing & Transaksi', icon: 'i-lucide-credit-card', to: '/billing', phase: 2 },
+    { label: 'Honor & Gaji Pegawai', icon: 'i-lucide-receipt', to: '/payroll', phase: 1 },
     { label: 'Laporan Keuangan', icon: 'i-lucide-bar-chart-3', to: '/reports', phase: 3 },
 
     { type: 'label', label: 'Konten & Marketing' },
+    { label: 'Promo & Voucher', icon: 'i-lucide-ticket-percent', to: '/promos', phase: 1 },
     { label: 'CMS', icon: 'i-lucide-newspaper', to: '/content', phase: 2 },
     { label: 'Notifikasi & Broadcast', icon: 'i-lucide-send', to: '/notifications', phase: 2 },
 
     { type: 'label', label: 'Sistem' },
     { label: 'User & Role', icon: 'i-lucide-shield-check', to: '/users', phase: 1 },
+    { label: 'Log Aktivitas', icon: 'i-lucide-activity', to: '/activity-logs', phase: 1 },
     { label: 'Dokumentasi & Panduan', icon: 'i-lucide-book-open', to: '/docs', phase: 1 }
   ]
 

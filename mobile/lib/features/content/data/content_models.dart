@@ -35,6 +35,9 @@ class Promo {
     this.bannerImageUrl,
     this.description,
     required this.isActive,
+    this.voucherCode,
+    this.discountValue,
+    this.discountType,
   });
 
   final String id;
@@ -42,6 +45,9 @@ class Promo {
   final String? bannerImageUrl;
   final String? description;
   final bool isActive;
+  final String? voucherCode;
+  final double? discountValue;
+  final String? discountType;
 
   factory Promo.fromJson(Map<String, dynamic> json) => Promo(
         id: json['id'] as String,
@@ -49,6 +55,9 @@ class Promo {
         bannerImageUrl: json['bannerImageUrl'] as String?,
         description: json['description'] as String?,
         isActive: json['isActive'] as bool,
+        voucherCode: json['voucherCode'] as String?,
+        discountValue: json['discountValue'] != null ? (json['discountValue'] as num).toDouble() : null,
+        discountType: json['discountType'] as String?,
       );
 }
 

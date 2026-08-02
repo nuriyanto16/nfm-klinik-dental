@@ -574,3 +574,35 @@ export interface TreatmentCount {
   treatmentName: string
   bookingCount: number
 }
+
+export type ActivityScope = 'admin' | 'mobile'
+export type ActivityCategory = 'auth' | 'booking' | 'medical' | 'payment' | 'profile' | 'system'
+export type ActivitySeverity = 'INFO' | 'WARNING' | 'ERROR' | 'SECURITY'
+export type ActivityStatus = 'SUCCESS' | 'FAILED' | 'PENDING'
+
+export interface ActivityLog {
+  id: string
+  scope: ActivityScope
+  category: ActivityCategory
+  action: string
+  description: string
+  userName: string
+  userRole: string
+  userEmail: string | null
+  ipAddress: string
+  userAgent: string
+  status: ActivityStatus
+  severity: ActivitySeverity
+  details?: Record<string, any> | null
+  createdAt: string
+}
+
+export interface ActivityLogQuery {
+  scope?: string
+  category?: string
+  severity?: string
+  search?: string
+  page?: number
+  pageSize?: number
+}
+

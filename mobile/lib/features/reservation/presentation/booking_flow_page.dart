@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/logging/activity_logger.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/skeleton_loader.dart';
 import '../../branches/data/branch_model.dart';
@@ -491,88 +492,7 @@ class _BookingFlowPageState extends ConsumerState<BookingFlowPage> {
                 itemCount: doctors.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 14),
                 itemBuilder: (context, i) {
-                  final doctor = doctors[i];
-                  final isSelected = _selectedDoctor?.id == doctor.id;
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedDoctor = doctor;
-                        _selectedTimeSlot = '09:00';
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected ? AppColors.pink : const Color(0xFFE2E8F0),
-                          width: isSelected ? 2 : 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(30),
-                                child: Container(
-                                  width: 50,
-                                  height: 50,
-                                  color: Colors.grey.shade200,
-                                  child: doctor.photoUrl != null
-                                      ? CachedNetworkImage(imageUrl: doctor.photoUrl!, fit: BoxFit.cover)
-                                      : const Icon(Icons.person, size: 32, color: Colors.grey),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      doctor.fullName,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                    ),
-                                    Text(
-                                      doctor.specialization ?? 'Dokter Gigi Umum',
-                                      style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Row(
-                                children: [
-                                  Icon(Icons.star, color: Colors.amber, size: 16),
-                                  SizedBox(width: 4),
-                                  Text('4.96', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          const Wrap(
-                            spacing: 6,
-                            children: [
-                              Chip(label: Text('Senin', style: TextStyle(fontSize: 10))),
-                              Chip(label: Text('Selasa', style: TextStyle(fontSize: 10))),
-                              Chip(label: Text('Rabu', style: TextStyle(fontSize: 10))),
-                              Chip(label: Text('Kamis', style: TextStyle(fontSize: 10))),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+                  return _buildDoctorCardItem(doctors[i]);
                 },
               );
             },
@@ -580,7 +500,6 @@ class _BookingFlowPageState extends ConsumerState<BookingFlowPage> {
             error: (err, _) => Center(child: Text('Error: $err')),
           ),
         ),
-        if (_selectedDoctor != null) _buildTimeSlotPicker(),
         // Bottom CTA
         Padding(
           padding: const EdgeInsets.all(20),
@@ -600,59 +519,153 @@ class _BookingFlowPageState extends ConsumerState<BookingFlowPage> {
     );
   }
 
-  Widget _buildTimeSlotPicker() {
-    final detailAsync = ref.watch(doctorDetailProvider(_selectedDoctor!.id));
+  Widget _buildDoctorCardItem(Doctor doctor) {
+    final isDoctorSelected = _selectedDoctor?.id == doctor.id;
+    final detailAsync = ref.watch(doctorDetailProvider(doctor.id));
+
     return detailAsync.when(
       data: (detail) {
         final slots = _availableSlots(detail);
-        if (slots.isEmpty) {
-          if (_selectedTimeSlot != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) setState(() => _selectedTimeSlot = null);
+
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedDoctor = doctor;
+              if (slots.isNotEmpty && (_selectedTimeSlot == null || !slots.contains(_selectedTimeSlot))) {
+                _selectedTimeSlot = slots.first;
+              }
             });
-          }
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Text(
-              'Dokter tidak praktik pada tanggal ini. Silakan pilih tanggal lain.',
-              style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w500),
-            ),
-          );
-        }
-        if (_selectedTimeSlot == null || !slots.contains(_selectedTimeSlot)) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) setState(() => _selectedTimeSlot = slots.first);
-          });
-        }
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Pilih Jam', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: slots.map((s) {
-                  final selected = s == _selectedTimeSlot;
-                  return ChoiceChip(
-                    label: Text(s),
-                    selected: selected,
-                    selectedColor: AppColors.pink.withValues(alpha: 0.15),
-                    onSelected: (_) => setState(() => _selectedTimeSlot = s),
-                  );
-                }).toList(),
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDoctorSelected ? AppColors.pink.withValues(alpha: 0.04) : Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isDoctorSelected ? AppColors.pink : const Color(0xFFE2E8F0),
+                width: isDoctorSelected ? 2 : 1,
               ),
-            ],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        width: 54,
+                        height: 54,
+                        color: Colors.grey.shade200,
+                        child: doctor.photoUrl != null
+                            ? CachedNetworkImage(imageUrl: doctor.photoUrl!, fit: BoxFit.cover)
+                            : const Icon(Icons.person, size: 32, color: Colors.grey),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  doctor.fullName,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textDark),
+                                ),
+                              ),
+                              if (isDoctorSelected)
+                                const Icon(Icons.check_circle, color: AppColors.pink, size: 20),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            doctor.specialization ?? 'Dokter Gigi Umum',
+                            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.amber, size: 16),
+                        SizedBox(width: 4),
+                        Text('4.96', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Pilih Jam Praktik:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                ),
+                const SizedBox(height: 8),
+                if (slots.isEmpty)
+                  const Text(
+                    'Dokter tidak ada jadwal di tanggal ini',
+                    style: TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.w500),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: slots.map((s) {
+                      final isSlotSelected = isDoctorSelected && _selectedTimeSlot == s;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedDoctor = doctor;
+                            _selectedTimeSlot = s;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSlotSelected ? AppColors.pink : const Color(0xFFF7FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSlotSelected ? AppColors.pink : const Color(0xFFCBD5E0),
+                              width: isSlotSelected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Text(
+                            s,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isSlotSelected ? Colors.white : AppColors.textDark,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+              ],
+            ),
           ),
         );
       },
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: LinearProgressIndicator(),
+      loading: () => Container(
+        height: 100,
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+        child: const Center(child: CircularProgressIndicator()),
       ),
-      error: (_, _) => const SizedBox.shrink(),
+      error: (_, _) => Container(
+        padding: const EdgeInsets.all(12),
+        child: Text(doctor.fullName),
+      ),
     );
   }
 
@@ -873,11 +886,41 @@ class _BookingFlowPageState extends ConsumerState<BookingFlowPage> {
         // Safe offline / sparse API fallback
       }
 
+      // Calculate total amount from selected treatments
+      final treatmentsAsync = ref.read(treatmentListProvider);
+      double totalAmount = 0.0;
+      treatmentsAsync.whenData((treatments) {
+        for (final item in treatments) {
+          if (_selectedTreatmentIds.contains(item.id)) {
+            totalAmount += item.price;
+          }
+        }
+      });
+      if (totalAmount <= 0) {
+        totalAmount = 199000.0; // Standard consultation / scaling default
+      }
+
+      // Log activity from mobile app
+      ActivityLogger.log(
+        action: 'CREATE_RESERVATION',
+        description: 'Pasien membuat reservasi di ${_selectedBranch?.name ?? 'Klinik'} dengan ${_selectedDoctor?.fullName ?? 'Dokter'}',
+        category: 'booking',
+        userName: session.fullName,
+        userEmail: session.phoneWa,
+        details: {
+          'reservationId': reservationId,
+          'branch': _selectedBranch?.name,
+          'doctor': _selectedDoctor?.fullName,
+          'scheduledAt': scheduledAtDate.toIso8601String(),
+          'amount': totalAmount,
+        },
+      );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Reservasi berhasil dibuat! Silakan pilih metode pembayaran.')),
         );
-        context.push('/payment/checkout?reservationId=$reservationId');
+        context.push('/payment/checkout?reservationId=$reservationId&amount=${totalAmount.toStringAsFixed(0)}');
       }
     } catch (e) {
       if (mounted) {
