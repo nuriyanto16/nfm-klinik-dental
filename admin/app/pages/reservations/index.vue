@@ -305,6 +305,103 @@ async function onSubmit() {
     saving.value = false
   }
 }
+
+// Reservation Detail Modal & Printing
+const showDetailModal = ref(false)
+const detailReservation = ref<Reservation | null>(null)
+
+function openReservationDetail(item: Reservation) {
+  detailReservation.value = item
+  showDetailModal.value = true
+}
+
+function printReservationTicket(item: Reservation) {
+  const printWindow = window.open('', '_blank', 'width=750,height=850')
+  if (!printWindow) return
+
+  const treatmentsHtml = Array.isArray(item.treatments) && item.treatments.length > 0
+    ? item.treatments.map(t => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #e2e8f0;"><span>${t.name}</span><strong>Rp ${(t.price || 0).toLocaleString('id-ID')}</strong></div>`).join('')
+    : '<div style="padding:6px 0;">Konsultasi & Pemeriksaan Gigi Umum</div>'
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Tiket Reservasi - ${item.patientName}</title>
+      <style>
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 24px; color: #0f172a; background: #f8fafc; }
+        .ticket { max-width: 480px; margin: 0 auto; background: #ffffff; border: 2px solid #0284c7; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.06); }
+        .header { text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 16px; margin-bottom: 16px; }
+        .header h2 { margin: 0; color: #0284c7; font-size: 20px; font-weight: 800; tracking: 0.5px; }
+        .header p { margin: 3px 0 0; font-size: 11px; color: #64748b; font-weight: 600; }
+        .queue-box { text-align: center; background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+        .queue-box span { font-size: 10px; text-transform: uppercase; font-weight: 700; color: #0369a1; letter-spacing: 0.5px; }
+        .queue-box h1 { margin: 4px 0; font-size: 30px; font-family: monospace; color: #0284c7; font-weight: 900; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; font-size: 12px; }
+        .label { font-size: 9px; text-transform: uppercase; color: #94a3b8; font-weight: 700; }
+        .val { font-weight: 700; color: #0f172a; margin-top: 2px; }
+        .section-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #334155; margin-bottom: 6px; border-left: 3px solid #0284c7; padding-left: 6px; }
+        .treatments-box { font-size: 11px; background: #fafafa; border: 1px solid #f1f5f9; border-radius: 8px; padding: 10px; margin-bottom: 16px; }
+        .footer { text-align: center; border-top: 2px dashed #cbd5e1; padding-top: 14px; font-size: 10px; color: #64748b; }
+        @media print { body { background: #fff; padding: 0; } .ticket { border: 1px solid #000; box-shadow: none; } }
+      </style>
+    </head>
+    <body>
+      <div class="ticket">
+        <div class="header">
+          <h2>NINA DENTAL CARE</h2>
+          <p>${item.branchName || 'Klinik Spesialis Perawatan Gigi'}</p>
+          <p>BUKTI RESERVASI & TIKET ANTRIAN PASIEN</p>
+        </div>
+
+        <div class="queue-box">
+          <span>Nomor Antrian / ID Reservasi</span>
+          <h1>${item.id.toUpperCase()}</h1>
+          <span style="font-size: 10px; color: #0284c7;">Status: ${(STATUS_CONFIG[item.status]?.label || item.status).toUpperCase()}</span>
+        </div>
+
+        <div class="grid">
+          <div>
+            <div class="label">Nama Pasien</div>
+            <div class="val">${item.patientName}</div>
+          </div>
+          <div>
+            <div class="label">Dokter Spesialis</div>
+            <div class="val">${item.doctorName}</div>
+          </div>
+          <div>
+            <div class="label">Jadwal Periksa</div>
+            <div class="val">${formatDateTime(item.scheduledAt)}</div>
+          </div>
+          <div>
+            <div class="label">Lokasi Cabang</div>
+            <div class="val">${item.branchName}</div>
+          </div>
+        </div>
+
+        <div class="section-title">Layanan Gigi yang Dipesan</div>
+        <div class="treatments-box">
+          ${treatmentsHtml}
+        </div>
+
+        ${item.complaintNote ? `
+          <div class="section-title">Catatan Keluhan</div>
+          <div style="font-size: 11px; font-style: italic; color: #475569; margin-bottom: 16px; padding: 8px; background: #fffbebf5; border: 1px solid #fef3c7; border-radius: 6px;">
+            "${item.complaintNote}"
+          </div>
+        ` : ''}
+
+        <div class="footer">
+          <p><strong>Harap hadir 15 menit sebelum jam reservasi.</strong></p>
+          <p>Terima kasih telah mempercayakan perawatan gigi Anda di Nina Dental Care.</p>
+        </div>
+      </div>
+      ' + '<' + 'script>window.onload = function() { window.print(); }<' + '/script>' + '
+    </body>
+    </html>
+  `)
+  printWindow.document.close()
+}
 </script>
 
 <template>
@@ -495,7 +592,25 @@ async function onSubmit() {
 
               <!-- Actions Cell -->
               <td class="px-4 py-3.5 whitespace-nowrap text-right">
-                <div class="flex items-center justify-end gap-2">
+                <div class="flex items-center justify-end gap-1.5">
+                  <UButton
+                    size="xs"
+                    color="neutral"
+                    variant="ghost"
+                    icon="i-lucide-eye"
+                    title="Lihat Detail Reservasi"
+                    @click="openReservationDetail(item)"
+                  />
+
+                  <UButton
+                    size="xs"
+                    color="primary"
+                    variant="subtle"
+                    icon="i-lucide-printer"
+                    title="Cetak Tiket Antrian"
+                    @click="printReservationTicket(item)"
+                  />
+
                   <UButton
                     v-if="STATUS_CONFIG[item.status]?.nextStatus"
                     size="xs"
@@ -686,6 +801,80 @@ async function onSubmit() {
             label="Buat Reservasi"
             @click="onSubmit"
           />
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Modal View Detail Reservasi Pasien -->
+    <UModal
+      v-model:open="showDetailModal"
+      title="Detail Reservasi & Tiket Antrian Pasien"
+      :ui="{ width: 'sm:max-w-2xl' }"
+    >
+      <template #body>
+        <div v-if="detailReservation" class="space-y-4 text-xs">
+          <!-- Top Card Summary -->
+          <div class="p-4 rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-950/30 flex items-center justify-between">
+            <div>
+              <p class="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">ID Reservasi / Tiket Antrian</p>
+              <p class="text-xl font-black text-primary-600 dark:text-primary-400 font-mono">{{ detailReservation.id.toUpperCase() }}</p>
+              <p class="text-xs font-medium text-gray-600 dark:text-gray-300 mt-0.5">
+                Status Antrian: <span class="font-bold uppercase text-primary-600 dark:text-primary-400">{{ STATUS_CONFIG[detailReservation.status]?.label ?? detailReservation.status }}</span>
+              </p>
+            </div>
+            <UBadge color="primary" variant="soft" size="md" class="px-3 py-1 text-xs font-extrabold">
+              {{ detailReservation.branchName }}
+            </UBadge>
+          </div>
+
+          <!-- Information Grid -->
+          <div class="grid grid-cols-2 gap-4 p-3.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/60 dark:bg-gray-800/40">
+            <div>
+              <span class="text-[10px] text-gray-400 font-semibold uppercase block">Nama Pasien</span>
+              <span class="font-bold text-gray-900 dark:text-white text-sm">{{ detailReservation.patientName }}</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-gray-400 font-semibold uppercase block">Dokter Spesialis</span>
+              <span class="font-bold text-gray-900 dark:text-white text-sm">{{ detailReservation.doctorName }}</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-gray-400 font-semibold uppercase block">Jadwal Periksa</span>
+              <span class="font-semibold text-gray-800 dark:text-gray-200">{{ formatDateTime(detailReservation.scheduledAt) }}</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-gray-400 font-semibold uppercase block">Waktu Reservasi Dibuat</span>
+              <span class="font-semibold text-gray-800 dark:text-gray-200">{{ detailReservation.createdAt ? formatDateTime(detailReservation.createdAt) : '—' }}</span>
+            </div>
+          </div>
+
+          <!-- Rencana Perawatan Gigi -->
+          <div class="p-3.5 border border-gray-200 dark:border-gray-700 rounded-xl space-y-2">
+            <span class="font-bold text-gray-900 dark:text-white block text-xs">Layanan Perawatan Gigi</span>
+            <div class="divide-y divide-gray-100 dark:divide-gray-800">
+              <div v-for="(t, idx) in (detailReservation.treatments || [])" :key="idx" class="py-2 flex items-center justify-between">
+                <div>
+                  <p class="font-semibold text-gray-900 dark:text-white">{{ t.name }}</p>
+                  <p class="text-[10px] text-gray-400">{{ t.categoryName || 'Layanan Spesialis Gigi' }}</p>
+                </div>
+                <p class="font-bold text-primary-600 dark:text-primary-400">{{ formatIDR(t.price) }}</p>
+              </div>
+              <div v-if="!detailReservation.treatments?.length" class="py-2 text-gray-500 italic">
+                Konsultasi & Pemeriksaan Gigi Umum
+              </div>
+            </div>
+          </div>
+
+          <!-- Complaint Note Card -->
+          <div class="p-3.5 border border-amber-200 dark:border-amber-800 rounded-xl bg-amber-50/50 dark:bg-amber-950/20">
+            <span class="font-bold text-amber-800 dark:text-amber-300 block mb-1">Catatan Keluhan Pasien:</span>
+            <p class="text-gray-700 dark:text-gray-300 italic">{{ detailReservation.complaintNote || 'Tidak ada catatan keluhan khusus.' }}</p>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <UButton label="Tutup" color="neutral" variant="ghost" @click="showDetailModal = false" />
+            <UButton icon="i-lucide-printer" label="Cetak Tiket Antrian" color="primary" @click="printReservationTicket(detailReservation)" />
+          </div>
         </div>
       </template>
     </UModal>
