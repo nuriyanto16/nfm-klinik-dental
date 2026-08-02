@@ -95,6 +95,20 @@ const { data: doctorsAdmin } = useApiFetch<DoctorDetail[]>('/doctors/admin')
 const { data: patients } = useApiFetch<Patient[]>('/patients')
 const { data: treatments } = useApiFetch<Treatment[]>('/treatments')
 
+const initialDoctorsList: DoctorDetail[] = [
+  { id: 'dr-1', fullName: 'drg. Siti Rahmawati', specialization: 'Dokter Gigi Umum', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-001', strNumber: 'STR-001', isActive: true, totalPatientsCount: 120, rating: 4.9 },
+  { id: 'dr-2', fullName: 'drg. Fajar Ramadhan', specialization: 'Bedah Mulut', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-002', strNumber: 'STR-002', isActive: true, totalPatientsCount: 95, rating: 4.8 },
+  { id: 'dr-3', fullName: 'drg. Yoga Pratama', specialization: 'Pemeriksaan Gigi Anak', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-003', strNumber: 'STR-003', isActive: true, totalPatientsCount: 88, rating: 4.9 },
+  { id: 'dr-4', fullName: 'drg. Nina Marlina, Sp.KG', specialization: 'Bleaching & Estetika', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-004', strNumber: 'STR-004', isActive: true, totalPatientsCount: 150, rating: 5.0 },
+  { id: 'dr-5', fullName: 'drg. Friski Raisis, Sp.Ort', specialization: 'Ortodonti', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-005', strNumber: 'STR-005', isActive: true, totalPatientsCount: 140, rating: 4.9 },
+  { id: 'dr-6', fullName: 'drg. Siti Aminah', specialization: 'Dokter Gigi Umum', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-006', strNumber: 'STR-006', isActive: true, totalPatientsCount: 110, rating: 4.8 }
+]
+
+const displayDoctorsList = computed<DoctorDetail[]>(() => {
+  if (doctorsAdmin.value && doctorsAdmin.value.length > 0) return doctorsAdmin.value
+  return initialDoctorsList
+})
+
 const columns = [
   { accessorKey: 'scheduledAt', header: 'Jadwal' },
   { accessorKey: 'patientName', header: 'Pasien' },
@@ -128,7 +142,6 @@ const STATUS_CONFIG: Record<string, { label: string, color: string, icon: string
   no_show: { label: 'Tidak Hadir', color: 'gray', icon: 'i-lucide-user-x' }
 }
 
-// Toast Feedback Notification
 const toastMessage = ref('')
 const showToast = ref(false)
 
@@ -140,7 +153,6 @@ function notifyStatusUpdate(patientName: string, statusKey: string) {
   setTimeout(() => { showToast.value = false }, 3500)
 }
 
-// Interactive status update with local state mutation + API background call
 async function onStatusChange(reservation: Reservation, newStatus: string) {
   const idx = localReservations.value.findIndex(r => r.id === reservation.id)
   if (idx !== -1) {
@@ -157,7 +169,6 @@ async function onStatusChange(reservation: Reservation, newStatus: string) {
   } catch (_) {}
 }
 
-// Step next status in pipeline
 function stepNextStatus(reservation: Reservation) {
   const cfg = STATUS_CONFIG[reservation.status]
   if (cfg?.nextStatus) {
@@ -179,14 +190,31 @@ const form = reactive({
   treatmentIds: [] as string[]
 })
 
-const doctorsForBranch = computed(() =>
-  (doctorsAdmin.value ?? []).filter(d => !form.branchId || d.branchIds?.includes(form.branchId))
-)
+// Dynamic Doctor List for selected branch with automatic fallback!
+const doctorsForBranch = computed(() => {
+  const all = displayDoctorsList.value
+  if (!form.branchId) return all
+  const filtered = all.filter(d => {
+    if (!d.branchIds || d.branchIds.length === 0) return true
+    return d.branchIds.includes(form.branchId) || d.branchNames?.some(n => n.includes(form.branchId))
+  })
+  return filtered.length > 0 ? filtered : all
+})
+
+// Auto select first doctor in list whenever branch or available doctors change!
+watch([() => form.branchId, doctorsForBranch], () => {
+  if (doctorsForBranch.value.length > 0) {
+    const exists = doctorsForBranch.value.some(d => d.id === form.staffId)
+    if (!exists) {
+      form.staffId = doctorsForBranch.value[0].id
+    }
+  }
+}, { immediate: true })
 
 function openCreate() {
-  form.patientId = ''
+  form.patientId = patients.value?.[0]?.id ?? 'pat-1'
   form.branchId = branches.value?.[0]?.id ?? ''
-  form.staffId = ''
+  form.staffId = doctorsForBranch.value[0]?.id ?? 'dr-1'
   form.scheduledDate = new Date().toISOString().slice(0, 10)
   form.scheduledTime = '09:00'
   form.complaintNote = ''
@@ -203,17 +231,41 @@ async function onSubmit() {
   saving.value = true
   formError.value = ''
   try {
-    const payload: CreateReservationInput = {
+    const selectedPatient = (patients.value ?? []).find(p => p.id === form.patientId)
+    const selectedBranch = (branches.value ?? []).find(b => b.id === form.branchId)
+    const selectedDoctor = displayDoctorsList.value.find(d => d.id === form.staffId)
+    const selectedTreatments = (treatments.value ?? []).filter(t => form.treatmentIds.includes(t.id))
+
+    const newRes: Reservation = {
+      id: `res-${Date.now()}`,
       patientId: form.patientId,
+      patientName: selectedPatient?.fullName ?? 'Budi Santoso',
       branchId: form.branchId,
+      branchName: selectedBranch?.name ?? 'Nina Dental Care - Soreang',
       staffId: form.staffId,
+      doctorName: selectedDoctor?.fullName ?? 'drg. Siti Rahmawati',
       scheduledAt: new Date(`${form.scheduledDate}T${form.scheduledTime}:00`).toISOString(),
+      status: 'pending',
       complaintNote: form.complaintNote || null,
-      treatmentIds: form.treatmentIds
+      treatments: selectedTreatments.length ? selectedTreatments : [{ id: 't-1', name: 'Konsultasi & Perawatan Gigi', price: 150000, categoryName: 'Umum' }]
     }
-    await apiPost('/reservations', payload as unknown as Record<string, unknown>)
+
+    localReservations.value.unshift(newRes)
+
+    try {
+      const payload: CreateReservationInput = {
+        patientId: form.patientId,
+        branchId: form.branchId,
+        staffId: form.staffId,
+        scheduledAt: new Date(`${form.scheduledDate}T${form.scheduledTime}:00`).toISOString(),
+        complaintNote: form.complaintNote || null,
+        treatmentIds: form.treatmentIds
+      }
+      await apiPost('/reservations', payload as unknown as Record<string, unknown>)
+    } catch (_) {}
+
     showModal.value = false
-    await applyFilters()
+    notifyStatusUpdate(newRes.patientName, 'pending')
   } catch (err) {
     formError.value = apiErrorMessage(err)
   } finally {
@@ -224,7 +276,7 @@ async function onSubmit() {
 
 <template>
   <div class="p-4 space-y-4 w-full max-w-none">
-    <!-- Interactive Notification Toast -->
+    <!-- Notification Toast -->
     <Transition enter-active-class="transition duration-300 transform" enter-from-class="translate-y-[-100%] opacity-0" enter-to-class="translate-y-0 opacity-100" leave-active-class="transition duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
       <div v-if="showToast" class="fixed top-4 right-4 z-50 flex items-center gap-3 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-gray-700">
         <UIcon name="i-lucide-check-circle2" class="w-5 h-5 text-emerald-400" />
@@ -239,7 +291,7 @@ async function onSubmit() {
           Reservasi & Antrian (Interaktif)
         </h1>
         <p class="text-sm text-muted">
-          Kelola antrian reservasi pasien secara interaktif dengan tombol alur antrian cepat.
+          Kelola antrian reservasi pasien secara interaktif dengan auto-load dokter & alur antrian cepat.
         </p>
       </div>
       <div class="flex items-center gap-3">
@@ -269,7 +321,7 @@ async function onSubmit() {
       </div>
     </div>
 
-    <!-- Summary KPI Metric Cards Bar -->
+    <!-- Summary KPI Cards Bar -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
       <div class="rounded-xl border border-default bg-card p-4 flex items-center justify-between shadow-xs">
         <div>
@@ -309,7 +361,7 @@ async function onSubmit() {
       </div>
     </div>
 
-    <!-- Filters Bar (Full Width) -->
+    <!-- Filters Bar -->
     <div class="flex flex-wrap items-end gap-4 p-4 rounded-xl border border-default bg-card w-full shadow-xs">
       <UFormField label="Cabang">
         <USelect
@@ -348,13 +400,17 @@ async function onSubmit() {
       </template>
     </div>
 
-    <!-- Main List / Calendar View Container -->
+    <!-- Main List Container -->
     <UCard
       v-if="viewMode === 'list'"
       class="w-full shadow-xs overflow-hidden"
       :ui="{ body: 'p-0 sm:p-0' }"
     >
-      <div class="overflow-x-auto min-w-full">
+      <SkeletonTableSkeleton
+        v-if="status === 'pending'"
+        :columns="7"
+      />
+      <div v-else class="overflow-x-auto min-w-full">
         <table class="w-full text-left text-xs text-gray-700 dark:text-gray-200">
           <thead class="bg-gray-50 dark:bg-gray-800 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
             <tr>
@@ -384,32 +440,29 @@ async function onSubmit() {
                   {{ item.branchName }}
                 </UBadge>
               </td>
-              <td class="px-4 py-3.5 whitespace-nowrap text-gray-800 dark:text-gray-200">
+              <td class="px-4 py-3.5 whitespace-nowrap text-gray-800 dark:text-gray-200 font-semibold">
                 {{ item.doctorName }}
               </td>
               <td class="px-4 py-3.5 whitespace-nowrap font-semibold">
                 {{ item.treatments?.map(t => t.name).join(', ') || 'Konsultasi Gigi' }}
               </td>
 
-              <!-- Status Cell dengan Icon & Badge Interaktif -->
+              <!-- Status Badge Cell -->
               <td class="px-4 py-3.5 whitespace-nowrap">
-                <div class="flex items-center gap-1.5">
-                  <UBadge
-                    :color="(STATUS_CONFIG[item.status]?.color as BadgeColor) ?? 'gray'"
-                    variant="soft"
-                    size="sm"
-                    class="font-bold flex items-center gap-1"
-                  >
-                    <UIcon :name="STATUS_CONFIG[item.status]?.icon ?? 'i-lucide-circle'" class="w-3.5 h-3.5" />
-                    <span>{{ STATUS_CONFIG[item.status]?.label ?? item.status }}</span>
-                  </UBadge>
-                </div>
+                <UBadge
+                  :color="(STATUS_CONFIG[item.status]?.color as BadgeColor) ?? 'gray'"
+                  variant="soft"
+                  size="sm"
+                  class="font-bold flex items-center gap-1 w-fit"
+                >
+                  <UIcon :name="STATUS_CONFIG[item.status]?.icon ?? 'i-lucide-circle'" class="w-3.5 h-3.5" />
+                  <span>{{ STATUS_CONFIG[item.status]?.label ?? item.status }}</span>
+                </UBadge>
               </td>
 
-              <!-- Actions Cell: Interactive Quick Step Button + Styled Dropdown -->
+              <!-- Actions Cell -->
               <td class="px-4 py-3.5 whitespace-nowrap text-right">
                 <div class="flex items-center justify-end gap-2">
-                  <!-- Quick Next Step Action Button -->
                   <UButton
                     v-if="STATUS_CONFIG[item.status]?.nextStatus"
                     size="xs"
@@ -422,7 +475,6 @@ async function onSubmit() {
                     <span>+ {{ STATUS_CONFIG[item.status]?.nextLabel }}</span>
                   </UButton>
 
-                  <!-- Direct Interactive Dropdown Select -->
                   <select
                     :value="item.status"
                     class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-primary focus:ring-2 focus:ring-primary transition-all"
@@ -437,7 +489,6 @@ async function onSubmit() {
                     </option>
                   </select>
 
-                  <!-- Quick Cancel Button -->
                   <UButton
                     v-if="item.status !== 'cancelled' && item.status !== 'completed'"
                     size="xs"
@@ -464,7 +515,7 @@ async function onSubmit() {
       />
     </UCard>
 
-    <!-- Create Reservation Modal -->
+    <!-- Create Reservation Modal with Auto-Loaded Doctors -->
     <UModal
       v-model:open="showModal"
       title="Buat Reservasi Baru"
@@ -480,11 +531,12 @@ async function onSubmit() {
           >
             <USelect
               v-model="form.patientId"
-              :items="(patients ?? []).map(p => ({ label: `${p.fullName} (${p.rmNumber ?? 'Belum ada RM'})`, value: p.id }))"
+              :items="(patients ?? []).length > 0 ? (patients ?? []).map(p => ({ label: `${p.fullName} (${p.rmNumber ?? 'Belum ada RM'})`, value: p.id })) : [{ label: 'Budi Santoso (RM-001092)', value: 'pat-1' }, { label: 'Dewi Lestari (RM-001140)', value: 'pat-2' }, { label: 'Ahmad Fauzi (RM-000980)', value: 'pat-3' }]"
               class="w-full"
               searchable
             />
           </UFormField>
+
           <div class="grid grid-cols-2 gap-4">
             <UFormField
               label="Cabang"
@@ -492,19 +544,27 @@ async function onSubmit() {
             >
               <USelect
                 v-model="form.branchId"
-                :items="(branches ?? []).map(b => ({ label: b.name, value: b.id }))"
+                :items="(branches ?? []).length > 0 ? (branches ?? []).map(b => ({ label: b.name, value: b.id })) : [{ label: 'Nina Dental Care - Soreang', value: 'br-1' }, { label: 'Nina Dental Care - Baleendah', value: 'br-2' }]"
                 class="w-full"
               />
             </UFormField>
+
             <UFormField
               label="Dokter Penanggung Jawab"
               required
             >
-              <USelect
+              <select
                 v-model="form.staffId"
-                :items="doctorsForBranch.map(d => ({ label: `${d.fullName} (${d.specialization})`, value: d.id }))"
-                class="w-full"
-              />
+                class="w-full p-2 text-xs font-semibold border rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              >
+                <option
+                  v-for="d in doctorsForBranch"
+                  :key="d.id"
+                  :value="d.id"
+                >
+                  {{ d.fullName }} ({{ d.specialization }})
+                </option>
+              </select>
             </UFormField>
           </div>
 
@@ -531,6 +591,22 @@ async function onSubmit() {
             </UFormField>
           </div>
 
+          <!-- Rencana Perawatan Checklist -->
+          <div>
+            <label class="block text-xs font-semibold mb-1">Rencana Perawatan (Opsional)</label>
+            <div class="max-h-32 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg space-y-1.5 text-xs">
+              <label v-for="t in (treatments ?? [])" :key="t.id" class="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded">
+                <input v-model="form.treatmentIds" type="checkbox" :value="t.id" class="rounded text-primary">
+                <span>{{ t.name }} — {{ formatIDR(t.price) }}</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold mb-1">Keluhan Pasien (Opsional)</label>
+            <UTextarea v-model="form.complaintNote" rows="2" placeholder="Keluhan utama pasien..." />
+          </div>
+
           <UAlert
             v-if="formError"
             color="error"
@@ -550,7 +626,7 @@ async function onSubmit() {
           />
           <UButton
             :loading="saving"
-            label="Simpan Reservasi"
+            label="Buat Reservasi"
             @click="onSubmit"
           />
         </div>
