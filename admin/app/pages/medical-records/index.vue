@@ -169,49 +169,140 @@ const initialDummyRecords: MedicalRecord[] = [
     id: 'mr-101',
     patientId: '31000000-0000-0000-0000-000000000001',
     patientName: 'Budi Santoso',
-    rmNumber: 'RM-0001',
+    rmNumber: 'RM-2026-0001',
     staffId: '21000000-0000-0000-0000-000000000001',
     doctorName: 'drg. Friski Raisis, Sp.Ort',
-    diagnosis: 'Karies dentin pada gigi 36 & Perataan Behel Metal',
-    treatmentNotes: 'Pembersihan karang gigi, kontrol behel metal konvensional bulan ke-6.',
+    diagnosis: 'Karies dentin pada gigi 36 & Kontrol Ortodonti Behel Metal',
+    treatmentNotes: 'Pembersihan karang gigi scaling, ganti kawat Niti 0.16 & karet behel metal konvensional bulan ke-6.',
     createdAt: '2026-07-27T10:00:00Z',
-    updatedAt: '2026-07-27T10:00:00Z'
+    updatedAt: '2026-07-27T10:00:00Z',
+    odontogram: [
+      { toothNumber: 36, condition: 'caries', notes: 'Karies profunda, perlu penambalan komposit' },
+      { toothNumber: 11, condition: 'healthy', notes: 'Posisi gigi sejajar' }
+    ]
   },
   {
     id: 'mr-102',
     patientId: '31000000-0000-0000-0000-000000000002',
     patientName: 'Siti Aminah',
-    rmNumber: 'RM-0002',
+    rmNumber: 'RM-2026-0002',
     staffId: '21000000-0000-0000-0000-000000000002',
     doctorName: 'drg. Nina Marlina, Sp.KG',
-    diagnosis: 'Scaling karang gigi & Fluoridasi 6-in-1',
-    treatmentNotes: 'Scaling rahang atas dan bawah, pembersihan noda stain & aplikasi varnish fluor.',
+    diagnosis: 'Scaling karang gigi & Perawatan Saluran Akar (PSA) gigi 21',
+    treatmentNotes: 'Preparasi saluran akar gigi 21, irigasi NaOCl 2.5%, ekstirpasi pulpa & pengisian kalsium hidroksida temporary.',
     createdAt: '2026-07-20T14:30:00Z',
-    updatedAt: '2026-07-20T14:30:00Z'
+    updatedAt: '2026-07-20T14:30:00Z',
+    odontogram: [
+      { toothNumber: 21, condition: 'filled', notes: 'Tahap 1 PSA selesai' }
+    ]
   },
   {
     id: 'mr-103',
     patientId: '31000000-0000-0000-0000-000000000003',
     patientName: 'Kayla Aminah',
-    rmNumber: 'RM-0003',
+    rmNumber: 'RM-2026-0003',
     staffId: '21000000-0000-0000-0000-000000000003',
-    doctorName: 'drg. Fajar Ramadhan',
-    diagnosis: 'Cabut gigi bungsu (odontektomi M3 bawah kanan)',
-    treatmentNotes: 'Ekstraksi gigi 48 terimpaksi, penjahitan 2 simpul, resep analgetik & antibiotik.',
+    doctorName: 'drg. Yoga Pratama',
+    diagnosis: 'Topical Application Fluoride (TAF) & Pit Fissure Sealant',
+    treatmentNotes: 'Pembersihan plak gigi susu, aplikasi pit fissure sealant pada molar 1 kanan atas untuk pencegahan karies anak.',
     createdAt: '2026-07-15T09:15:00Z',
-    updatedAt: '2026-07-15T09:15:00Z'
+    updatedAt: '2026-07-15T09:15:00Z',
+    odontogram: [
+      { toothNumber: 55, condition: 'healthy', notes: 'Gigi susu anak sehat' }
+    ]
   },
   {
     id: 'mr-104',
     patientId: '31000000-0000-0000-0000-000000000004',
     patientName: 'Ahmad Fauzi',
-    rmNumber: 'RM-0004',
+    rmNumber: 'RM-2026-0004',
     staffId: '21000000-0000-0000-0000-000000000001',
     doctorName: 'drg. Friski Raisis, Sp.Ort',
-    diagnosis: 'Bleaching Instant Laser 2 Rahang',
-    treatmentNotes: 'Aplikasi gingival barrier, bleaching gel hydrogen peroxide 35%, sinar LED 3x15 menit.',
+    diagnosis: 'Bleaching Instant Laser 2 Rahang & Polish Stain',
+    treatmentNotes: 'Aplikasi gingival barrier protection, gel hydrogen peroxide 35%, penyinaran LED 3x15 menit, tingkat kecerahan +4 shade.',
     createdAt: '2026-07-10T11:00:00Z',
-    updatedAt: '2026-07-10T11:00:00Z'
+    updatedAt: '2026-07-10T11:00:00Z',
+    odontogram: [
+      { toothNumber: 11, condition: 'bleaching', notes: 'Shade B1 pasca bleaching' }
+    ]
+  },
+  {
+    id: 'mr-105',
+    patientId: '31000000-0000-0000-0000-000000000005',
+    patientName: 'Dewi Lestari',
+    rmNumber: 'RM-2026-0005',
+    staffId: '21000000-0000-0000-0000-000000000002',
+    doctorName: 'drg. Fajar Ramadhan',
+    diagnosis: 'Odontektomi Gigi Impaksi M3 Rahang Bawah Kanan (Gigi 48)',
+    treatmentNotes: 'Infiltrasi anestesi lokal, separasi mahkota gigi 48 terimpaksi melintang, ekstrasi, pembersihan kuretase, penjahitan silk 3-0.',
+    createdAt: '2026-07-08T13:00:00Z',
+    updatedAt: '2026-07-08T13:00:00Z',
+    odontogram: [
+      { toothNumber: 48, condition: 'extracted', notes: 'Pasca odontektomi impaksi kelas II B' }
+    ]
+  },
+  {
+    id: 'mr-106',
+    patientId: '31000000-0000-0000-0000-000000000006',
+    patientName: 'Rina Marlina',
+    rmNumber: 'RM-2026-0006',
+    staffId: '21000000-0000-0000-0000-000000000001',
+    doctorName: 'drg. Siti Rahmawati',
+    diagnosis: 'Pemasangan Crown E-Max Porselen pada gigi 12',
+    treatmentNotes: 'Crown cetakan pasca PSA, cementing resin cement dual-cure, evaluasi kontak oklusi & artikulasi pasca pasang.',
+    createdAt: '2026-07-05T15:20:00Z',
+    updatedAt: '2026-07-05T15:20:00Z',
+    odontogram: [
+      { toothNumber: 12, condition: 'crown', notes: 'Crown E-Max estetik' }
+    ]
+  },
+  {
+    id: 'mr-107',
+    patientId: '31000000-0000-0000-0000-000000000007',
+    patientName: 'Hendra Wijaya',
+    rmNumber: 'RM-2026-0007',
+    staffId: '21000000-0000-0000-0000-000000000003',
+    doctorName: 'drg. Yoga Pratama',
+    diagnosis: 'Gingivitis Marginalis & Penumpukan Kalkulus Subgingiva',
+    treatmentNotes: 'Deep scaling ultrasound & root planing gigi bawah anterior, irigasi obat kumur chlorhexidine 0.2%.',
+    createdAt: '2026-07-02T08:45:00Z',
+    updatedAt: '2026-07-02T08:45:00Z'
+  },
+  {
+    id: 'mr-108',
+    patientId: '31000000-0000-0000-0000-000000000008',
+    patientName: 'Maya Indah',
+    rmNumber: 'RM-2026-0008',
+    staffId: '21000000-0000-0000-0000-000000000002',
+    doctorName: 'drg. Nina Marlina, Sp.KG',
+    diagnosis: 'Veneer Porselen Direct Komposit Gigi 11 & 21',
+    treatmentNotes: 'Preparasi minimal email 0.3mm, penambalan komposit mikrohibrid shade A1, finishing & polishing bur burr diamond.',
+    createdAt: '2026-06-28T16:00:00Z',
+    updatedAt: '2026-06-28T16:00:00Z'
+  },
+  {
+    id: 'mr-109',
+    patientId: '31000000-0000-0000-0000-000000000009',
+    patientName: 'Dian Permata',
+    rmNumber: 'RM-2026-0009',
+    staffId: '21000000-0000-0000-0000-000000000001',
+    doctorName: 'drg. Friski Raisis, Sp.Ort',
+    diagnosis: 'Pemasangan Behel Sapphire Estetik (Bulan 1)',
+    treatmentNotes: 'Bonding bracket ceramic sapphire gigi rahang atas & bawah, pasang kawat awal Niti 0.12, edukasi kebersihan mulut.',
+    createdAt: '2026-06-25T10:30:00Z',
+    updatedAt: '2026-06-25T10:30:00Z'
+  },
+  {
+    id: 'mr-110',
+    patientId: '31000000-0000-0000-0000-000000000010',
+    patientName: 'Riski Pratama',
+    rmNumber: 'RM-2026-0010',
+    staffId: '21000000-0000-0000-0000-000000000002',
+    doctorName: 'drg. Fajar Ramadhan',
+    diagnosis: 'Pencabutan Gigi Komplikasi Gigi 26 Residual Root',
+    treatmentNotes: 'Infiltrasi anestesi periapikal, luksasi bein, ekstraksi sisa akar gigi 26, tampon steril depresi perdarahan.',
+    createdAt: '2026-06-20T11:15:00Z',
+    updatedAt: '2026-06-20T11:15:00Z'
   }
 ]
 
