@@ -55,7 +55,50 @@ const patients = computed(() => {
   if (Array.isArray((d as any)?.data)) return (d as any).data
   return []
 })
-watch(search, () => { page.value = 1 })
+const { data: reservations } = useApiFetch<any>('/reservations')
+const { data: payments } = useApiFetch<any>('/payments')
+
+const columns = [
+  { id: 'photo', header: '' },
+  { accessorKey: 'fullName', header: 'Nama Pasien' },
+  { accessorKey: 'rmNumber', header: 'No. RM' },
+  { accessorKey: 'relation', header: 'Relasi' },
+  { accessorKey: 'createdAt', header: 'Terdaftar' }
+]
+
+const relationLabel: Record<string, string> = {
+  self: 'Akun Sendiri',
+  child: 'Anak',
+  spouse: 'Pasangan',
+  parent: 'Orang Tua',
+  other: 'Lainnya'
+}
+const RELATIONS = [
+  { label: 'Akun Sendiri', value: 'self' },
+  { label: 'Anak', value: 'child' },
+  { label: 'Pasangan', value: 'spouse' },
+  { label: 'Orang Tua', value: 'parent' },
+  { label: 'Lainnya', value: 'other' }
+]
+
+function initials(name?: string) {
+  if (!name || typeof name !== 'string') return 'P'
+  return name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()
+}
+
+const patientAvatars: Record<string, string> = {
+  'Budi Santoso': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+  'Siti Aminah': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+  'Kayla Aminah': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+  'Ahmad Fauzi': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+  'Dewi Lestari': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+  'Rina Marlina': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80'
+}
+
+function getPatientAvatar(name?: string) {
+  if (!name) return ''
+  return patientAvatars[name] ?? ''
+}
 
 const initialPatients: Patient[] = [
   { id: '31000000-0000-0000-0000-000000000001', fullName: 'Budi Santoso', phoneWa: '081234567890', email: 'budi.santoso@example.com', gender: 'male', dateOfBirth: '1990-05-15', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0001', relation: 'self', createdAt: '2026-07-01T00:00:00Z' },
