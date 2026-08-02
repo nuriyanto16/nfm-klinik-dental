@@ -124,6 +124,17 @@ const displayDoctorsList = computed<DoctorDetail[]>(() => {
   return initialDoctorsList
 })
 
+function formatTreatmentsName(treatments: any): string {
+  if (Array.isArray(treatments) && treatments.length > 0) {
+    const names = treatments.map(t => typeof t === 'string' ? t : (t?.name || t?.title || '')).filter(Boolean)
+    if (names.length > 0) return names.join(', ')
+  }
+  if (typeof treatments === 'string' && treatments.trim()) {
+    return treatments
+  }
+  return 'Konsultasi & Perawatan Gigi'
+}
+
 const columns = [
   { accessorKey: 'scheduledAt', header: 'Jadwal' },
   { accessorKey: 'patientName', header: 'Pasien' },
@@ -459,7 +470,7 @@ async function onSubmit() {
                 {{ item.doctorName }}
               </td>
               <td class="px-4 py-3.5 whitespace-nowrap font-semibold">
-                {{ item.treatments?.map(t => t.name).join(', ') || 'Konsultasi Gigi' }}
+                {{ formatTreatmentsName(item.treatments) }}
               </td>
 
               <!-- Status Badge Cell -->
