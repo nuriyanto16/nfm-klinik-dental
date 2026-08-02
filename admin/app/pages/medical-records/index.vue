@@ -138,32 +138,116 @@ async function onSubmit() {
       await apiPost('/medical-records', payload as unknown as Record<string, unknown>)
     }
 
-    showModal.value = false
-    await refresh()
-  } catch (err) {
-    formError.value = apiErrorMessage(err)
-  } finally {
-    saving.value = false
+// --- Search, Filter & Pagination ---
+const search = ref('')
+const filterDoctor = ref('all')
+const page = ref(1)
+const pageSize = 10
+
+const initialDummyRecords: MedicalRecord[] = [
+  {
+    id: 'mr-101',
+    patientId: '31000000-0000-0000-0000-000000000001',
+    patientName: 'Budi Santoso',
+    rmNumber: 'RM-0001',
+    staffId: '21000000-0000-0000-0000-000000000001',
+    doctorName: 'drg. Friski Raisis, Sp.Ort',
+    diagnosis: 'Karies dentin pada gigi 36 & Perataan Behel Metal',
+    treatmentNotes: 'Pembersihan karang gigi, kontrol behel metal konvensional bulan ke-6.',
+    createdAt: '2026-07-27T10:00:00Z',
+    updatedAt: '2026-07-27T10:00:00Z'
+  },
+  {
+    id: 'mr-102',
+    patientId: '31000000-0000-0000-0000-000000000002',
+    patientName: 'Siti Aminah',
+    rmNumber: 'RM-0002',
+    staffId: '21000000-0000-0000-0000-000000000002',
+    doctorName: 'drg. Nina Marlina, Sp.KG',
+    diagnosis: 'Scaling karang gigi & Fluoridasi 6-in-1',
+    treatmentNotes: 'Scaling rahang atas dan bawah, pembersihan noda stain & aplikasi varnish fluor.',
+    createdAt: '2026-07-20T14:30:00Z',
+    updatedAt: '2026-07-20T14:30:00Z'
+  },
+  {
+    id: 'mr-103',
+    patientId: '31000000-0000-0000-0000-000000000003',
+    patientName: 'Kayla Aminah',
+    rmNumber: 'RM-0003',
+    staffId: '21000000-0000-0000-0000-000000000003',
+    doctorName: 'drg. Fajar Ramadhan',
+    diagnosis: 'Cabut gigi bungsu (odontektomi M3 bawah kanan)',
+    treatmentNotes: 'Ekstraksi gigi 48 terimpaksi, penjahitan 2 simpul, resep analgetik & antibiotik.',
+    createdAt: '2026-07-15T09:15:00Z',
+    updatedAt: '2026-07-15T09:15:00Z'
+  },
+  {
+    id: 'mr-104',
+    patientId: '31000000-0000-0000-0000-000000000004',
+    patientName: 'Ahmad Fauzi',
+    rmNumber: 'RM-0004',
+    staffId: '21000000-0000-0000-0000-000000000001',
+    doctorName: 'drg. Friski Raisis, Sp.Ort',
+    diagnosis: 'Bleaching Instant Laser 2 Rahang',
+    treatmentNotes: 'Aplikasi gingival barrier, bleaching gel hydrogen peroxide 35%, sinar LED 3x15 menit.',
+    createdAt: '2026-07-10T11:00:00Z',
+    updatedAt: '2026-07-10T11:00:00Z'
   }
-}
+]
+
+const displayRecords = computed(() => {
+  const base = (records.value && records.value.length > 0) ? records.value : initialDummyRecords
+  return base.filter(r => {
+    const matchSearch = !search.value || 
+      (r.patientName || '').toLowerCase().includes(search.value.toLowerCase()) ||
+      (r.diagnosis || '').toLowerCase().includes(search.value.toLowerCase()) ||
+      (r.rmNumber || '').toLowerCase().includes(search.value.toLowerCase())
+    const matchDoc = filterDoctor.value === 'all' || r.staffId === filterDoctor.value || (r.doctorName || '').includes(filterDoctor.value)
+    return matchSearch && matchDoc
+  })
+})
+
+const totalPages = computed(() => Math.ceil(displayRecords.value.length / pageSize) || 1)
+const paginatedRecords = computed(() => {
+  const start = (page.value - 1) * pageSize
+  return displayRecords.value.slice(start, start + pageSize)
+})
 </script>
 
 <template>
   <div class="p-4 space-y-4 w-full max-w-none">
-    <div class="flex items-center justify-between flex-wrap gap-2">
+    <div class="flex items-center justify-between flex-wrap gap-3">
       <div>
-        <h1 class="text-xl font-semibold">
+        <h1 class="text-xl font-bold text-gray-900 dark:text-white">
           Rekam Medis & Follow-Up Kontrol
         </h1>
-        <p class="text-sm text-muted">
-          Pencatatan rekam medis, odontogram, dan rekomendasi kontrol berkala pasien.
+        <p class="text-xs text-gray-500">
+          Pencatatan rekam medis, odontogram, resep, dan rekomendasi jadwal kontrol berkala pasien.
         </p>
       </div>
-      <UButton
-        icon="i-lucide-plus"
-        label="Tambah Rekam Medis"
-        @click="openCreate"
-      />
+      <div class="flex items-center gap-3">
+        <UInput
+          v-model="search"
+          icon="i-lucide-search"
+          placeholder="Cari nama pasien / RM / diagnosis..."
+          class="w-full sm:w-64"
+        />
+        <select
+          v-model="filterDoctor"
+          class="p-2 border rounded-lg bg-white dark:bg-gray-800 text-xs font-medium"
+        >
+          <option value="all">Semua Dokter</option>
+          <option v-for="d in doctorsAdmin" :key="d.id" :value="d.id">
+            {{ d.fullName }}
+          </option>
+        </select>
+        <UButton
+          icon="i-lucide-plus"
+          label="+ Tambah Rekam Medis"
+          color="primary"
+          @click="openCreate"
+        />
+      </div>
     </div>
 
     <!-- 2-Column Layout Grid -->
@@ -175,55 +259,80 @@ async function onSubmit() {
           color="error"
           variant="subtle"
           icon="i-lucide-alert-triangle"
-          title="Gagal memuat data"
-          :description="`core-api belum bisa dihubungi: ${error.message}`"
+          title="Gagal memuat data dari server core-api"
+          :description="`Menampilkan data rekam medis lokal: ${error.message}`"
         />
 
         <SkeletonTableSkeleton
           v-if="status === 'pending'"
           :columns="5"
         />
-        <UTable
-          v-else
-          :data="records ?? []"
-          :columns="columns"
-          class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs"
-        >
-          <template #createdAt-cell="{ row }">
-            {{ formatDateTime(row.original.createdAt) }}
-          </template>
-          <template #diagnosis-cell="{ row }">
-            <span class="line-clamp-1 font-medium">{{ row.original.diagnosis ?? '—' }}</span>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex items-center gap-1">
+        <div v-else class="space-y-3">
+          <UTable
+            :data="paginatedRecords"
+            :columns="columns"
+            class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs"
+          >
+            <template #createdAt-cell="{ row }">
+              {{ formatDateTime(row.original.createdAt) }}
+            </template>
+            <template #diagnosis-cell="{ row }">
+              <span class="line-clamp-1 font-medium text-gray-900 dark:text-white">{{ row.original.diagnosis ?? '—' }}</span>
+            </template>
+            <template #actions-cell="{ row }">
+              <div class="flex items-center gap-1">
+                <UButton
+                  icon="i-lucide-eye"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  label="Detail"
+                  @click="openDetail(row.original)"
+                />
+                <UButton
+                  icon="i-lucide-edit-2"
+                  size="xs"
+                  color="primary"
+                  variant="ghost"
+                  label="Edit"
+                  @click="openEdit(row.original)"
+                />
+                <UButton
+                  icon="i-lucide-trash-2"
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  label="Hapus"
+                  @click="deleteRecord(row.original)"
+                />
+              </div>
+            </template>
+          </UTable>
+
+          <!-- Pagination Bar -->
+          <div class="flex items-center justify-between px-3 py-2 bg-white dark:bg-gray-800 rounded-xl border text-xs text-gray-500">
+            <span>Menampilkan {{ paginatedRecords.length }} dari {{ displayRecords.length }} rekam medis</span>
+            <div class="flex items-center gap-2">
               <UButton
-                icon="i-lucide-eye"
+                icon="i-lucide-chevron-left"
                 size="xs"
                 color="neutral"
-                variant="ghost"
-                label="Detail"
-                @click="openDetail(row.original)"
+                variant="outline"
+                :disabled="page <= 1"
+                @click="page--"
               />
+              <span class="font-semibold text-gray-900 dark:text-white">Hal {{ page }} / {{ totalPages }}</span>
               <UButton
-                icon="i-lucide-edit-2"
+                icon="i-lucide-chevron-right"
                 size="xs"
-                color="primary"
-                variant="ghost"
-                label="Edit"
-                @click="openEdit(row.original)"
-              />
-              <UButton
-                icon="i-lucide-trash-2"
-                size="xs"
-                color="error"
-                variant="ghost"
-                label="Hapus"
-                @click="deleteRecord(row.original)"
+                color="neutral"
+                variant="outline"
+                :disabled="page >= totalPages"
+                @click="page++"
               />
             </div>
-          </template>
-        </UTable>
+          </div>
+        </div>
       </div>
 
       <!-- Right Column: Panel Pasien Rekomendasi Kontrol Terdekat -->
