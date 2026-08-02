@@ -57,6 +57,24 @@ const patients = computed(() => {
 })
 watch(search, () => { page.value = 1 })
 
+const initialPatients: Patient[] = [
+  { id: '31000000-0000-0000-0000-000000000001', fullName: 'Budi Santoso', phoneWa: '081234567890', email: 'budi.santoso@example.com', gender: 'male', dateOfBirth: '1990-05-15', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0001', relation: 'self', createdAt: '2026-07-01T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000002', fullName: 'Siti Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '1995-08-20', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0002', relation: 'self', createdAt: '2026-07-02T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000003', fullName: 'Kayla Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '2018-03-10', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0003', relation: 'child', createdAt: '2026-07-03T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000004', fullName: 'Ahmad Fauzi', phoneWa: '081311223344', email: 'ahmad.fauzi@example.com', gender: 'male', dateOfBirth: '1988-12-01', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0004', relation: 'self', createdAt: '2026-07-04T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000005', fullName: 'Dewi Lestari', phoneWa: '081355667788', email: 'dewi.lestari@example.com', gender: 'female', dateOfBirth: '1993-11-11', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0005', relation: 'self', createdAt: '2026-07-05T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000006', fullName: 'Rina Marlina', phoneWa: '081244556677', email: 'rina.marlina@example.com', gender: 'female', dateOfBirth: '1992-04-14', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0006', relation: 'self', createdAt: '2026-07-06T00:00:00Z' }
+]
+
+const localPatients = ref<Patient[]>([])
+
+const displayPatients = computed<Patient[]>(() => {
+  const apiList = patients.value
+  const all = apiList.length > 0 ? [...apiList, ...initialPatients.filter(ip => !apiList.some((ap: Patient) => ap.id === ip.id))] : initialPatients
+  const extra = localPatients.value.filter(lp => !all.some(p => p.id === lp.id))
+  return [...extra, ...all]
+})
+
 // Selected patient state - initialized deterministically to match SSR and client
 const selectedPatientId = ref<string>(initialPatients[0].id)
 
