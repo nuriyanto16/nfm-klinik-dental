@@ -517,98 +517,98 @@ function openWhatsApp(phone?: string) {
 
 <template>
   <div class="p-4 space-y-4 w-full max-w-none">
-    <div class="flex items-center justify-between flex-wrap gap-2">
-      <div>
-        <h1 class="text-xl font-bold text-gray-900 dark:text-white">
-          Pasien
-        </h1>
-        <p class="text-xs text-gray-500">
-          Total {{ displayPatients.length }} pasien terdaftar. Klik baris untuk lihat detail di panel sebelah kanan.
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
-        <UInput
-          v-model="search"
-          icon="i-lucide-search"
-          placeholder="Cari nama / no. RM..."
-          class="w-full sm:w-64"
-        />
-        <UButton
-          icon="i-lucide-plus"
-          label="+ Tambah Pasien"
-          color="primary"
-          @click="openCreate"
-        />
-      </div>
-    </div>
-
-    <!-- Main Layout Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      <!-- Patients List -->
-      <UCard
-        class="lg:col-span-7 xl:col-span-8 shadow-xs"
-        :ui="{ body: 'p-0 sm:p-0' }"
-      >
-        <div v-if="status === 'pending'" class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
-          <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
-          Memuat data pasien...
+    <ClientOnly>
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+            Pasien
+          </h1>
+          <p class="text-xs text-gray-500">
+            Total {{ displayPatients.length }} pasien terdaftar. Klik baris untuk lihat detail di panel sebelah kanan.
+          </p>
         </div>
-        <UTable
-          v-else
-          :data="displayPatients"
-          :columns="columns"
-          class="cursor-pointer"
-          @select="(e: any) => selectPatient(e?.original || e)"
+        <div class="flex items-center gap-3">
+          <UInput
+            v-model="search"
+            icon="i-lucide-search"
+            placeholder="Cari nama / no. RM..."
+            class="w-full sm:w-64"
+          />
+          <UButton
+            icon="i-lucide-plus"
+            label="+ Tambah Pasien"
+            color="primary"
+            @click="openCreate"
+          />
+        </div>
+      </div>
+
+      <!-- Main Layout Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Patients List -->
+        <UCard
+          class="lg:col-span-7 xl:col-span-8 shadow-xs"
+          :ui="{ body: 'p-0 sm:p-0' }"
         >
-          <template #photo-cell="{ row }">
-            <UAvatar
-              :src="(row?.original || row)?.photoUrl || getPatientAvatar((row?.original || row)?.fullName)"
-              :text="initials((row?.original || row)?.fullName)"
-              size="sm"
-              class="bg-primary-100 text-primary-700 font-bold"
-            />
-          </template>
-          <template #fullName-cell="{ row }">
-            <span
-              class="font-bold text-gray-900 dark:text-white"
-              :class="{ 'text-primary': (row?.original || row)?.id === selectedPatientId }"
-            >
-              {{ (row?.original || row)?.fullName || '—' }}
-            </span>
-          </template>
-          <template #rmNumber-cell="{ row }">
-            <UBadge
-              :color="(row?.original || row)?.rmNumber ? 'success' : 'error'"
-              variant="subtle"
-              size="xs"
-            >
-              {{ (row?.original || row)?.rmNumber ?? 'Belum Terhubung' }}
-            </UBadge>
-          </template>
-          <template #relation-cell="{ row }">
-            {{ relationLabel[(row?.original || row)?.relation] ?? (row?.original || row)?.relation ?? 'Akun Sendiri' }}
-          </template>
-          <template #createdAt-cell="{ row }">
-            {{ safeDateShort((row?.original || row)?.createdAt) }}
-          </template>
-        </UTable>
-
-        <div class="flex items-center justify-between p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
-          <span>Menampilkan 1–{{ displayPatients.length }} dari {{ displayPatients.length }} data</span>
-          <div class="flex items-center gap-2">
-            <UButton icon="i-lucide-chevron-left" color="neutral" variant="outline" size="xs" disabled />
-            <span>Hal 1 / 1</span>
-            <UButton icon="i-lucide-chevron-right" color="neutral" variant="outline" size="xs" disabled />
+          <div v-if="status === 'pending'" class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
+            <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
+            Memuat data pasien...
           </div>
-        </div>
-      </UCard>
+          <UTable
+            v-else
+            :data="displayPatients"
+            :columns="columns"
+            class="cursor-pointer"
+            @select="(e: any) => selectPatient(e?.original || e)"
+          >
+            <template #photo-cell="{ row }">
+              <UAvatar
+                :src="(row?.original || row)?.photoUrl || getPatientAvatar((row?.original || row)?.fullName)"
+                :text="initials((row?.original || row)?.fullName)"
+                size="sm"
+                class="bg-primary-100 text-primary-700 font-bold"
+              />
+            </template>
+            <template #fullName-cell="{ row }">
+              <span
+                class="font-bold text-gray-900 dark:text-white"
+                :class="{ 'text-primary': (row?.original || row)?.id === selectedPatientId }"
+              >
+                {{ (row?.original || row)?.fullName || '—' }}
+              </span>
+            </template>
+            <template #rmNumber-cell="{ row }">
+              <UBadge
+                :color="(row?.original || row)?.rmNumber ? 'success' : 'error'"
+                variant="subtle"
+                size="xs"
+              >
+                {{ (row?.original || row)?.rmNumber ?? 'Belum Terhubung' }}
+              </UBadge>
+            </template>
+            <template #relation-cell="{ row }">
+              {{ relationLabel[(row?.original || row)?.relation] ?? (row?.original || row)?.relation ?? 'Akun Sendiri' }}
+            </template>
+            <template #createdAt-cell="{ row }">
+              {{ safeDateShort((row?.original || row)?.createdAt) }}
+            </template>
+          </UTable>
 
-      <!-- Persistent detail panel -->
-      <UCard
-        class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-4 shadow-xs"
-        :ui="{ body: 'max-h-[calc(100vh-140px)] overflow-y-auto space-y-4 p-4 sm:p-4' }"
-      >
-        <ClientOnly>
+          <div class="flex items-center justify-between p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
+            <span>Menampilkan 1–{{ displayPatients.length }} dari {{ displayPatients.length }} data</span>
+            <div class="flex items-center gap-2">
+              <UButton icon="i-lucide-chevron-left" color="neutral" variant="outline" size="xs" disabled />
+              <span>Hal 1 / 1</span>
+              <UButton icon="i-lucide-chevron-right" color="neutral" variant="outline" size="xs" disabled />
+            </div>
+          </div>
+        </UCard>
+
+        <!-- Persistent detail panel -->
+        <UCard
+          class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-4 shadow-xs"
+          :ui="{ body: 'max-h-[calc(100vh-140px)] overflow-y-auto space-y-4 p-4 sm:p-4' }"
+        >
           <div v-if="!detailPatient" class="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
             <UIcon name="i-lucide-user-round" class="w-10 h-10" />
             <p class="text-sm">Pilih pasien di daftar untuk melihat detail.</p>
@@ -884,9 +884,9 @@ function openWhatsApp(phone?: string) {
             </div>
           </div>
         </template>
-        </ClientOnly>
       </UCard>
     </div>
+  </ClientOnly>
 
     <!-- ====================== -->
     <!-- Modal Tambah / Edit Pasien -->
