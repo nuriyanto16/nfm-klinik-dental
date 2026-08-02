@@ -130,7 +130,11 @@ function openCreate() {
 
 async function openEdit(doctor: DoctorDetail) {
   editingId.value = doctor.id
-  const detail = await $fetch<DoctorDetail>(apiUrl(`/doctors/${doctor.id}`))
+  let detail = doctor
+  try {
+    const fetched = await $fetch<DoctorDetail>(apiUrl(`/doctors/${doctor.id}`))
+    if (fetched) detail = fetched
+  } catch (_) {}
   form.fullName = detail.fullName
   form.email = detail.email ?? ''
   form.phoneWa = detail.phoneWa ?? ''
