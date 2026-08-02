@@ -130,7 +130,160 @@ const paymentColumns = [
       </div>
     </div>
 
-    <!-- Panel Pasien Rekomendasi Kontrol & Tindak Lanjut -->
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <UCard class="lg:col-span-8">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-medium text-sm">
+                Revenue 14 Hari Terakhir
+              </h2>
+              <p class="text-xs text-muted">
+                Trend pendapatan harian gabungan cabang
+              </p>
+            </div>
+          </div>
+        </template>
+        <SkeletonChartSkeleton v-if="trendStatus === 'pending'" />
+        <ChartsEChart
+          v-else
+          :option="trendOption"
+          height="220px"
+        />
+      </UCard>
+
+      <UCard class="lg:col-span-4">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h2 class="font-medium text-sm">
+              Status Reservasi
+            </h2>
+          </div>
+        </template>
+        <SkeletonChartSkeleton v-if="statusCountsStatus === 'pending'" />
+        <ChartsEChart
+          v-else
+          :option="statusOption"
+          height="220px"
+        />
+      </UCard>
+    </div>
+
+    <!-- Additional Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <UCard>
+        <template #header>
+          <h2 class="font-medium">
+            Revenue per Cabang
+          </h2>
+        </template>
+        <SkeletonChartSkeleton v-if="branchRevenueStatus === 'pending'" />
+        <ChartsEChart
+          v-else
+          :option="branchOption"
+        />
+      </UCard>
+
+      <UCard>
+        <template #header>
+          <h2 class="font-medium">
+            Perawatan Terlaris
+          </h2>
+        </template>
+        <SkeletonChartSkeleton v-if="topTreatmentsStatus === 'pending'" />
+        <ChartsEChart
+          v-else
+          :option="treatmentOption"
+        />
+      </UCard>
+    </div>
+
+    <!-- Recent Tables Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h2 class="font-medium">
+              Reservasi Terbaru
+            </h2>
+            <UButton
+              to="/reservations"
+              variant="link"
+              size="xs"
+              label="Lihat semua"
+              trailing-icon="i-lucide-arrow-right"
+            />
+          </div>
+        </template>
+        <SkeletonTableSkeleton
+          v-if="reservationsStatus === 'pending'"
+          :rows="5"
+          :columns="3"
+        />
+        <UTable
+          v-else
+          :data="recentReservations"
+          :columns="reservationColumns"
+        >
+          <template #scheduledAt-cell="{ row }">
+            {{ formatDateTime(row.original.scheduledAt) }}
+          </template>
+          <template #status-cell="{ row }">
+            <UBadge
+              :color="reservationStatusColor(row.original.status)"
+              variant="subtle"
+            >
+              {{ reservationStatusLabel(row.original.status) }}
+            </UBadge>
+          </template>
+        </UTable>
+      </UCard>
+
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h2 class="font-medium">
+              Transaksi Terbaru
+            </h2>
+            <UButton
+              to="/billing"
+              variant="link"
+              size="xs"
+              label="Lihat semua"
+              trailing-icon="i-lucide-arrow-right"
+            />
+          </div>
+        </template>
+        <SkeletonTableSkeleton
+          v-if="paymentsStatus === 'pending'"
+          :rows="5"
+          :columns="4"
+        />
+        <UTable
+          v-else
+          :data="recentPayments"
+          :columns="paymentColumns"
+        >
+          <template #createdAt-cell="{ row }">
+            {{ formatDateTime(row.original.createdAt) }}
+          </template>
+          <template #amount-cell="{ row }">
+            {{ formatIDR(row.original.amount) }}
+          </template>
+          <template #status-cell="{ row }">
+            <UBadge
+              :color="paymentStatusColor(row.original.status)"
+              variant="subtle"
+            >
+              {{ paymentStatusLabel(row.original.status) }}
+            </UBadge>
+          </template>
+        </UTable>
+      </UCard>
+    </div>
+
+    <!-- Panel Pasien Rekomendasi Kontrol & Tindak Lanjut (Paling Bawah) -->
     <UCard class="bg-white dark:bg-gray-800 border-l-4 border-l-amber-500 shadow-xs">
       <template #header>
         <div class="flex items-center justify-between">
@@ -160,9 +313,9 @@ const paymentColumns = [
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="font-bold text-xs text-gray-900 dark:text-white">{{ fu.patientName }}</span>
-              <UBadge color="gray" variant="outline" size="xs">{{ fu.rmNumber }}</UBadge>
+              <UBadge color="neutral" variant="outline" size="xs">{{ fu.rmNumber }}</UBadge>
             </div>
-            <UBadge :color="fu.daysRemaining <= 1 ? 'red' : 'amber'" variant="soft" size="xs">
+            <UBadge :color="fu.daysRemaining <= 1 ? 'error' : 'warning'" variant="soft" size="xs">
               {{ fu.daysRemaining === 1 ? 'Besok Kontrol' : `${fu.daysRemaining} Hari Lagi` }}
             </UBadge>
           </div>
