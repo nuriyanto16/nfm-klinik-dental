@@ -395,17 +395,8 @@ function onReactivate(treatment: Treatment) {
     </div>
 
     <!-- Create/Edit Modal -->
-    <UModal v-model="showModal">
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="font-semibold text-base">
-              {{ editingId ? 'Edit Perawatan' : 'Tambah Perawatan Baru' }}
-            </h3>
-            <UButton color="gray" variant="ghost" icon="i-lucide-x" @click="showModal = false" />
-          </div>
-        </template>
-
+    <UModal v-model:open="showModal" :title="editingId ? 'Edit Perawatan' : 'Tambah Perawatan Baru'">
+      <template #body>
         <form class="space-y-4" @submit.prevent="onSubmit">
           <UAlert
             v-if="formError"
@@ -435,7 +426,7 @@ function onReactivate(treatment: Treatment) {
             <span class="font-medium text-gray-700 dark:text-gray-300">+ Tambah Kategori Baru</span>
             <div class="flex gap-2">
               <UInput v-model="newCategoryName" placeholder="Nama kategori..." size="xs" class="flex-1" />
-              <UButton label="Tambah" size="xs" color="gray" @click="addCategory" />
+              <UButton label="Tambah" size="xs" color="neutral" @click="addCategory" />
             </div>
           </div>
 
@@ -470,11 +461,11 @@ function onReactivate(treatment: Treatment) {
           </div>
 
           <div class="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <UButton label="Batal" color="gray" variant="ghost" @click="showModal = false" />
+            <UButton label="Batal" color="neutral" variant="ghost" @click="showModal = false" />
             <UButton type="submit" label="Simpan Perawatan" :loading="saving" />
           </div>
         </form>
-      </UCard>
+      </template>
     </UModal>
   </div>
 </template>

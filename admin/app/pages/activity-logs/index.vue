@@ -418,7 +418,7 @@ function getCategoryLabel(category: ActivityCategory) {
     </UCard>
 
     <!-- Detail Modal -->
-    <UModal v-model="showDetailModal" :ui="{ width: 'sm:max-w-xl' }">
+    <UModal v-model:open="showDetailModal" title="Rincian Log Aktivitas & Audit Trail">
       <UCard v-if="selectedLog" class="bg-white dark:bg-gray-800">
         <template #header>
           <div class="flex items-center justify-between">

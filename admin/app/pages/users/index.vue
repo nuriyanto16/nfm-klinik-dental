@@ -187,8 +187,8 @@ function initials(name: string) {
       </div>
     </UCard>
 
-    <!-- Detail Profile Slideover / Modal -->
-    <UModal v-model="showProfileModal" :ui="{ width: 'sm:max-w-xl' }">
+    <!-- Modal Profile Detail -->
+    <UModal v-model:open="showProfileModal" title="Detail Profil Pegawai & Izin Praktik" :ui="{ width: 'sm:max-w-xl' }">
       <UCard v-if="selectedStaff" class="bg-white dark:bg-gray-800">
         <template #header>
           <div class="flex items-center justify-between">

@@ -402,17 +402,8 @@ function copyCode(code?: string) {
     </div>
 
     <!-- Modal Form Create/Edit Voucher -->
-    <UModal v-model="showModal">
-      <UCard class="bg-white dark:bg-gray-800">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="font-bold text-base text-gray-900 dark:text-white">
-              {{ editingId ? 'Edit Kode Voucher' : 'Buat Kode Voucher Baru' }}
-            </h3>
-            <UButton icon="i-lucide-x" color="gray" variant="ghost" @click="showModal = false" />
-          </div>
-        </template>
-
+    <UModal v-model:open="showModal" :title="editingId ? 'Edit Kode Voucher' : 'Buat Kode Voucher Baru'">
+      <template #body>
         <form class="space-y-4" @submit.prevent="saveVoucher">
           <div>
             <label class="block text-xs font-semibold mb-1">Judul Promo / Voucher</label>
@@ -460,11 +451,11 @@ function copyCode(code?: string) {
           </div>
 
           <div class="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <UButton label="Batal" color="gray" variant="ghost" @click="showModal = false" />
+            <UButton label="Batal" color="neutral" variant="ghost" @click="showModal = false" />
             <UButton label="Simpan Voucher" color="primary" type="submit" />
           </div>
         </form>
-      </UCard>
+      </template>
     </UModal>
   </div>
 </template>

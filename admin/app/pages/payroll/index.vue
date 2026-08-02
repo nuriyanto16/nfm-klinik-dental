@@ -288,7 +288,7 @@ function triggerPrint() {
     </UCard>
 
     <!-- Slip Gaji Modal / Print Template -->
-    <UModal v-model="showPrintSlipModal" :ui="{ width: 'sm:max-w-2xl' }">
+    <UModal v-model:open="showPrintSlipModal" :ui="{ width: 'sm:max-w-2xl' }">
       <UCard v-if="selectedPayroll" class="bg-white text-gray-900 print:shadow-none print:border-none">
         <template #header>
           <div class="flex items-center justify-between print:hidden">

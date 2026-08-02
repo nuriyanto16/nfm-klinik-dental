@@ -275,11 +275,8 @@ function deletePromo(p: Promo) {
     </div>
 
     <!-- Article Modal -->
-    <UModal v-model="showArticleModal">
-      <UCard class="bg-white dark:bg-gray-800">
-        <template #header>
-          <h3 class="font-bold text-gray-900 dark:text-white">{{ editingArticleId ? 'Edit Artikel' : 'Tambah Artikel Baru' }}</h3>
-        </template>
+    <UModal v-model:open="showArticleModal" :title="editingArticleId ? 'Edit Artikel' : 'Tambah Artikel Baru'">
+      <template #body>
         <div class="space-y-4">
           <div>
             <label class="block text-xs font-semibold mb-1">Judul Artikel</label>
@@ -302,22 +299,17 @@ function deletePromo(p: Promo) {
             <label class="block text-xs font-semibold mb-1">Isi Konten Artikel</label>
             <UTextarea v-model="articleForm.body" rows="4" placeholder="Tuliskan isi artikel..." />
           </div>
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton label="Batal" color="gray" variant="ghost" @click="showArticleModal = false" />
+          <div class="flex justify-end gap-2 pt-2">
+            <UButton label="Batal" color="neutral" variant="ghost" @click="showArticleModal = false" />
             <UButton label="Simpan Artikel" color="primary" @click="saveArticle" />
           </div>
-        </template>
-      </UCard>
+        </div>
+      </template>
     </UModal>
 
     <!-- Promo Modal -->
-    <UModal v-model="showPromoModal">
-      <UCard class="bg-white dark:bg-gray-800">
-        <template #header>
-          <h3 class="font-bold text-gray-900 dark:text-white">{{ editingPromoId ? 'Edit Promo' : 'Tambah Banner Promo' }}</h3>
-        </template>
+    <UModal v-model:open="showPromoModal" :title="editingPromoId ? 'Edit Promo' : 'Tambah Banner Promo'">
+      <template #body>
         <div class="space-y-4">
           <div>
             <label class="block text-xs font-semibold mb-1">Judul Promo</label>
@@ -335,14 +327,12 @@ function deletePromo(p: Promo) {
             <label class="block text-xs font-semibold mb-1">Keterangan Promo</label>
             <UTextarea v-model="promoForm.description" rows="2" placeholder="Syarat & ketentuan promo..." />
           </div>
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton label="Batal" color="gray" variant="ghost" @click="showPromoModal = false" />
+          <div class="flex justify-end gap-2 pt-2">
+            <UButton label="Batal" color="neutral" variant="ghost" @click="showPromoModal = false" />
             <UButton label="Simpan Promo" color="primary" @click="savePromo" />
           </div>
-        </template>
-      </UCard>
+        </div>
+      </template>
     </UModal>
   </div>
 </template>

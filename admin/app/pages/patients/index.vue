@@ -387,27 +387,12 @@ function openEdit(patient: Patient) {
     </div>
 
     <!-- Modal Entri Transformasi Behel & Senyum Baru -->
-    <UModal v-model="showTransformationModal">
-      <UCard class="bg-white dark:bg-gray-800">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
-              <UIcon name="i-lucide-sparkles" class="w-5 h-5 text-primary" />
-              Entri Transformasi Behel & Senyum Pasien
-            </h3>
-            <UButton icon="i-lucide-x" color="gray" variant="ghost" @click="showTransformationModal = false" />
-          </div>
-        </template>
-
+    <UModal v-model:open="showTransformationModal" title="Entri Transformasi Behel & Senyum Pasien">
+      <template #body>
         <form class="space-y-4" @submit.prevent="saveTransformation">
           <div>
             <label class="block text-xs font-semibold mb-1">Nama Pasien</label>
             <UInput :model-value="detailPatient?.fullName" disabled class="bg-gray-100 dark:bg-gray-800 font-bold" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold mb-1">Judul Transformasi</label>
-            <UInput v-model="transForm.title" placeholder="mis. Transformasi Behel Metal 12 Bulan" />
           </div>
 
           <div class="grid grid-cols-2 gap-4">
@@ -415,11 +400,10 @@ function openEdit(patient: Patient) {
               <label class="block text-xs font-semibold mb-1">Dokter Penanggung Jawab</label>
               <select v-model="transForm.doctorName" class="w-full p-2 text-xs border rounded bg-white dark:bg-gray-800">
                 <option value="drg. Friski Raisis, Sp.Ort">drg. Friski Raisis, Sp.Ort</option>
-                <option value="drg. Siti Aminah">drg. Siti Aminah</option>
-                <option value="drg. Budi Santoso, Sp.KGA">drg. Budi Santoso, Sp.KGA</option>
+                <option value="drg. Siti Rahmawati">drg. Siti Rahmawati</option>
+                <option value="drg. Nina Marlina, Sp.KG">drg. Nina Marlina, Sp.KG</option>
               </select>
             </div>
-
             <div>
               <label class="block text-xs font-semibold mb-1">Durasi Perawatan (Bulan)</label>
               <UInput v-model.number="transForm.durationMonths" type="number" min="1" max="48" />
@@ -427,31 +411,31 @@ function openEdit(patient: Patient) {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold mb-1">URL Foto Sebelum (Bulan 0)</label>
-            <UInput v-model="transForm.beforePhotoUrl" placeholder="https://images.unsplash.com/..." />
+            <label class="block text-xs font-semibold mb-1">URL Foto Sebelum (Before / Bulan 0)</label>
+            <UInput v-model="transForm.beforeImageUrl" placeholder="https://images.unsplash.com/..." />
           </div>
 
           <div>
-            <label class="block text-xs font-semibold mb-1">URL Foto Proses Penataan (Behel)</label>
-            <UInput v-model="transForm.progressPhotoUrl" placeholder="https://images.unsplash.com/..." />
+            <label class="block text-xs font-semibold mb-1">URL Foto Proses (Behel / Bulan 6)</label>
+            <UInput v-model="transForm.progressImageUrl" placeholder="https://images.unsplash.com/..." />
           </div>
 
           <div>
-            <label class="block text-xs font-semibold mb-1">URL Foto Hasil Akhir (Senyum Rapi)</label>
-            <UInput v-model="transForm.afterPhotoUrl" placeholder="https://images.unsplash.com/..." />
+            <label class="block text-xs font-semibold mb-1">URL Foto Hasil Akhir (After / Senyum Rapi)</label>
+            <UInput v-model="transForm.afterImageUrl" placeholder="https://images.unsplash.com/..." />
           </div>
 
           <div>
-            <label class="block text-xs font-semibold mb-1">Catatan Medis & Progres Perubahan</label>
-            <UTextarea v-model="transForm.notes" rows="2" placeholder="Catatan perubahan bentuk lengkung gigi & kontak gigitan..." />
+            <label class="block text-xs font-semibold mb-1">Catatan Diagnosa & Perubahan Estetis</label>
+            <UTextarea v-model="transForm.medicalNotes" rows="2" placeholder="Tingkat perbaikan gigitan (occlusion) & kerapihan gigi..." />
           </div>
 
-          <div class="flex justify-end gap-2 pt-2">
-            <UButton label="Batal" color="gray" variant="ghost" @click="showTransformationModal = false" />
-            <UButton label="Simpan Entri Transformasi" color="primary" type="submit" />
+          <div class="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <UButton label="Batal" color="neutral" variant="ghost" @click="showTransformationModal = false" />
+            <UButton label="Simpan Transformasi" color="primary" type="submit" />
           </div>
         </form>
-      </UCard>
+      </template>
     </UModal>
   </div>
 </template>
