@@ -95,10 +95,16 @@ const displayPatients = computed<Patient[]>(() => {
   return initialPatients
 })
 
+const CHART_PRIMARY = '#0284c7'
+
 const manualPatientId = ref<string | null>(null)
-const detailPatient = computed<Patient | null>(() => {
+const detailPatient = computed<Patient>(() => {
   const list = displayPatients.value
-  return list.find(p => p.id === manualPatientId.value) ?? list[0] ?? null
+  if (manualPatientId.value) {
+    const found = list.find(p => p.id === manualPatientId.value)
+    if (found) return found
+  }
+  return list[0] ?? initialPatients[0]
 })
 
 const patientName = computed(() => detailPatient.value?.fullName ?? '')
