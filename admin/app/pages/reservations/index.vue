@@ -310,6 +310,24 @@ async function onSubmit() {
 const showDetailModal = ref(false)
 const detailReservation = ref<Reservation | null>(null)
 
+function getTreatmentName(t: any): string {
+  if (!t) return 'Layanan Perawatan Gigi'
+  if (typeof t === 'string') return t
+  return t.name || t.treatmentName || t.title || 'Layanan Perawatan Gigi'
+}
+
+function getTreatmentCategory(t: any): string {
+  if (!t || typeof t !== 'object') return 'Layanan Spesialis Gigi'
+  return t.categoryName || t.category || 'Layanan Spesialis Gigi'
+}
+
+function getTreatmentPrice(t: any): number {
+  if (!t || typeof t !== 'object') return 0
+  const val = t.price ?? t.cost ?? t.estimatedPrice ?? t.amount ?? 0
+  const num = Number(val)
+  return isNaN(num) ? 0 : num
+}
+
 function openReservationDetail(item: Reservation) {
   detailReservation.value = item
   showDetailModal.value = true
@@ -320,7 +338,7 @@ function printReservationTicket(item: Reservation) {
   if (!printWindow) return
 
   const treatmentsHtml = Array.isArray(item.treatments) && item.treatments.length > 0
-    ? item.treatments.map(t => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #e2e8f0;"><span>${t.name}</span><strong>Rp ${(t.price || 0).toLocaleString('id-ID')}</strong></div>`).join('')
+    ? item.treatments.map(t => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #e2e8f0;"><span>${getTreatmentName(t)}</span><strong>Rp ${getTreatmentPrice(t).toLocaleString('id-ID')}</strong></div>`).join('')
     : '<div style="padding:6px 0;">Konsultasi & Pemeriksaan Gigi Umum</div>'
 
   printWindow.document.write(`
@@ -814,28 +832,28 @@ function printReservationTicket(item: Reservation) {
       <template #body>
         <div v-if="detailReservation" class="space-y-4 text-xs">
           <!-- Top Card Summary -->
-          <div class="p-4 rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-950/30 flex items-center justify-between">
-            <div>
+          <div class="p-4 rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-950/30 flex items-center justify-between gap-3">
+            <div class="min-w-0 flex-1">
               <p class="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">ID Reservasi / Tiket Antrian</p>
-              <p class="text-xl font-black text-primary-600 dark:text-primary-400 font-mono">{{ detailReservation.id.toUpperCase() }}</p>
-              <p class="text-xs font-medium text-gray-600 dark:text-gray-300 mt-0.5">
+              <p class="text-sm sm:text-base font-black text-primary-600 dark:text-primary-400 font-mono break-all leading-tight">{{ detailReservation.id }}</p>
+              <p class="text-xs font-medium text-gray-600 dark:text-gray-300 mt-1">
                 Status Antrian: <span class="font-bold uppercase text-primary-600 dark:text-primary-400">{{ STATUS_CONFIG[detailReservation.status]?.label ?? detailReservation.status }}</span>
               </p>
             </div>
-            <UBadge color="primary" variant="soft" size="md" class="px-3 py-1 text-xs font-extrabold">
-              {{ detailReservation.branchName }}
+            <UBadge color="primary" variant="soft" size="md" class="px-3 py-1.5 text-xs font-extrabold shrink-0">
+              {{ detailReservation.branchName || 'Cabang Utama' }}
             </UBadge>
           </div>
 
           <!-- Information Grid -->
-          <div class="grid grid-cols-2 gap-4 p-3.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/60 dark:bg-gray-800/40">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/60 dark:bg-gray-800/40">
             <div>
               <span class="text-[10px] text-gray-400 font-semibold uppercase block">Nama Pasien</span>
-              <span class="font-bold text-gray-900 dark:text-white text-sm">{{ detailReservation.patientName }}</span>
+              <span class="font-bold text-gray-900 dark:text-white text-sm">{{ detailReservation.patientName || '—' }}</span>
             </div>
             <div>
               <span class="text-[10px] text-gray-400 font-semibold uppercase block">Dokter Spesialis</span>
-              <span class="font-bold text-gray-900 dark:text-white text-sm">{{ detailReservation.doctorName }}</span>
+              <span class="font-bold text-gray-900 dark:text-white text-sm">{{ detailReservation.doctorName || '—' }}</span>
             </div>
             <div>
               <span class="text-[10px] text-gray-400 font-semibold uppercase block">Jadwal Periksa</span>
@@ -849,14 +867,19 @@ function printReservationTicket(item: Reservation) {
 
           <!-- Rencana Perawatan Gigi -->
           <div class="p-3.5 border border-gray-200 dark:border-gray-700 rounded-xl space-y-2">
-            <span class="font-bold text-gray-900 dark:text-white block text-xs">Layanan Perawatan Gigi</span>
-            <div class="divide-y divide-gray-100 dark:divide-gray-800">
-              <div v-for="(t, idx) in (detailReservation.treatments || [])" :key="idx" class="py-2 flex items-center justify-between">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-gray-900 dark:text-white block text-xs">Layanan Perawatan Gigi</span>
+              <span v-if="detailReservation.treatments?.length" class="text-[10px] font-semibold text-primary-600 dark:text-primary-400">
+                Total: {{ formatIDR((detailReservation.treatments || []).reduce((sum: number, t: any) => sum + getTreatmentPrice(t), 0)) }}
+              </span>
+            </div>
+            <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-48 overflow-y-auto pr-1">
+              <div v-for="(t, idx) in (detailReservation.treatments || [])" :key="idx" class="py-2 flex items-center justify-between gap-2">
                 <div>
-                  <p class="font-semibold text-gray-900 dark:text-white">{{ t.name }}</p>
-                  <p class="text-[10px] text-gray-400">{{ t.categoryName || 'Layanan Spesialis Gigi' }}</p>
+                  <p class="font-semibold text-gray-900 dark:text-white">{{ getTreatmentName(t) }}</p>
+                  <p class="text-[10px] text-gray-400">{{ getTreatmentCategory(t) }}</p>
                 </div>
-                <p class="font-bold text-primary-600 dark:text-primary-400">{{ formatIDR(t.price) }}</p>
+                <p class="font-bold text-primary-600 dark:text-primary-400 shrink-0">{{ formatIDR(getTreatmentPrice(t)) }}</p>
               </div>
               <div v-if="!detailReservation.treatments?.length" class="py-2 text-gray-500 italic">
                 Konsultasi & Pemeriksaan Gigi Umum
