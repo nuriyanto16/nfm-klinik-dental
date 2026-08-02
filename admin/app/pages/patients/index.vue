@@ -493,67 +493,70 @@ function openWhatsApp(phone?: string) {
 
 <template>
   <div class="p-4 space-y-4 w-full max-w-none">
-    <ClientOnly>
-      <div class="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 class="text-xl font-bold text-gray-900 dark:text-white">
-            Pasien
-          </h1>
-          <p class="text-xs text-gray-500">
-            Total {{ displayPatients.length }} pasien terdaftar. Klik baris untuk lihat detail di panel sebelah kanan.
-          </p>
-        </div>
-        <div class="flex items-center gap-3">
-          <UInput
-            v-model="search"
-            icon="i-lucide-search"
-            placeholder="Cari nama / no. RM..."
-            class="w-full sm:w-64"
-          />
-          <UButton
-            icon="i-lucide-plus"
-            label="+ Tambah Pasien"
-            color="primary"
-            @click="openCreate"
-          />
-        </div>
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div>
+        <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+          Pasien
+        </h1>
+        <p class="text-xs text-gray-500">
+          Total {{ displayPatients.length }} pasien terdaftar. Klik baris untuk lihat detail di panel sebelah kanan.
+        </p>
       </div>
+      <div class="flex items-center gap-3">
+        <UInput
+          v-model="search"
+          icon="i-lucide-search"
+          placeholder="Cari nama / no. RM..."
+          class="w-full sm:w-64"
+        />
+        <UButton
+          icon="i-lucide-plus"
+          label="+ Tambah Pasien"
+          color="primary"
+          @click="openCreate"
+        />
+      </div>
+    </div>
 
-      <!-- Main Layout Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <!-- Patients List -->
-        <UCard
-          class="lg:col-span-7 xl:col-span-8 shadow-xs"
-          :ui="{ body: 'p-0 sm:p-0' }"
+    <!-- Main Layout Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- Patients List -->
+      <UCard
+        class="lg:col-span-7 xl:col-span-8 shadow-xs"
+        :ui="{ body: 'p-0 sm:p-0' }"
+      >
+        <div v-if="status === 'pending'" class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
+          <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
+          Memuat data pasien...
+        </div>
+        <UTable
+          v-else
+          :data="displayPatients"
+          :columns="columns"
+          class="cursor-pointer"
+          @select="(e: any) => selectPatient(e?.original || e)"
         >
-          <div v-if="status === 'pending'" class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
-            <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
-            Memuat data pasien...
-          </div>
-          <UTable
-            v-else
-            :data="displayPatients"
-            :columns="columns"
-            class="cursor-pointer"
-            @select="(e: any) => selectPatient(e?.original || e)"
-          >
-            <template #photo-cell="{ row }">
+          <template #photo-cell="{ row }">
+            <div @click="selectPatient(row?.original || row)">
               <UAvatar
                 :src="(row?.original || row)?.photoUrl || getPatientAvatar((row?.original || row)?.fullName)"
                 :text="initials((row?.original || row)?.fullName)"
                 size="sm"
                 class="bg-primary-100 text-primary-700 font-bold"
               />
-            </template>
-            <template #fullName-cell="{ row }">
-              <span
-                class="font-bold text-gray-900 dark:text-white"
-                :class="{ 'text-primary': (row?.original || row)?.id === selectedPatientId }"
-              >
-                {{ (row?.original || row)?.fullName || '—' }}
-              </span>
-            </template>
-            <template #rmNumber-cell="{ row }">
+            </div>
+          </template>
+          <template #fullName-cell="{ row }">
+            <div
+              class="font-bold text-gray-900 dark:text-white cursor-pointer"
+              :class="{ 'text-primary': (row?.original || row)?.id === selectedPatientId }"
+              @click="selectPatient(row?.original || row)"
+            >
+              {{ (row?.original || row)?.fullName || '—' }}
+            </div>
+          </template>
+          <template #rmNumber-cell="{ row }">
+            <div @click="selectPatient(row?.original || row)">
               <UBadge
                 :color="(row?.original || row)?.rmNumber ? 'success' : 'error'"
                 variant="subtle"
@@ -561,14 +564,19 @@ function openWhatsApp(phone?: string) {
               >
                 {{ (row?.original || row)?.rmNumber ?? 'Belum Terhubung' }}
               </UBadge>
-            </template>
-            <template #relation-cell="{ row }">
+            </div>
+          </template>
+          <template #relation-cell="{ row }">
+            <div @click="selectPatient(row?.original || row)">
               {{ relationLabel[(row?.original || row)?.relation] ?? (row?.original || row)?.relation ?? 'Akun Sendiri' }}
-            </template>
-            <template #createdAt-cell="{ row }">
+            </div>
+          </template>
+          <template #createdAt-cell="{ row }">
+            <div @click="selectPatient(row?.original || row)">
               {{ safeDateShort((row?.original || row)?.createdAt) }}
-            </template>
-          </UTable>
+            </div>
+          </template>
+        </UTable>
 
           <div class="flex items-center justify-between p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
             <span>Menampilkan 1–{{ displayPatients.length }} dari {{ displayPatients.length }} data</span>
@@ -656,7 +664,9 @@ function openWhatsApp(phone?: string) {
               <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
             </div>
             <div v-else class="h-28 w-full">
-              <Chart :option="spendingOption" class="h-full w-full" />
+              <ClientOnly>
+                <Chart :option="spendingOption" class="h-full w-full" />
+              </ClientOnly>
             </div>
           </div>
 
@@ -862,7 +872,6 @@ function openWhatsApp(phone?: string) {
         </template>
       </UCard>
     </div>
-  </ClientOnly>
 
     <!-- ====================== -->
     <!-- Modal Tambah / Edit Pasien -->
