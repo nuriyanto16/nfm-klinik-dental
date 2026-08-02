@@ -82,6 +82,9 @@ watch(apiPromos, val => {
 const filterStatus = ref<'all' | 'active' | 'inactive'>('active')
 const searchQuery = ref('')
 
+const page = ref(1)
+const pageSize = 6
+
 const filteredVouchers = computed(() => {
   return vouchers.value.filter(v => {
     if (filterStatus.value === 'active' && !v.isActive) return false
@@ -95,6 +98,12 @@ const filteredVouchers = computed(() => {
     }
     return true
   })
+})
+
+const totalPages = computed(() => Math.ceil(filteredVouchers.value.length / pageSize) || 1)
+const paginatedVouchers = computed(() => {
+  const start = (page.value - 1) * pageSize
+  return filteredVouchers.value.slice(start, start + pageSize)
 })
 
 const stats = computed(() => {
@@ -311,98 +320,110 @@ function copyCode(code?: string) {
     </div>
 
     <!-- Promos & Vouchers Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <UCard
-        v-for="v in filteredVouchers"
-        :key="v.id"
-        class="bg-white dark:bg-gray-800 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-md transition-shadow"
-      >
-        <div class="space-y-3">
-          <!-- Banner Image -->
-          <div class="relative">
-            <img
-              :src="v.bannerImageUrl || 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800'"
-              class="w-full h-40 object-cover rounded-lg"
-            >
-            <div class="absolute top-2 right-2 flex gap-1">
-              <UBadge :color="v.isActive ? 'green' : 'gray'" size="xs" variant="solid">
-                {{ v.isActive ? 'Aktif Tayang' : 'Non-aktif' }}
-              </UBadge>
+    <div class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <UCard
+          v-for="v in paginatedVouchers"
+          :key="v.id"
+          class="bg-white dark:bg-gray-800 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-md transition-shadow"
+        >
+          <div class="space-y-3">
+            <!-- Banner Image -->
+            <div class="relative">
+              <img
+                :src="v.bannerImageUrl || 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800'"
+                class="w-full h-40 object-cover rounded-lg"
+              >
+              <div class="absolute top-2 right-2 flex gap-1">
+                <UBadge :color="v.isActive ? 'green' : 'gray'" size="xs" variant="solid">
+                  {{ v.isActive ? 'Aktif Tayang' : 'Non-aktif' }}
+                </UBadge>
+              </div>
+            </div>
+
+            <!-- Voucher Code Pill -->
+            <div class="flex items-center justify-between bg-primary-50 dark:bg-primary-950/40 p-2.5 rounded-lg border border-primary-200 dark:border-primary-800">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-lucide-ticket-percent" class="w-5 h-5 text-primary" />
+                <div>
+                  <span class="text-[10px] uppercase font-bold text-gray-500 block">Kode Voucher</span>
+                  <span class="font-mono font-extrabold text-sm text-primary tracking-wider">{{ v.voucherCode || 'TIDAK-ADA' }}</span>
+                </div>
+              </div>
+              <UButton
+                size="xs"
+                color="primary"
+                variant="soft"
+                icon="i-lucide-copy"
+                label="Salin"
+                @click="copyCode(v.voucherCode)"
+              />
+            </div>
+
+            <!-- Title & Description -->
+            <h3 class="font-bold text-base text-gray-900 dark:text-white line-clamp-1">{{ v.title }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{{ v.description }}</p>
+
+            <!-- Details Grid -->
+            <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 dark:bg-gray-900 p-2.5 rounded-lg">
+              <div>
+                <span class="text-gray-400 block text-[10px]">Nilai Diskon</span>
+                <span class="font-bold text-emerald-600">
+                  {{ v.discountType === 'percentage' ? `${v.discountValue}%` : formatIDR(v.discountValue || 0) }}
+                </span>
+              </div>
+              <div>
+                <span class="text-gray-400 block text-[10px]">Penggunaan Kuota</span>
+                <span class="font-semibold text-gray-800 dark:text-gray-200">
+                  {{ v.usedCount || 0 }} / {{ v.maxUsageCount || '100' }} Klaim
+                </span>
+              </div>
+              <div>
+                <span class="text-gray-400 block text-[10px]">Min. Transaksi</span>
+                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ formatIDR(v.minTransaction || 0) }}</span>
+              </div>
+              <div>
+                <span class="text-gray-400 block text-[10px]">Target Treatment</span>
+                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ v.targetCategory || 'Semua' }}</span>
+              </div>
             </div>
           </div>
 
-          <!-- Voucher Code Pill -->
-          <div class="flex items-center justify-between bg-primary-50 dark:bg-primary-950/40 p-2.5 rounded-lg border border-primary-200 dark:border-primary-800">
-            <div class="flex items-center gap-2">
-              <UIcon name="i-lucide-ticket-percent" class="w-5 h-5 text-primary" />
-              <div>
-                <span class="text-[10px] uppercase font-bold text-gray-500 block">Kode Voucher</span>
-                <span class="font-mono font-extrabold text-sm text-primary tracking-wider">{{ v.voucherCode || 'TIDAK-ADA' }}</span>
-              </div>
-            </div>
+          <!-- Action Buttons -->
+          <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700 mt-4">
+            <UButton
+              size="xs"
+              :color="v.isActive ? 'amber' : 'green'"
+              variant="ghost"
+              :icon="v.isActive ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+              :label="v.isActive ? 'Sembunyikan' : 'Aktifkan'"
+              @click="toggleActive(v)"
+            />
             <UButton
               size="xs"
               color="primary"
               variant="soft"
-              icon="i-lucide-copy"
-              label="Salin"
-              @click="copyCode(v.voucherCode)"
+              icon="i-lucide-edit-2"
+              label="Edit Voucher"
+              @click="openEdit(v)"
             />
           </div>
+        </UCard>
+      </div>
 
-          <!-- Title & Description -->
-          <h3 class="font-bold text-base text-gray-900 dark:text-white line-clamp-1">{{ v.title }}</h3>
-          <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{{ v.description }}</p>
-
-          <!-- Details Grid -->
-          <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 dark:bg-gray-900 p-2.5 rounded-lg">
-            <div>
-              <span class="text-gray-400 block text-[10px]">Nilai Diskon</span>
-              <span class="font-bold text-emerald-600">
-                {{ v.discountType === 'percentage' ? `${v.discountValue}%` : formatIDR(v.discountValue || 0) }}
-              </span>
-            </div>
-            <div>
-              <span class="text-gray-400 block text-[10px]">Penggunaan Kuota</span>
-              <span class="font-semibold text-gray-800 dark:text-gray-200">
-                {{ v.usedCount || 0 }} / {{ v.maxUsageCount || '100' }} Klaim
-              </span>
-            </div>
-            <div>
-              <span class="text-gray-400 block text-[10px]">Min. Transaksi</span>
-              <span class="font-semibold text-gray-800 dark:text-gray-200">{{ formatIDR(v.minTransaction || 0) }}</span>
-            </div>
-            <div>
-              <span class="text-gray-400 block text-[10px]">Target Treatment</span>
-              <span class="font-semibold text-gray-800 dark:text-gray-200">{{ v.targetCategory || 'Semua' }}</span>
-            </div>
-          </div>
+      <!-- Pagination Footer -->
+      <div class="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border text-xs text-gray-500 shadow-xs">
+        <span>Menampilkan {{ paginatedVouchers.length }} dari {{ filteredVouchers.length }} promo voucher</span>
+        <div class="flex items-center gap-2">
+          <UButton icon="i-lucide-chevron-left" size="xs" color="neutral" variant="outline" :disabled="page <= 1" @click="page--" />
+          <span class="font-semibold text-gray-900 dark:text-white">Hal {{ page }} / {{ totalPages }}</span>
+          <UButton icon="i-lucide-chevron-right" size="xs" color="neutral" variant="outline" :disabled="page >= totalPages" @click="page++" />
         </div>
-
-        <!-- Action Buttons -->
-        <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700 mt-4">
-          <UButton
-            size="xs"
-            :color="v.isActive ? 'amber' : 'green'"
-            variant="ghost"
-            :icon="v.isActive ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-            :label="v.isActive ? 'Sembunyikan' : 'Aktifkan'"
-            @click="toggleActive(v)"
-          />
-          <UButton
-            size="xs"
-            color="primary"
-            variant="soft"
-            icon="i-lucide-edit-2"
-            label="Edit Voucher"
-            @click="openEdit(v)"
-          />
-        </div>
-      </UCard>
+      </div>
     </div>
 
     <!-- Modal Form Create/Edit Voucher -->
-    <UModal v-model:open="showModal" :title="editingId ? 'Edit Kode Voucher' : 'Buat Kode Voucher Baru'">
+    <UModal v-model:open="showModal" :title="editingId ? 'Edit Kode Voucher' : 'Buat Kode Voucher Baru'" :ui="{ width: 'sm:max-w-2xl' }">
       <template #body>
         <form class="space-y-4" @submit.prevent="saveVoucher">
           <div>

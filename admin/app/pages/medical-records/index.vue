@@ -221,6 +221,69 @@ const paginatedRecords = computed(() => {
   const start = (page.value - 1) * pageSize
   return displayRecords.value.slice(start, start + pageSize)
 })
+function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
+  const win = window.open('', '_blank', 'width=800,height=900')
+  if (!win) return
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Cetak Rekam Medis - ${record.patientName}</title>
+      <style>
+        body { font-family: sans-serif; padding: 24px; color: #111827; }
+        .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; }
+        .header h2 { margin: 0; color: #2563eb; font-size: 20px; }
+        .header p { margin: 4px 0 0 0; font-size: 11px; color: #6b7280; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+        .info-table td { padding: 6px; font-size: 12px; }
+        .section-title { font-weight: bold; font-size: 13px; margin-top: 16px; margin-bottom: 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; color: #1f2937; }
+        .box { border: 1px solid #e5e7eb; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; background: #f9fafb; line-height: 1.5; }
+        .footer { margin-top: 40px; display: flex; justify-content: space-between; font-size: 11px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h2>NINA DENTAL CARE</h2>
+        <p>Jl. Terusan Kopo No. 8, Soreang & Baleendah, Bandung | Telp/WA: +62 812-3400-0002</p>
+        <p><b>DOKUMEN RESMI REKAM MEDIS PASIEN</b></p>
+      </div>
+
+      <table class="info-table">
+        <tr>
+          <td><b>Nama Pasien:</b> ${record.patientName}</td>
+          <td><b>Tanggal Perawatan:</b> ${new Date(record.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
+        </tr>
+        <tr>
+          <td><b>Dokter Penanggung Jawab:</b> ${record.doctorName || 'drg. Nina Marlina, Sp.KG'}</td>
+          <td><b>No. Rekam Medis:</b> ${record.rmNumber || 'RM-0001'}</td>
+        </tr>
+      </table>
+
+      <div class="section-title">DIAGNOSIS MEDIS GIGI</div>
+      <div class="box">${record.diagnosis || 'Pemeriksaan Rutin & Perawatan Gigi'}</div>
+
+      <div class="section-title">CATATAN TINDAKAN MEDIS & RESEP</div>
+      <div class="box">${record.treatmentNotes || 'Tidak ada catatan tambahan.'}</div>
+
+      <div class="footer">
+        <div>
+          <p>Pasien / Wali</p>
+          <br><br><br>
+          <p>( ${record.patientName} )</p>
+        </div>
+        <div>
+          <p>Dokter Pemeriksa,</p>
+          <br><br><br>
+          <p>( ${record.doctorName || 'drg. Nina Marlina, Sp.KG'} )</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `)
+  win.document.close()
+  win.focus()
+  setTimeout(() => { win.print() }, 400)
+}
 </script>
 
 <template>
@@ -297,6 +360,14 @@ const paginatedRecords = computed(() => {
                   variant="ghost"
                   label="Detail"
                   @click="openDetail(row.original)"
+                />
+                <UButton
+                  icon="i-lucide-printer"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  label="Cetak"
+                  @click="printMedicalRecord(row.original)"
                 />
                 <UButton
                   icon="i-lucide-edit-2"

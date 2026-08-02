@@ -176,9 +176,29 @@ const transformationsMap = ref<Record<string, SmileTransformation[]>>({
   ]
 })
 
+const defaultSmileTransformation: SmileTransformation = {
+  id: 'trans-default',
+  patientId: '',
+  patientName: 'Pasien Klinik',
+  doctorName: 'drg. Friski Raisis, Sp.Ort',
+  title: 'Transformasi Perataan & Pembersihan Gigi (12 Bulan)',
+  durationMonths: 12,
+  beforePhotoUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800',
+  progressPhotoUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800',
+  afterPhotoUrl: 'https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=800',
+  notes: 'Penataan susunan gigi gingsul dan pembersihan karang gigi pasca perawatan klinik.',
+  createdAt: '2026-07-28T10:00:00Z'
+}
+
 const currentPatientTransformations = computed(() => {
   if (!detailPatient.value) return []
-  return transformationsMap.value[detailPatient.value.id] ?? []
+  const custom = transformationsMap.value[detailPatient.value.id]
+  if (custom && custom.length > 0) return custom
+  return [{
+    ...defaultSmileTransformation,
+    patientId: detailPatient.value.id,
+    patientName: detailPatient.value.fullName
+  }]
 })
 
 const spendingOption = computed<EChartsOption>(() => {
@@ -475,7 +495,7 @@ function openEdit(patient: Patient) {
           <!-- Tren Belanja (6 Bulan) Bar Chart -->
           <div class="space-y-1.5 border-t border-gray-100 dark:border-gray-800 pt-3">
             <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider block">
-              TREN BELANJA (6 BULAN)
+              TREN PERAWATAN KLINIK (6 BULAN)
             </span>
             <div class="h-28 w-full">
               <Chart :option="spendingOption" class="h-full w-full" />

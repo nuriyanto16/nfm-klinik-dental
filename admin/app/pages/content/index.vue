@@ -289,41 +289,46 @@ function deletePromo(p: Promo) {
     </div>
 
     <!-- Article Modal -->
-    <UModal v-model:open="showArticleModal" :title="editingArticleId ? 'Edit Artikel' : 'Tambah Artikel Baru'">
+    <UModal v-model:open="showArticleModal" :title="editingArticleId ? 'Edit Artikel Edukasi Kesehatan' : 'Tambah Artikel Baru'" :ui="{ width: 'sm:max-w-2xl' }">
       <template #body>
-        <div class="space-y-4">
-          <div>
-            <label class="block text-xs font-semibold mb-1">Judul Artikel</label>
-            <UInput v-model="articleForm.title" placeholder="mis. Kapan Harus Behel Gigi?" />
+        <div class="space-y-4 text-xs">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold mb-1">Judul Artikel *</label>
+              <UInput v-model="articleForm.title" placeholder="mis. Kapan Harus Pasang Behel Gigi?" class="w-full" />
+            </div>
+            <div>
+              <label class="block font-semibold mb-1">Kategori Artikel *</label>
+              <select v-model="articleForm.categoryName" class="w-full p-2 text-xs border rounded-md bg-white dark:bg-gray-800">
+                <option value="Ortodonti">Ortodonti & Behel</option>
+                <option value="Tips Kesehatan">Tips Kesehatan Gigi</option>
+                <option value="Nina Kidz">Gigi Anak (Nina Kidz)</option>
+                <option value="Perawatan Gigi">Estetika & Pemutihan Gigi</option>
+              </select>
+            </div>
           </div>
+
           <div>
-            <label class="block text-xs font-semibold mb-1">Kategori</label>
-            <select v-model="articleForm.categoryName" class="w-full p-2 text-xs border rounded bg-white dark:bg-gray-800">
-              <option value="Ortodonti">Ortodonti</option>
-              <option value="Tips Kesehatan">Tips Kesehatan</option>
-              <option value="Nina Kidz">Nina Kidz</option>
-              <option value="Perawatan Gigi">Perawatan Gigi</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold mb-1">Upload Cover Foto Artikel</label>
-            <div class="flex items-center gap-3">
+            <label class="block font-semibold mb-1">Upload Cover Foto Banner Artikel</label>
+            <div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 p-2.5 rounded-xl border border-gray-200 dark:border-gray-800">
               <input
                 type="file"
                 accept="image/*"
                 class="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
                 @change="(e) => onFileSelected(e, (url) => articleForm.coverImageUrl = url)"
               >
-              <img v-if="articleForm.coverImageUrl" :src="articleForm.coverImageUrl" class="w-12 h-12 object-cover rounded border border-gray-200 shrink-0">
+              <img v-if="articleForm.coverImageUrl" :src="articleForm.coverImageUrl" class="w-16 h-12 object-cover rounded-lg border border-gray-200 shrink-0">
             </div>
           </div>
+
           <div>
-            <label class="block text-xs font-semibold mb-1">Isi Konten Artikel</label>
-            <UTextarea v-model="articleForm.body" rows="4" placeholder="Tuliskan isi artikel..." />
+            <label class="block font-semibold mb-1">Isi Konten Artikel Lengkap *</label>
+            <UTextarea v-model="articleForm.body" rows="6" placeholder="Tuliskan materi edukasi kesehatan gigi..." class="w-full" />
           </div>
-          <div class="flex justify-end gap-2 pt-2">
+
+          <div class="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
             <UButton label="Batal" color="neutral" variant="ghost" @click="showArticleModal = false" />
-            <UButton label="Simpan Artikel" color="primary" @click="saveArticle" />
+            <UButton label="Simpan Artikel" color="primary" icon="i-lucide-check" @click="saveArticle" />
           </div>
         </div>
       </template>

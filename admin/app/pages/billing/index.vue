@@ -139,15 +139,100 @@ const form = reactive({
   status: 'paid'
 })
 
-function openCreate() {
-  form.reservationId = ''
-  form.amount = 0
-  form.depositAmount = 100000
-  form.paymentMethod = 'cash'
-  form.entryStaff = 'Maya Putri'
-  form.status = 'paid'
-  formError.value = ''
-  showModal.value = true
+const showDetailModal = ref(false)
+const selectedPayment = ref<Payment | null>(null)
+
+function openPaymentDetail(payment: Payment) {
+  selectedPayment.value = payment
+  showDetailModal.value = true
+}
+
+function printInvoice(payment: Payment) {
+  const win = window.open('', '_blank', 'width=800,height=900')
+  if (!win) return
+  const pName = payment.patientName || 'Budi Santoso'
+  const bName = payment.branchName || 'Soreang'
+  const method = methodLabelMap[payment.paymentMethod] || payment.paymentMethod || 'Tunai'
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Kwitansi & Invoice Pembayaran - ${payment.id}</title>
+      <style>
+        body { font-family: sans-serif; padding: 24px; color: #111827; }
+        .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; }
+        .header h2 { margin: 0; color: #2563eb; font-size: 20px; }
+        .header p { margin: 4px 0 0 0; font-size: 11px; color: #6b7280; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+        .info-table td { padding: 6px; font-size: 12px; }
+        .item-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        .item-table th, .item-table td { border: 1px solid #e5e7eb; padding: 8px; font-size: 12px; }
+        .item-table th { background: #f3f4f6; }
+        .total-box { margin-top: 20px; text-align: right; font-size: 14px; font-weight: bold; }
+        .footer { margin-top: 40px; display: flex; justify-content: space-between; font-size: 11px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h2>NINA DENTAL CARE</h2>
+        <p>Jl. Terusan Kopo No. 8, ${bName}, Bandung | Telp/WA: +62 812-3400-0002</p>
+        <p><b>INVOICE & BUKTI PEMBAYARAN RESMI</b></p>
+      </div>
+
+      <table class="info-table">
+        <tr>
+          <td><b>No. Transaksi:</b> ${payment.id}</td>
+          <td><b>Tanggal:</b> ${new Date(payment.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
+        </tr>
+        <tr>
+          <td><b>Nama Pasien:</b> ${pName}</td>
+          <td><b>Metode Pembayaran:</b> ${method}</td>
+        </tr>
+        <tr>
+          <td><b>Cabang Klinik:</b> ${bName}</td>
+          <td><b>Status:</b> ${payment.status === 'paid' ? 'LUNAS' : 'PENDING'}</td>
+        </tr>
+      </table>
+
+      <table class="item-table">
+        <thead>
+          <tr>
+            <th>Deskripsi Perawatan / Layanan</th>
+            <th>Metode</th>
+            <th style="text-align: right;">Jumlah (Rp)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Perawatan Gigi & Layanan Klinik Nina Dental Care</td>
+            <td>${method}</td>
+            <td style="text-align: right;">${payment.amount.toLocaleString('id-ID')}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="total-box">
+        TOTAL PEMBAYARAN: Rp ${payment.amount.toLocaleString('id-ID')}
+      </div>
+
+      <div class="footer">
+        <div>
+          <p>Pasien / Pembayar</p>
+          <br><br><br>
+          <p>( ${pName} )</p>
+        </div>
+        <div>
+          <p>Kasir / Front Office,</p>
+          <br><br><br>
+          <p>( Kasir Nina Dental Care )</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `)
+  win.document.close()
+  win.focus()
+  setTimeout(() => { win.print() }, 400)
 }
 
 async function onSubmit() {
@@ -324,7 +409,7 @@ async function onSubmit() {
                       variant="ghost"
                       icon="i-lucide-eye"
                       title="Lihat Detail"
-                      :to="`/product/klinik/billing/${item.id}`"
+                      @click="openPaymentDetail(item)"
                     />
                     <UButton
                       size="xs"
@@ -332,8 +417,7 @@ async function onSubmit() {
                       variant="subtle"
                       icon="i-lucide-printer"
                       label="Cetak Invoice"
-                      :to="`/product/klinik/billing/${item.id}/invoice`"
-                      target="_blank"
+                      @click="printInvoice(item)"
                     />
                   </div>
                 </td>

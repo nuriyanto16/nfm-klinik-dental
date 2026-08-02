@@ -31,18 +31,19 @@ const initialReservations: Reservation[] = [
   { id: 'res-6', patientId: 'pat-6', branchId: 'br-1', staffId: 'dr-2', scheduledAt: '2026-07-31T09:00:00Z', status: 'completed', complaintNote: 'Scaling Gigi', createdAt: '2026-07-30T08:00:00Z', patientName: 'Dewi Lestari', branchName: 'Nina Dental Care - Baleendah', doctorName: 'drg. Fajar Ramadhan', treatments: [{ id: 't-6', name: 'Scaling Gigi (Pembersihan Karang)', price: 199000, categoryName: 'Pencegahan' }] }
 ]
 
-const localReservations = ref<Reservation[]>([])
+const localReservations = ref<Reservation[]>([...initialReservations])
 
 watch(() => reservationsPage.value?.data, (val) => {
   if (val && val.length > 0) {
     localReservations.value = [...val]
-  } else if (localReservations.value.length === 0) {
+  } else {
     localReservations.value = [...initialReservations]
   }
 }, { immediate: true })
 
 const filteredReservations = computed(() => {
-  return localReservations.value.filter(r => {
+  const list = localReservations.value.length > 0 ? localReservations.value : initialReservations
+  return list.filter(r => {
     if (filters.branchId && filters.branchId !== 'all' && r.branchId !== filters.branchId) return false
     if (filters.status && filters.status !== 'all' && r.status !== filters.status) return false
     return true
@@ -52,10 +53,14 @@ const filteredReservations = computed(() => {
 async function applyFilters() {
   try {
     const res = await $fetch<PaginatedResponse<Reservation>>(apiUrl(buildQuery()))
-    if (res?.data?.length) {
+    if (res?.data && res.data.length > 0) {
       localReservations.value = res.data
+    } else {
+      localReservations.value = [...initialReservations]
     }
-  } catch (_) {}
+  } catch (_) {
+    localReservations.value = [...initialReservations]
+  }
 }
 watch(page, applyFilters)
 
