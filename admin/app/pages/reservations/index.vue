@@ -23,12 +23,12 @@ function buildQuery() {
 const { data: reservationsPage, status, error, refresh } = useApiFetch<PaginatedResponse<Reservation>>(() => buildQuery())
 
 const initialReservations: Reservation[] = [
-  { id: 'res-1', patientId: 'pat-1', branchId: 'br-1', staffId: 'dr-1', scheduledAt: '2026-08-03T13:00:00Z', status: 'pending', complaintNote: 'Pemasangan Behel Metal', createdAt: '2026-08-02T08:00:00Z', patientName: 'Dewi Lestari', branchName: 'Nina Dental Care - Baleendah', doctorName: 'drg. Siti Rahmawati', treatments: [{ id: 't-1', name: 'Behel Keramik (Sapphire)', price: 4500000, categoryName: 'Ortodonti' }] },
-  { id: 'res-2', patientId: 'pat-2', branchId: 'br-2', staffId: 'dr-2', scheduledAt: '2026-08-01T10:00:00Z', status: 'confirmed', complaintNote: 'Cabut Gigi', createdAt: '2026-07-31T08:00:00Z', patientName: 'Ahmad Fauzi', branchName: 'Nina Dental Care - Soreang', doctorName: 'drg. Fajar Ramadhan', treatments: [{ id: 't-2', name: 'Cabut Gigi Dewasa', price: 350000, categoryName: 'Bedah Mulut' }] },
-  { id: 'res-3', patientId: 'pat-3', branchId: 'br-1', staffId: 'dr-3', scheduledAt: '2026-07-31T17:00:00Z', status: 'confirmed', complaintNote: 'Periksa Gigi Anak', createdAt: '2026-07-30T08:00:00Z', patientName: 'Siti Aminah', branchName: 'Nina Dental Care - Baleendah', doctorName: 'drg. Yoga Pratama', treatments: [{ id: 't-3', name: 'Pemeriksaan Gigi Anak (Nina Kidz)', price: 150000, categoryName: 'Nina Kidz' }] },
-  { id: 'res-4', patientId: 'pat-4', branchId: 'br-2', staffId: 'dr-4', scheduledAt: '2026-07-31T15:00:00Z', status: 'in_progress', complaintNote: 'Bleaching Instant', createdAt: '2026-07-30T08:00:00Z', patientName: 'Budi Santoso', branchName: 'Nina Dental Care - Soreang', doctorName: 'drg. Nina Marlina, Sp.KG', treatments: [{ id: 't-4', name: 'Bleaching (Pemutihan Gigi)', price: 1850000, categoryName: 'Estetika' }] },
-  { id: 'res-5', patientId: 'pat-5', branchId: 'br-2', staffId: 'dr-1', scheduledAt: '2026-07-31T11:00:00Z', status: 'checked_in', complaintNote: 'Behel Metal', createdAt: '2026-07-30T08:00:00Z', patientName: 'Rina Marlina', branchName: 'Nina Dental Care - Soreang', doctorName: 'drg. Siti Rahmawati', treatments: [{ id: 't-5', name: 'Behel Metal Konvensional', price: 4000000, categoryName: 'Ortodonti' }] },
-  { id: 'res-6', patientId: 'pat-6', branchId: 'br-1', staffId: 'dr-2', scheduledAt: '2026-07-31T09:00:00Z', status: 'completed', complaintNote: 'Scaling Gigi', createdAt: '2026-07-30T08:00:00Z', patientName: 'Dewi Lestari', branchName: 'Nina Dental Care - Baleendah', doctorName: 'drg. Fajar Ramadhan', treatments: [{ id: 't-6', name: 'Scaling Gigi (Pembersihan Karang)', price: 199000, categoryName: 'Pencegahan' }] }
+  { id: 'res-1', patientId: 'pat-1', branchId: '21000000-0000-0000-0000-000000000002', staffId: 'dr-1', scheduledAt: '2026-08-03T13:00:00Z', status: 'pending', complaintNote: 'Pemasangan Behel Metal', createdAt: '2026-08-02T08:00:00Z', patientName: 'Dewi Lestari', branchName: 'Nina Dental Care - Baleendah', doctorName: 'drg. Siti Rahmawati', treatments: [{ id: 't-1', name: 'Behel Keramik (Sapphire)', price: 4500000, categoryName: 'Ortodonti' }] },
+  { id: 'res-2', patientId: 'pat-2', branchId: '21000000-0000-0000-0000-000000000001', staffId: 'dr-2', scheduledAt: '2026-08-01T10:00:00Z', status: 'confirmed', complaintNote: 'Cabut Gigi', createdAt: '2026-07-31T08:00:00Z', patientName: 'Ahmad Fauzi', branchName: 'Nina Dental Care - Soreang', doctorName: 'drg. Fajar Ramadhan', treatments: [{ id: 't-2', name: 'Cabut Gigi Dewasa', price: 350000, categoryName: 'Bedah Mulut' }] },
+  { id: 'res-3', patientId: 'pat-3', branchId: '21000000-0000-0000-0000-000000000002', staffId: 'dr-3', scheduledAt: '2026-07-31T17:00:00Z', status: 'confirmed', complaintNote: 'Periksa Gigi Anak', createdAt: '2026-07-30T08:00:00Z', patientName: 'Siti Aminah', branchName: 'Nina Dental Care - Baleendah', doctorName: 'drg. Yoga Pratama', treatments: [{ id: 't-3', name: 'Pemeriksaan Gigi Anak (Nina Kidz)', price: 150000, categoryName: 'Nina Kidz' }] },
+  { id: 'res-4', patientId: 'pat-4', branchId: '21000000-0000-0000-0000-000000000001', staffId: 'dr-4', scheduledAt: '2026-07-31T15:00:00Z', status: 'in_progress', complaintNote: 'Bleaching Instant', createdAt: '2026-07-30T08:00:00Z', patientName: 'Budi Santoso', branchName: 'Nina Dental Care - Soreang', doctorName: 'drg. Nina Marlina, Sp.KG', treatments: [{ id: 't-4', name: 'Bleaching (Pemutihan Gigi)', price: 1850000, categoryName: 'Estetika' }] },
+  { id: 'res-5', patientId: 'pat-5', branchId: '21000000-0000-0000-0000-000000000001', staffId: 'dr-1', scheduledAt: '2026-07-31T11:00:00Z', status: 'checked_in', complaintNote: 'Behel Metal', createdAt: '2026-07-30T08:00:00Z', patientName: 'Rina Marlina', branchName: 'Nina Dental Care - Soreang', doctorName: 'drg. Siti Rahmawati', treatments: [{ id: 't-5', name: 'Behel Metal Konvensional', price: 4000000, categoryName: 'Ortodonti' }] },
+  { id: 'res-6', patientId: 'pat-6', branchId: '21000000-0000-0000-0000-000000000002', staffId: 'dr-2', scheduledAt: '2026-07-31T09:00:00Z', status: 'completed', complaintNote: 'Scaling Gigi', createdAt: '2026-07-30T08:00:00Z', patientName: 'Dewi Lestari', branchName: 'Nina Dental Care - Baleendah', doctorName: 'drg. Fajar Ramadhan', treatments: [{ id: 't-6', name: 'Scaling Gigi (Pembersihan Karang)', price: 199000, categoryName: 'Pencegahan' }] }
 ]
 
 const localReservations = ref<Reservation[]>([...initialReservations])
@@ -44,7 +44,17 @@ watch(() => reservationsPage.value?.data, (val) => {
 const filteredReservations = computed(() => {
   const list = localReservations.value.length > 0 ? localReservations.value : initialReservations
   return list.filter(r => {
-    if (filters.branchId && filters.branchId !== 'all' && r.branchId !== filters.branchId) return false
+    if (filters.branchId && filters.branchId !== 'all') {
+      const selectedBranch = (branches.value ?? []).find(b => b.id === filters.branchId)
+      const matchId = r.branchId === filters.branchId
+      const matchName = selectedBranch && r.branchName && (
+        r.branchName.toLowerCase().includes(selectedBranch.name.toLowerCase()) ||
+        selectedBranch.name.toLowerCase().includes(r.branchName.toLowerCase()) ||
+        (selectedBranch.name.includes('Baleendah') && r.branchName.includes('Baleendah')) ||
+        (selectedBranch.name.includes('Soreang') && r.branchName.includes('Soreang'))
+      )
+      if (!matchId && !matchName) return false
+    }
     if (filters.status && filters.status !== 'all' && r.status !== filters.status) return false
     return true
   })
