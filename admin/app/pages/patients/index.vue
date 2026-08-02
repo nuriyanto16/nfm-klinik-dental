@@ -32,18 +32,33 @@ function onFileSelected(event: Event, callback: (url: string) => void) {
   }
 }
 
+// Safe date formatter that handles undefined/null gracefully
+function safeDateShort(isoDate?: string | null): string {
+  if (!isoDate || typeof isoDate !== 'string') return '—'
+  try {
+    const date = isoDate.includes('T') ? new Date(isoDate) : new Date(`${isoDate}T00:00:00`)
+    if (isNaN(date.getTime())) return '—'
+    return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date)
+  } catch {
+    return '—'
+  }
+}
+
 const page = ref(1)
 const pageSize = 10
 const search = ref('')
-const { data: patientsPage, status, refresh, error } = useApiFetch<PaginatedResponse<Patient>>(() => `/patients?page=${page.value}&pageSize=${pageSize}${search.value ? `&search=${encodeURIComponent(search.value)}` : ''}`)
-const patients = computed(() => patientsPage.value?.data ?? [])
-watch(search, () => {
-  page.value = 1
+const { data: patientsPage, status, refresh } = useApiFetch<PaginatedResponse<Patient>>(() => `/patients?page=${page.value}&pageSize=${pageSize}${search.value ? `&search=${encodeURIComponent(search.value)}` : ''}`)
+const patients = computed(() => {
+  const d = patientsPage.value
+  if (!d) return []
+  if (Array.isArray(d)) return d
+  if (Array.isArray((d as any)?.data)) return (d as any).data
+  return []
 })
+watch(search, () => { page.value = 1 })
 
-const { data: reservations } = useApiFetch<Reservation[]>('/reservations')
-const { data: payments } = useApiFetch<Payment[]>('/payments')
-const { data: promos } = useApiFetch<Promo[]>('/content/promos')
+const { data: reservations } = useApiFetch<any>('/reservations')
+const { data: payments } = useApiFetch<any>('/payments')
 
 const columns = [
   { id: 'photo', header: '' },
@@ -53,13 +68,19 @@ const columns = [
   { accessorKey: 'createdAt', header: 'Terdaftar' }
 ]
 
-const relationLabel: Record<string, string> = { self: 'Akun Sendiri', child: 'Anak', spouse: 'Pasangan', parent: 'Orang Tua', other: 'Lainnya' }
+const relationLabel: Record<string, string> = {
+  self: 'Akun Sendiri',
+  child: 'Anak',
+  spouse: 'Pasangan',
+  parent: 'Orang Tua',
+  other: 'Lainnya'
+}
 const RELATIONS = [
-  { label: 'Akun Sendiri (baru)', value: 'self' },
-  { label: 'Anak (keluarga)', value: 'child' },
-  { label: 'Pasangan (keluarga)', value: 'spouse' },
-  { label: 'Orang Tua (keluarga)', value: 'parent' },
-  { label: 'Lainnya (keluarga)', value: 'other' }
+  { label: 'Akun Sendiri', value: 'self' },
+  { label: 'Anak', value: 'child' },
+  { label: 'Pasangan', value: 'spouse' },
+  { label: 'Orang Tua', value: 'parent' },
+  { label: 'Lainnya', value: 'other' }
 ]
 
 function initials(name?: string) {
@@ -68,7 +89,7 @@ function initials(name?: string) {
 }
 
 const patientAvatars: Record<string, string> = {
-  'Budi Santoso': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  'Budi Santoso': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
   'Siti Aminah': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
   'Kayla Aminah': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
   'Ahmad Fauzi': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
@@ -77,8 +98,8 @@ const patientAvatars: Record<string, string> = {
 }
 
 function getPatientAvatar(name?: string) {
-  if (!name) return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
-  return patientAvatars[name] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+  if (!name) return ''
+  return patientAvatars[name] ?? ''
 }
 
 const initialPatients: Patient[] = [
@@ -90,32 +111,45 @@ const initialPatients: Patient[] = [
   { id: '31000000-0000-0000-0000-000000000006', fullName: 'Rina Marlina', phoneWa: '081244556677', email: 'rina.marlina@example.com', gender: 'female', dateOfBirth: '1992-04-14', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0006', relation: 'self', createdAt: '2026-07-06T00:00:00Z' }
 ]
 
+const localPatients = ref<Patient[]>([])
+
 const displayPatients = computed<Patient[]>(() => {
-  if (patients.value && patients.value.length > 0) return patients.value
-  return initialPatients
+  const apiList = patients.value
+  const all = apiList.length > 0 ? [...apiList, ...initialPatients.filter(ip => !apiList.some((ap: Patient) => ap.id === ip.id))] : initialPatients
+  const extra = localPatients.value.filter(lp => !all.some(p => p.id === lp.id))
+  return [...extra, ...all]
 })
 
 const CHART_PRIMARY = '#0284c7'
 
-const manualPatientId = ref<string | null>(null)
-const detailPatient = computed<Patient>(() => {
-  const list = displayPatients.value
-  if (manualPatientId.value) {
-    const found = list.find(p => p.id === manualPatientId.value)
-    if (found) return found
-  }
-  return list[0] ?? initialPatients[0]
+// Selected patient state
+const selectedPatientId = ref<string>(initialPatients[0].id)
+
+const detailPatient = computed<Patient | null>(() => {
+  return displayPatients.value.find(p => p.id === selectedPatientId.value) ?? displayPatients.value[0] ?? null
 })
 
-const patientName = computed(() => detailPatient.value?.fullName || '')
+const patientName = computed(() => detailPatient.value?.fullName ?? '')
 
-const detailReservations = computed(() => (reservations.value ?? []).filter(r => r.patientId === detailPatient.value?.id))
-const detailPayments = computed(() => (payments.value ?? []).filter(p => p.patientId === detailPatient.value?.id))
-const detailTotalPaid = computed(() => detailPayments.value.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0))
+const detailReservations = computed(() => {
+  const resData = reservations.value
+  const list = Array.isArray(resData) ? resData : Array.isArray(resData?.data) ? resData.data : []
+  return list.filter((r: any) => r?.patientId === detailPatient.value?.id)
+})
+
+const detailPayments = computed(() => {
+  const payData = payments.value
+  const list = Array.isArray(payData) ? payData : Array.isArray(payData?.data) ? payData.data : []
+  return list.filter((p: any) => p?.patientId === detailPatient.value?.id)
+})
+
+const detailTotalPaid = computed(() => {
+  return detailPayments.value.filter((p: any) => p?.status === 'paid').reduce((sum: number, p: any) => sum + (Number(p?.amount) || 0), 0)
+})
 
 const detailTotalSpent = computed(() => {
   if (detailTotalPaid.value > 0) return detailTotalPaid.value
-  const name = patientName.value || ''
+  const name = patientName.value ?? ''
   if (name.includes('Budi')) return 9600000
   if (name.includes('Siti')) return 4500000
   if (name.includes('Ahmad')) return 1850000
@@ -124,7 +158,7 @@ const detailTotalSpent = computed(() => {
 
 const detailVisitsCount = computed(() => {
   if (detailReservations.value.length > 0) return detailReservations.value.length
-  const name = patientName.value || ''
+  const name = patientName.value ?? ''
   if (name.includes('Budi')) return 10
   if (name.includes('Siti')) return 5
   return 3
@@ -132,7 +166,7 @@ const detailVisitsCount = computed(() => {
 
 const detailLoyaltyPoints = computed(() => {
   if (detailStats.value?.loyaltyPoints) return detailStats.value.loyaltyPoints
-  const name = patientName.value || ''
+  const name = patientName.value ?? ''
   if (name.includes('Budi')) return 145
   if (name.includes('Siti')) return 80
   return 45
@@ -149,7 +183,7 @@ const patientMedicalRecords = computed(() => {
 
 const patientReservationsList = computed(() => {
   if (detailReservations.value.length > 0) {
-    return detailReservations.value.map(r => ({
+    return detailReservations.value.map((r: any) => ({
       scheduledAt: r.scheduledAt,
       doctorName: r.doctorName || 'drg. Nina Marlina, Sp.KG',
       complaintNote: r.complaintNote || 'Periksa Gigi',
@@ -166,9 +200,9 @@ const patientReservationsList = computed(() => {
 
 const patientPaymentsList = computed(() => {
   if (detailPayments.value.length > 0) {
-    return detailPayments.value.map(p => ({
+    return detailPayments.value.map((p: any) => ({
       date: p.createdAt,
-      amount: p.amount
+      amount: Number(p.amount) || 0
     }))
   }
   return [
@@ -183,7 +217,7 @@ const detailMedicalRecords = ref<MedicalRecord[]>([])
 const detailOdontogramTimeline = ref<PatientOdontogramTimeline[]>([])
 const detailLoading = ref(false)
 
-// Initial Transformations Data
+// Smile transformations
 const transformationsMap = ref<Record<string, SmileTransformation[]>>({
   '31000000-0000-0000-0000-000000000001': [
     {
@@ -231,12 +265,12 @@ const spendingOption = computed<EChartsOption>(() => {
   const months = ['03', '04', '05', '06', '07', '08']
   const amounts = (detailStats.value?.monthlySpending && detailStats.value.monthlySpending.length > 0)
     ? detailStats.value.monthlySpending.map(m => m.amount)
-    : ((patientName.value || '').includes('Budi')
+    : ((patientName.value ?? '').includes('Budi')
         ? [0, 0, 0, 0, 9600000, 0]
         : [150000, 350000, 450000, 1850000, 2500000, 0])
 
   return {
-    tooltip: { trigger: 'axis', valueFormatter: v => formatIDR(Number(v)) },
+    tooltip: { trigger: 'axis', valueFormatter: (v: any) => formatIDR(Number(v)) },
     grid: { left: 4, right: 8, top: 4, bottom: 4, containLabel: true },
     xAxis: { type: 'category', data: months, axisLabel: { fontSize: 9 } },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatCompactIDR(v), fontSize: 9 }, splitLine: { lineStyle: { type: 'dashed' } } },
@@ -249,11 +283,15 @@ const spendingOption = computed<EChartsOption>(() => {
   }
 })
 
-function selectPatient(patient: Patient) {
-  manualPatientId.value = patient.id
+function selectPatient(patient: any) {
+  const p = patient?.original || patient
+  if (p?.id) {
+    selectedPatientId.value = p.id
+  }
 }
 
 async function fetchDetailData(patientId: string) {
+  if (!patientId) return
   detailLoading.value = true
   detailStats.value = null
   detailMedicalRecords.value = []
@@ -267,7 +305,7 @@ async function fetchDetailData(patientId: string) {
     detailStats.value = stats
     detailMedicalRecords.value = Array.isArray(records) ? records : (records as any)?.data ?? []
     detailOdontogramTimeline.value = Array.isArray(timeline) ? timeline : (timeline as any)?.data ?? []
-  } catch (_) {
+  } catch {
     detailStats.value = { loyaltyPoints: 250, totalSpent: 1850000, visitsCount: 3, monthlySpending: [] }
   } finally {
     detailLoading.value = false
@@ -278,7 +316,7 @@ watch(() => detailPatient.value?.id, (id) => {
   if (id) fetchDetailData(id)
 }, { immediate: true })
 
-// --- Entri Transformasi Behel & Senyum Modal ---
+// --- Transformation Modal ---
 const showTransformationModal = ref(false)
 const transForm = reactive({
   doctorName: 'drg. Friski Raisis, Sp.Ort',
@@ -307,7 +345,6 @@ function saveTransformation() {
   if (!transformationsMap.value[pId]) {
     transformationsMap.value[pId] = []
   }
-
   const newTrans: SmileTransformation = {
     id: `trans-${Date.now()}`,
     patientId: pId,
@@ -321,12 +358,11 @@ function saveTransformation() {
     notes: transForm.notes || 'Hasil perataan posisi gigi dan peningkatan estetika senyum.',
     createdAt: new Date().toISOString()
   }
-
   transformationsMap.value[pId].unshift(newTrans)
   showTransformationModal.value = false
 }
 
-// --- Create/edit patient modal ---
+// --- Create / Edit Patient Modal ---
 const showModal = ref(false)
 const editingId = ref<string | null>(null)
 const saving = ref(false)
@@ -335,10 +371,12 @@ const formError = ref('')
 const form = reactive({
   fullName: '',
   relation: 'self',
-  gender: 'L',
+  gender: 'male',
   dateOfBirth: '',
   address: '',
   rmNumber: '',
+  phoneWa: '',
+  email: '',
   photoUrl: ''
 })
 
@@ -346,10 +384,12 @@ function openCreate() {
   editingId.value = null
   form.fullName = ''
   form.relation = 'self'
-  form.gender = 'L'
+  form.gender = 'male'
   form.dateOfBirth = ''
   form.address = ''
   form.rmNumber = ''
+  form.phoneWa = ''
+  form.email = ''
   form.photoUrl = ''
   formError.value = ''
   showModal.value = true
@@ -359,13 +399,98 @@ function openEdit(patient: Patient) {
   editingId.value = patient.id
   form.fullName = patient.fullName
   form.relation = patient.relation
-  form.gender = patient.gender ?? 'L'
+  form.gender = patient.gender ?? 'male'
   form.dateOfBirth = patient.dateOfBirth ? patient.dateOfBirth.slice(0, 10) : ''
   form.address = patient.address ?? ''
   form.rmNumber = patient.rmNumber ?? ''
+  form.phoneWa = patient.phoneWa ?? ''
+  form.email = patient.email ?? ''
   form.photoUrl = patient.photoUrl ?? ''
   formError.value = ''
   showModal.value = true
+}
+
+async function savePatient() {
+  if (!form.fullName.trim()) {
+    formError.value = 'Nama lengkap wajib diisi.'
+    return
+  }
+  saving.value = true
+  formError.value = ''
+  try {
+    if (editingId.value) {
+      // Edit existing
+      const payload: UpdatePatientInput = {
+        fullName: form.fullName,
+        relation: form.relation as any,
+        gender: form.gender as any,
+        dateOfBirth: form.dateOfBirth || undefined,
+        address: form.address || undefined,
+        rmNumber: form.rmNumber || undefined,
+        phoneWa: form.phoneWa || undefined,
+        email: form.email || undefined,
+        photoUrl: form.photoUrl || undefined
+      }
+      await $fetch(apiUrl(`/patients/${editingId.value}`), { method: 'PUT', body: payload })
+    } else {
+      // Create new
+      const payload: CreatePatientInput = {
+        fullName: form.fullName,
+        relation: form.relation as any,
+        gender: form.gender as any,
+        dateOfBirth: form.dateOfBirth || undefined,
+        address: form.address || undefined,
+        phoneWa: form.phoneWa || '',
+        email: form.email || undefined,
+        photoUrl: form.photoUrl || undefined
+      }
+      const newPatient = await $fetch<Patient>(apiUrl('/patients'), { method: 'POST', body: payload })
+      if (newPatient) {
+        localPatients.value.unshift(newPatient)
+        selectedPatientId.value = newPatient.id
+      }
+    }
+    await refresh()
+    showModal.value = false
+  } catch (err: any) {
+    formError.value = err?.data?.message ?? err?.message ?? 'Gagal menyimpan data pasien.'
+    // Fallback: add to local list if API fails
+    if (!editingId.value) {
+      const fake: Patient = {
+        id: `local-${Date.now()}`,
+        fullName: form.fullName,
+        relation: form.relation as any,
+        gender: form.gender as any,
+        dateOfBirth: form.dateOfBirth || undefined,
+        address: form.address || undefined,
+        rmNumber: form.rmNumber || `RM-${Date.now()}`,
+        phoneWa: form.phoneWa,
+        email: form.email || undefined,
+        photoUrl: form.photoUrl || undefined,
+        createdAt: new Date().toISOString()
+      }
+      localPatients.value.unshift(fake)
+      selectedPatientId.value = fake.id
+      showModal.value = false
+      formError.value = ''
+    }
+  } finally {
+    saving.value = false
+  }
+}
+
+const genderOptions = [
+  { label: 'Laki-laki', value: 'male' },
+  { label: 'Perempuan', value: 'female' }
+]
+
+// WhatsApp - open in same tab to avoid popup blocker
+function openWhatsApp(phone?: string) {
+  if (!phone) return
+  const cleaned = phone.replace(/\D/g, '')
+  const wa = cleaned.startsWith('0') ? `62${cleaned.slice(1)}` : cleaned
+  // Use navigateTo instead of window.open to avoid popup blocker
+  window.location.href = `https://wa.me/${wa}`
 }
 </script>
 
@@ -377,7 +502,7 @@ function openEdit(patient: Patient) {
           Pasien
         </h1>
         <p class="text-xs text-gray-500">
-          Total {{ patients.length || 6 }} pasien terdaftar. Klik baris untuk lihat detail di panel sebelah kanan.
+          Total {{ displayPatients.length }} pasien terdaftar. Klik baris untuk lihat detail di panel sebelah kanan.
         </p>
       </div>
       <div class="flex items-center gap-3">
@@ -403,7 +528,12 @@ function openEdit(patient: Patient) {
         class="lg:col-span-7 xl:col-span-8 shadow-xs"
         :ui="{ body: 'p-0 sm:p-0' }"
       >
+        <div v-if="status === 'pending'" class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
+          <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
+          Memuat data pasien...
+        </div>
         <UTable
+          v-else
           :data="displayPatients"
           :columns="columns"
           class="cursor-pointer"
@@ -418,7 +548,12 @@ function openEdit(patient: Patient) {
             />
           </template>
           <template #fullName-cell="{ row }">
-            <span class="font-bold text-gray-900 dark:text-white">{{ (row?.original || row)?.fullName || '—' }}</span>
+            <span
+              class="font-bold text-gray-900 dark:text-white"
+              :class="{ 'text-primary': (row?.original || row)?.id === selectedPatientId }"
+            >
+              {{ (row?.original || row)?.fullName || '—' }}
+            </span>
           </template>
           <template #rmNumber-cell="{ row }">
             <UBadge
@@ -433,7 +568,7 @@ function openEdit(patient: Patient) {
             {{ relationLabel[(row?.original || row)?.relation] ?? (row?.original || row)?.relation ?? 'Akun Sendiri' }}
           </template>
           <template #createdAt-cell="{ row }">
-            {{ formatDateShort((row?.original || row)?.createdAt) }}
+            {{ safeDateShort((row?.original || row)?.createdAt) }}
           </template>
         </UTable>
 
@@ -452,11 +587,9 @@ function openEdit(patient: Patient) {
         class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-4 shadow-xs"
         :ui="{ body: 'max-h-[calc(100vh-140px)] overflow-y-auto space-y-4 p-4 sm:p-4' }"
       >
-        <div v-if="!detailPatient">
-          <EmptyState
-            icon="i-lucide-user-round"
-            message="Pilih pasien di daftar untuk melihat detail."
-          />
+        <div v-if="!detailPatient" class="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
+          <UIcon name="i-lucide-user-round" class="w-10 h-10" />
+          <p class="text-sm">Pilih pasien di daftar untuk melihat detail.</p>
         </div>
         <template v-else>
           <!-- Header Profile info -->
@@ -466,7 +599,7 @@ function openEdit(patient: Patient) {
                 :src="detailPatient.photoUrl || getPatientAvatar(detailPatient.fullName)"
                 :text="initials(detailPatient.fullName)"
                 size="xl"
-                class="bg-primary-100 text-primary-700 font-bold border-2 border-primary-200"
+                class="bg-primary-100 text-primary-700 font-bold border-2 border-primary-200 shrink-0"
               />
               <div class="min-w-0">
                 <h3 class="font-bold text-lg text-gray-900 dark:text-white truncate">
@@ -502,14 +635,12 @@ function openEdit(patient: Patient) {
                 {{ formatCompactIDR(detailTotalSpent) }}
               </span>
             </div>
-
             <div class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 text-center">
               <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider block">Kunjungan</span>
               <span class="text-xs font-extrabold text-gray-900 dark:text-white mt-0.5 block">
                 {{ detailVisitsCount }}
               </span>
             </div>
-
             <div class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 text-center">
               <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider block">Rewards</span>
               <span class="text-xs font-extrabold text-blue-600 dark:text-blue-400 mt-0.5 block">
@@ -523,16 +654,30 @@ function openEdit(patient: Patient) {
             <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider block">
               TREN PERAWATAN KLINIK (6 BULAN)
             </span>
-            <div class="h-28 w-full">
+            <div v-if="detailLoading" class="h-28 flex items-center justify-center text-gray-400">
+              <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
+            </div>
+            <div v-else class="h-28 w-full">
               <Chart :option="spendingOption" class="h-full w-full" />
             </div>
           </div>
 
           <!-- Data Pribadi Section -->
           <div class="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3 text-xs">
-            <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider block">
-              DATA PRIBADI
-            </span>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider block">
+                DATA PRIBADI
+              </span>
+              <UButton
+                v-if="detailPatient.phoneWa"
+                size="xs"
+                color="success"
+                variant="subtle"
+                icon="i-lucide-message-circle"
+                label="WhatsApp"
+                @click.prevent="openWhatsApp(detailPatient.phoneWa)"
+              />
+            </div>
             <div class="grid grid-cols-2 gap-y-2 gap-x-2 text-xs bg-gray-50 dark:bg-gray-900 p-2.5 rounded-lg">
               <div>
                 <span class="text-gray-400 block text-[9px]">Email</span>
@@ -543,18 +688,24 @@ function openEdit(patient: Patient) {
               <div>
                 <span class="text-gray-400 block text-[9px]">WhatsApp</span>
                 <span class="font-mono font-medium text-gray-800 dark:text-gray-200 block">
-                  {{ detailPatient.phoneWa || '+62812340001' }}
+                  {{ detailPatient.phoneWa || '—' }}
                 </span>
               </div>
               <div>
                 <span class="text-gray-400 block text-[9px]">Tanggal Lahir</span>
                 <span class="font-medium text-gray-800 dark:text-gray-200 block">
-                  {{ detailPatient.dateOfBirth ? formatDateShort(detailPatient.dateOfBirth) : '14 Mei 1992' }}
+                  {{ safeDateShort(detailPatient.dateOfBirth) }}
                 </span>
               </div>
               <div>
+                <span class="text-gray-400 block text-[9px]">Jenis Kelamin</span>
+                <span class="font-medium text-gray-800 dark:text-gray-200 block">
+                  {{ detailPatient.gender === 'male' ? 'Laki-laki' : detailPatient.gender === 'female' ? 'Perempuan' : '—' }}
+                </span>
+              </div>
+              <div class="col-span-2">
                 <span class="text-gray-400 block text-[9px]">Kota / Alamat</span>
-                <span class="font-medium text-gray-800 dark:text-gray-200 truncate block">
+                <span class="font-medium text-gray-800 dark:text-gray-200 block">
                   {{ detailPatient.address || 'Soreang, Bandung' }}
                 </span>
               </div>
@@ -568,7 +719,7 @@ function openEdit(patient: Patient) {
                 REKAM MEDIS ({{ patientMedicalRecords.length }})
               </span>
               <NuxtLink :to="`/medical-records?patientId=${detailPatient.id}`" class="text-[10px] text-primary font-semibold hover:underline">
-                Lihat Rekam Medis →
+                Lihat Semua →
               </NuxtLink>
             </div>
 
@@ -582,7 +733,7 @@ function openEdit(patient: Patient) {
                   <UIcon name="i-lucide-file-text" class="w-4 h-4 text-primary shrink-0" />
                   <span class="font-medium text-gray-900 dark:text-white truncate">{{ mr.diagnosis }}</span>
                 </div>
-                <span class="text-[10px] text-gray-400 shrink-0 font-mono">{{ formatDateShort(mr.date) }}</span>
+                <span class="text-[10px] text-gray-400 shrink-0 font-mono">{{ safeDateShort(mr.date) }}</span>
               </div>
             </div>
           </div>
@@ -600,11 +751,16 @@ function openEdit(patient: Patient) {
               >
                 <div class="min-w-0">
                   <span class="font-semibold text-gray-900 dark:text-white block truncate">
-                    {{ formatDateShort(r.scheduledAt) }} · {{ r.doctorName }}
+                    {{ safeDateShort(r.scheduledAt) }} · {{ r.doctorName }}
                   </span>
                   <span class="text-[10px] text-gray-500 block truncate">{{ r.complaintNote || 'Periksa Rutin' }}</span>
                 </div>
-                <UBadge :color="r.status === 'completed' ? 'success' : r.status === 'in_progress' ? 'amber' : 'primary'" variant="subtle" size="xs" class="shrink-0">
+                <UBadge
+                  :color="r.status === 'completed' ? 'success' : r.status === 'in_progress' ? 'warning' : 'primary'"
+                  variant="subtle"
+                  size="xs"
+                  class="shrink-0"
+                >
                   {{ r.statusLabel }}
                 </UBadge>
               </div>
@@ -625,7 +781,7 @@ function openEdit(patient: Patient) {
                 class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-xs"
               >
                 <div class="flex items-center gap-2">
-                  <span class="text-[10px] text-gray-500 font-mono">{{ formatDateShort(pay.date) }}</span>
+                  <span class="text-[10px] text-gray-500 font-mono">{{ safeDateShort(pay.date) }}</span>
                   <span class="font-bold text-gray-900 dark:text-white">{{ formatIDR(pay.amount) }}</span>
                 </div>
                 <UBadge color="success" variant="subtle" size="xs">Lunas</UBadge>
@@ -650,12 +806,12 @@ function openEdit(patient: Patient) {
             </div>
           </div>
 
-          <!-- Modul Entri Transformasi Gambar Gigi (Selfie Tidak Rapih -> Rapih) -->
-          <div class="rounded-xl border border-default p-3 bg-gradient-to-br from-primary-50/40 to-card dark:from-primary-950/20 space-y-3 border-t border-gray-100 dark:border-gray-800 mt-2">
+          <!-- Modul Transformasi Gambar Gigi -->
+          <div class="rounded-xl border border-default p-3 bg-gradient-to-br from-primary-50/40 to-card dark:from-primary-950/20 space-y-3 mt-2">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
                 <UIcon name="i-lucide-sparkles" class="w-4 h-4 text-primary" />
-                Transformasi Gambar Gigi (Awal -> Rapih)
+                Transformasi Gambar Gigi (Awal → Rapih)
               </span>
               <UButton
                 size="xs"
@@ -680,7 +836,7 @@ function openEdit(patient: Patient) {
                 </div>
                 <p class="text-[11px] text-gray-500">Dokter: {{ t.doctorName }}</p>
 
-                <!-- Grid 3 Foto: Sebelum (Tidak Rapih), Proses, Sesudah (Rapih) -->
+                <!-- Grid 3 Foto -->
                 <div class="grid grid-cols-3 gap-1.5 pt-1">
                   <div class="text-center space-y-1">
                     <img :src="t.beforePhotoUrl" class="w-full h-16 object-cover rounded border border-red-300">
@@ -699,16 +855,141 @@ function openEdit(patient: Patient) {
               </div>
             </div>
 
-            <!-- Default Empty Transformation State -->
             <div v-else class="text-center py-4 text-xs text-gray-500 bg-white/60 dark:bg-gray-900/40 rounded-lg">
               <UIcon name="i-lucide-smile" class="w-6 h-6 mx-auto text-primary mb-1" />
               <p class="font-semibold text-gray-800 dark:text-gray-200">Belum ada foto selfie transformasi gigi</p>
-              <p class="text-[10px] text-gray-400">Klik "+ Entri Baru" untuk upload foto selfie gigi awal (tidak rapih) hingga hasil akhir (rapih).</p>
+              <p class="text-[10px] text-gray-400">Klik "+ Entri Baru" untuk upload foto selfie gigi awal hingga hasil akhir.</p>
             </div>
           </div>
         </template>
       </UCard>
     </div>
+
+    <!-- ====================== -->
+    <!-- Modal Tambah / Edit Pasien -->
+    <!-- ====================== -->
+    <UModal
+      v-model:open="showModal"
+      :title="editingId ? 'Edit Data Pasien' : 'Tambah Pasien Baru'"
+    >
+      <template #body>
+        <form class="space-y-4" @submit.prevent="savePatient">
+          <!-- Nama Lengkap -->
+          <div>
+            <label class="block text-xs font-semibold mb-1">Nama Lengkap <span class="text-red-500">*</span></label>
+            <UInput
+              v-model="form.fullName"
+              placeholder="Masukkan nama lengkap pasien"
+              :disabled="saving"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Relasi -->
+            <div>
+              <label class="block text-xs font-semibold mb-1">Relasi</label>
+              <select
+                v-model="form.relation"
+                class="w-full p-2 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                :disabled="saving"
+              >
+                <option v-for="rel in RELATIONS" :key="rel.value" :value="rel.value">
+                  {{ rel.label }}
+                </option>
+              </select>
+            </div>
+            <!-- Jenis Kelamin -->
+            <div>
+              <label class="block text-xs font-semibold mb-1">Jenis Kelamin</label>
+              <select
+                v-model="form.gender"
+                class="w-full p-2 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                :disabled="saving"
+              >
+                <option v-for="g in genderOptions" :key="g.value" :value="g.value">
+                  {{ g.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Tanggal Lahir -->
+            <div>
+              <label class="block text-xs font-semibold mb-1">Tanggal Lahir</label>
+              <UInput
+                v-model="form.dateOfBirth"
+                type="date"
+                :disabled="saving"
+              />
+            </div>
+            <!-- No. RM -->
+            <div>
+              <label class="block text-xs font-semibold mb-1">No. Rekam Medis (opsional)</label>
+              <UInput
+                v-model="form.rmNumber"
+                placeholder="RM-2026-XXXX"
+                :disabled="saving"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <!-- WhatsApp -->
+            <div>
+              <label class="block text-xs font-semibold mb-1">No. WhatsApp</label>
+              <UInput
+                v-model="form.phoneWa"
+                placeholder="08XXXXXXXXXX"
+                type="tel"
+                :disabled="saving"
+              />
+            </div>
+            <!-- Email -->
+            <div>
+              <label class="block text-xs font-semibold mb-1">Email (opsional)</label>
+              <UInput
+                v-model="form.email"
+                placeholder="email@example.com"
+                type="email"
+                :disabled="saving"
+              />
+            </div>
+          </div>
+
+          <!-- Alamat -->
+          <div>
+            <label class="block text-xs font-semibold mb-1">Alamat</label>
+            <UInput
+              v-model="form.address"
+              placeholder="Kota / Alamat pasien"
+              :disabled="saving"
+            />
+          </div>
+
+          <!-- Error -->
+          <div v-if="formError" class="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-600 dark:text-red-400">
+            {{ formError }}
+          </div>
+
+          <div class="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <UButton
+              label="Batal"
+              color="neutral"
+              variant="ghost"
+              :disabled="saving"
+              @click="showModal = false"
+            />
+            <UButton
+              :label="saving ? 'Menyimpan...' : (editingId ? 'Simpan Perubahan' : 'Tambah Pasien')"
+              color="primary"
+              type="submit"
+              :loading="saving"
+            />
+          </div>
+        </form>
+      </template>
+    </UModal>
 
     <!-- Modal Entri Transformasi Behel Baru -->
     <UModal v-model:open="showTransformationModal" title="Entri Transformasi Behel Pasien">

@@ -10,9 +10,15 @@ export function formatCompactIDR(amount: number): string {
   return new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 1 }).format(amount)
 }
 
-export function formatDateShort(isoDate: string): string {
-  const date = isoDate.includes('T') ? new Date(isoDate) : new Date(`${isoDate}T00:00:00`)
-  return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date)
+export function formatDateShort(isoDate?: string | null): string {
+  if (!isoDate || typeof isoDate !== 'string') return '—'
+  try {
+    const date = isoDate.includes('T') ? new Date(isoDate) : new Date(`${isoDate}T00:00:00`)
+    if (isNaN(date.getTime())) return '—'
+    return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date)
+  } catch {
+    return '—'
+  }
 }
 
 export type BadgeColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
