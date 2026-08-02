@@ -287,11 +287,11 @@ async function onSubmit() {
     <!-- Top Action Bar -->
     <div class="flex items-center justify-between flex-wrap gap-4">
       <div>
-        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
-          Reservasi & Antrian (Interaktif)
+        <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+          Reservasi & Antrian
         </h1>
-        <p class="text-sm text-muted">
-          Kelola antrian reservasi pasien secara interaktif dengan auto-load dokter & alur antrian cepat.
+        <p class="text-xs text-gray-500">
+          Kelola antrian reservasi pasien, jadwal dokter, dan status pelayanan klinik.
         </p>
       </div>
       <div class="flex items-center gap-3">
@@ -501,8 +501,30 @@ async function onSubmit() {
                 </div>
               </td>
             </tr>
-          </tbody>
-        </table>
+      </div>
+
+      <!-- Pagination Bar -->
+      <div class="flex items-center justify-between p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
+        <span>Menampilkan 1–{{ filteredReservations.length }} dari {{ filteredReservations.length }} data</span>
+        <div class="flex items-center gap-2">
+          <UButton
+            icon="i-lucide-chevron-left"
+            color="neutral"
+            variant="outline"
+            size="xs"
+            :disabled="page <= 1"
+            @click="page--"
+          />
+          <span>Hal {{ page }} / {{ Math.ceil(filteredReservations.length / pageSize) || 1 }}</span>
+          <UButton
+            icon="i-lucide-chevron-right"
+            color="neutral"
+            variant="outline"
+            size="xs"
+            :disabled="page >= (Math.ceil(filteredReservations.length / pageSize) || 1)"
+            @click="page++"
+          />
+        </div>
       </div>
     </UCard>
 
