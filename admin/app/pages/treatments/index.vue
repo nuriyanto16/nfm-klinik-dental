@@ -109,6 +109,8 @@ const editingId = ref<string | null>(null)
 const saving = ref(false)
 const formError = ref('')
 const newCategoryName = ref('')
+const newCategoryDesc = ref('')
+const modalTab = ref<'perawatan' | 'kategori'>('perawatan')
 
 const form = reactive({
   categoryId: '',
@@ -130,6 +132,7 @@ function openCreate() {
   form.imageUrl = ''
   form.isActive = true
   formError.value = ''
+  modalTab.value = 'perawatan'
   showModal.value = true
 }
 
@@ -144,6 +147,7 @@ function openEdit(treatment: Treatment, closeDetailFirst = false) {
   form.imageUrl = treatment.imageUrl ?? ''
   form.isActive = treatment.isActive
   formError.value = ''
+  modalTab.value = 'perawatan'
   showModal.value = true
 }
 
@@ -158,6 +162,20 @@ function addCategory() {
   localCategories.value.push(newCat)
   form.categoryId = newCat.id
   newCategoryName.value = ''
+  newCategoryDesc.value = ''
+  try { $fetch(apiUrl('/treatment-categories'), { method: 'POST', body: { name: catName } }) } catch {}
+}
+
+function deleteCategory(catId: string) {
+  const inUse = localTreatments.value.some(t => t.categoryId === catId)
+  if (inUse) {
+    alert('Kategori ini masih digunakan oleh perawatan lain. Pindahkan perawatan tersebut terlebih dahulu.')
+    return
+  }
+  if (!confirm('Hapus kategori ini?')) return
+  localCategories.value = localCategories.value.filter(c => c.id !== catId)
+  if (form.categoryId === catId) form.categoryId = localCategories.value[0]?.id ?? ''
+  try { $fetch(apiUrl(`/treatment-categories/${catId}`), { method: 'DELETE' }) } catch {}
 }
 
 async function onSubmit() {
@@ -545,85 +563,250 @@ function catColor(categoryId: string): string {
     </USlideover>
 
     <!-- ════════════════════════════════ -->
-    <!-- Create / Edit Modal -->
+    <!-- Create / Edit Modal (Tab-based) -->
     <!-- ════════════════════════════════ -->
     <UModal
       v-model:open="showModal"
       :title="editingId ? 'Edit Perawatan' : 'Tambah Perawatan Baru'"
+      :ui="{ width: 'sm:max-w-lg' }"
     >
       <template #body>
-        <form class="space-y-4" @submit.prevent="onSubmit">
-          <div v-if="formError" class="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-xs text-red-600">
+        <!-- Tab Switcher -->
+        <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 p-0.5 rounded-lg mb-4">
+          <button
+            type="button"
+            class="flex-1 py-1.5 text-xs font-semibold rounded-md transition-all"
+            :class="modalTab === 'perawatan' ? 'bg-white dark:bg-gray-700 text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+            @click="modalTab = 'perawatan'"
+          >
+            <span class="flex items-center justify-center gap-1.5">
+              <UIcon name="i-lucide-stethoscope" class="w-3.5 h-3.5" />
+              Data Perawatan
+            </span>
+          </button>
+          <button
+            type="button"
+            class="flex-1 py-1.5 text-xs font-semibold rounded-md transition-all"
+            :class="modalTab === 'kategori' ? 'bg-white dark:bg-gray-700 text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+            @click="modalTab = 'kategori'"
+          >
+            <span class="flex items-center justify-center gap-1.5">
+              <UIcon name="i-lucide-tags" class="w-3.5 h-3.5" />
+              Master Kategori
+              <span class="bg-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">{{ localCategories.length }}</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- ── TAB: Data Perawatan ── -->
+        <form v-if="modalTab === 'perawatan'" class="space-y-4" @submit.prevent="onSubmit">
+          <div v-if="formError" class="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-xs text-red-600 flex items-center gap-2">
+            <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
             {{ formError }}
           </div>
 
           <!-- Kategori -->
           <div>
-            <label class="block text-xs font-semibold mb-1">Kategori <span class="text-red-500">*</span></label>
+            <label class="block text-xs font-semibold mb-1.5">
+              Kategori <span class="text-red-500">*</span>
+              <button type="button" class="ml-2 text-[10px] text-primary font-normal hover:underline" @click="modalTab = 'kategori'">
+                + Kelola Kategori →
+              </button>
+            </label>
             <select
               v-model="form.categoryId"
-              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer"
             >
+              <option value="" disabled>-- Pilih Kategori --</option>
               <option v-for="cat in localCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
             </select>
           </div>
 
-          <!-- Tambah Kategori Baru -->
-          <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg space-y-2 border border-dashed border-gray-300 dark:border-gray-700">
-            <span class="text-xs font-semibold text-gray-600 dark:text-gray-300 flex items-center gap-1">
-              <UIcon name="i-lucide-tag" class="w-3.5 h-3.5" />
-              Tambah Kategori Baru
-            </span>
-            <div class="flex gap-2">
-              <UInput v-model="newCategoryName" placeholder="Nama kategori..." size="xs" class="flex-1" />
-              <UButton label="+ Tambah" size="xs" color="neutral" variant="outline" @click="addCategory" />
-            </div>
-          </div>
-
-          <!-- Nama -->
+          <!-- Nama Perawatan -->
           <div>
-            <label class="block text-xs font-semibold mb-1">Nama Perawatan <span class="text-red-500">*</span></label>
-            <UInput v-model="form.name" placeholder="mis. Scaling 6-in-1 Super Clean" />
+            <label class="block text-xs font-semibold mb-1.5">Nama Perawatan <span class="text-red-500">*</span></label>
+            <input
+              v-model="form.name"
+              type="text"
+              placeholder="mis. Scaling Gigi (Pembersihan Karang Gigi)"
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400"
+              :disabled="saving"
+            >
           </div>
 
           <!-- Deskripsi -->
           <div>
-            <label class="block text-xs font-semibold mb-1">Deskripsi (Opsional)</label>
-            <UTextarea v-model="form.description" placeholder="Penjelasan singkat layanan perawatan..." rows="2" />
+            <label class="block text-xs font-semibold mb-1.5">Deskripsi <span class="text-gray-400 font-normal">(Opsional)</span></label>
+            <textarea
+              v-model="form.description"
+              rows="3"
+              placeholder="Penjelasan singkat tentang prosedur dan manfaat perawatan ini..."
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400 resize-none"
+              :disabled="saving"
+            />
           </div>
 
           <!-- Harga & Durasi -->
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold mb-1">Harga (Rp) <span class="text-red-500">*</span></label>
-              <UInput v-model.number="form.price" type="number" step="50000" min="0" />
-              <span class="text-[10px] text-gray-400 mt-0.5 block">{{ form.price > 0 ? formatIDR(form.price) : '' }}</span>
+              <label class="block text-xs font-semibold mb-1.5">Harga (Rp) <span class="text-red-500">*</span></label>
+              <input
+                v-model.number="form.price"
+                type="number"
+                step="50000"
+                min="0"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                :disabled="saving"
+              >
+              <span class="text-[10px] text-emerald-600 font-semibold mt-0.5 block h-4">
+                {{ form.price > 0 ? formatIDR(form.price) : '' }}
+              </span>
             </div>
             <div>
-              <label class="block text-xs font-semibold mb-1">Durasi (Menit)</label>
-              <UInput v-model.number="form.durationMinutes" type="number" step="5" min="5" max="480" />
+              <label class="block text-xs font-semibold mb-1.5">Durasi (Menit)</label>
+              <input
+                v-model.number="form.durationMinutes"
+                type="number"
+                step="5"
+                min="5"
+                max="480"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                :disabled="saving"
+              >
+              <span class="text-[10px] text-gray-400 mt-0.5 block h-4">
+                {{ form.durationMinutes ? `~${form.durationMinutes} menit` : '' }}
+              </span>
             </div>
           </div>
 
-          <!-- Status -->
-          <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <input id="isActive" v-model="form.isActive" type="checkbox" class="w-4 h-4 rounded text-primary focus:ring-primary">
-            <label for="isActive" class="text-sm font-semibold cursor-pointer">
-              Status Aktif
-              <span class="text-xs font-normal text-gray-400 ml-1">(tampil di aplikasi & klinik)</span>
-            </label>
-          </div>
+          <!-- Status Aktif -->
+          <label class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-pointer group">
+            <input
+              id="isActive"
+              v-model="form.isActive"
+              type="checkbox"
+              class="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
+            >
+            <div>
+              <span class="text-sm font-semibold group-hover:text-primary transition-colors">Status Aktif</span>
+              <span class="block text-[11px] text-gray-400">Perawatan ini tampil di aplikasi & daftar layanan klinik</span>
+            </div>
+            <UBadge
+              :color="form.isActive ? 'success' : 'neutral'"
+              variant="soft"
+              size="xs"
+              class="ml-auto"
+            >
+              {{ form.isActive ? 'Aktif' : 'Nonaktif' }}
+            </UBadge>
+          </label>
 
-          <div class="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div class="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
             <UButton label="Batal" color="neutral" variant="ghost" :disabled="saving" @click="showModal = false" />
             <UButton
               type="submit"
               :label="saving ? 'Menyimpan...' : (editingId ? 'Simpan Perubahan' : 'Tambah Perawatan')"
               color="primary"
               :loading="saving"
+              icon="i-lucide-save"
             />
           </div>
         </form>
+
+        <!-- ── TAB: Master Kategori ── -->
+        <div v-else class="space-y-4">
+          <!-- Add Category Form -->
+          <div class="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-200 dark:border-primary-800 space-y-3">
+            <h4 class="text-xs font-bold text-primary flex items-center gap-1.5">
+              <UIcon name="i-lucide-plus-circle" class="w-4 h-4" />
+              Tambah Kategori Baru
+            </h4>
+            <div>
+              <label class="block text-xs font-semibold mb-1.5">Nama Kategori <span class="text-red-500">*</span></label>
+              <div class="flex gap-2">
+                <input
+                  v-model="newCategoryName"
+                  type="text"
+                  placeholder="mis. Gigi Palsu, Veneer, Implan..."
+                  class="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400"
+                  @keydown.enter.prevent="addCategory"
+                >
+                <UButton
+                  icon="i-lucide-plus"
+                  label="Tambah"
+                  color="primary"
+                  size="sm"
+                  :disabled="!newCategoryName.trim()"
+                  @click="addCategory"
+                />
+              </div>
+              <p class="text-[10px] text-gray-400 mt-1">Tekan Enter atau klik Tambah untuk menyimpan kategori.</p>
+            </div>
+          </div>
+
+          <!-- Daftar Kategori -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Daftar Kategori ({{ localCategories.length }})</h4>
+            </div>
+            <div v-if="localCategories.length === 0" class="py-6 text-center text-gray-400 text-xs">
+              <UIcon name="i-lucide-tags" class="w-6 h-6 mx-auto mb-1" />
+              Belum ada kategori
+            </div>
+            <div v-else class="space-y-2">
+              <div
+                v-for="cat in localCategories"
+                :key="cat.id"
+                class="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 group"
+              >
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 rounded-full bg-primary shrink-0" />
+                  <span class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ cat.name }}</span>
+                  <span class="text-[10px] text-gray-400">
+                    ({{ localTreatments.filter(t => t.categoryId === cat.id).length }} perawatan)
+                  </span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <UBadge
+                    v-if="form.categoryId === cat.id"
+                    color="primary"
+                    variant="subtle"
+                    size="xs"
+                  >
+                    Dipilih
+                  </UBadge>
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    color="primary"
+                    icon="i-lucide-check"
+                    title="Gunakan kategori ini"
+                    @click="form.categoryId = cat.id; modalTab = 'perawatan'"
+                  />
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    color="error"
+                    icon="i-lucide-trash-2"
+                    title="Hapus kategori"
+                    @click="deleteCategory(cat.id)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-800">
+            <UButton
+              label="← Kembali ke Form Perawatan"
+              color="primary"
+              variant="outline"
+              size="sm"
+              icon="i-lucide-arrow-left"
+              @click="modalTab = 'perawatan'"
+            />
+          </div>
+        </div>
       </template>
     </UModal>
   </div>
