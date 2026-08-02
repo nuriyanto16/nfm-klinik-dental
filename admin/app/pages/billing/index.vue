@@ -320,11 +320,11 @@ async function onSubmit() {
                   <div class="flex items-center justify-end gap-1">
                     <UButton
                       size="xs"
-                      color="gray"
+                      color="neutral"
                       variant="ghost"
                       icon="i-lucide-eye"
                       title="Lihat Detail"
-                      :to="`/billing/${item.id}`"
+                      :to="`/product/klinik/billing/${item.id}`"
                     />
                     <UButton
                       size="xs"
@@ -332,7 +332,7 @@ async function onSubmit() {
                       variant="subtle"
                       icon="i-lucide-printer"
                       label="Cetak Invoice"
-                      :to="`/billing/${item.id}/invoice`"
+                      :to="`/product/klinik/billing/${item.id}/invoice`"
                       target="_blank"
                     />
                   </div>
