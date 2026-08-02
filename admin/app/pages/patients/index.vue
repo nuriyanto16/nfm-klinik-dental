@@ -80,11 +80,27 @@ function getPatientAvatar(name?: string) {
   return patientAvatars[name] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
 }
 
+const initialPatients: Patient[] = [
+  { id: '31000000-0000-0000-0000-000000000001', fullName: 'Budi Santoso', phoneWa: '081234567890', email: 'budi.santoso@example.com', gender: 'male', dateOfBirth: '1990-05-15', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0001', relation: 'self', createdAt: '2026-07-01T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000002', fullName: 'Siti Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '1995-08-20', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0002', relation: 'self', createdAt: '2026-07-02T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000003', fullName: 'Kayla Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '2018-03-10', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0003', relation: 'child', createdAt: '2026-07-03T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000004', fullName: 'Ahmad Fauzi', phoneWa: '081311223344', email: 'ahmad.fauzi@example.com', gender: 'male', dateOfBirth: '1988-12-01', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0004', relation: 'self', createdAt: '2026-07-04T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000005', fullName: 'Dewi Lestari', phoneWa: '081355667788', email: 'dewi.lestari@example.com', gender: 'female', dateOfBirth: '1993-11-11', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0005', relation: 'self', createdAt: '2026-07-05T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000006', fullName: 'Rina Marlina', phoneWa: '081244556677', email: 'rina.marlina@example.com', gender: 'female', dateOfBirth: '1992-04-14', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0006', relation: 'self', createdAt: '2026-07-06T00:00:00Z' }
+]
+
+const displayPatients = computed<Patient[]>(() => {
+  if (patients.value && patients.value.length > 0) return patients.value
+  return initialPatients
+})
+
 const manualPatientId = ref<string | null>(null)
 const detailPatient = computed<Patient | null>(() => {
-  const list = patients.value
+  const list = displayPatients.value
   return list.find(p => p.id === manualPatientId.value) ?? list[0] ?? null
 })
+
+const patientName = computed(() => detailPatient.value?.fullName ?? '')
 
 const detailReservations = computed(() => (reservations.value ?? []).filter(r => r.patientId === detailPatient.value?.id))
 const detailPayments = computed(() => (payments.value ?? []).filter(p => p.patientId === detailPatient.value?.id))
@@ -92,23 +108,23 @@ const detailTotalPaid = computed(() => detailPayments.value.filter(p => p.status
 
 const detailTotalSpent = computed(() => {
   if (detailTotalPaid.value > 0) return detailTotalPaid.value
-  if (detailPatient.value?.fullName.includes('Budi')) return 9600000
-  if (detailPatient.value?.fullName.includes('Siti')) return 4500000
-  if (detailPatient.value?.fullName.includes('Ahmad')) return 1850000
+  if (patientName.value.includes('Budi')) return 9600000
+  if (patientName.value.includes('Siti')) return 4500000
+  if (patientName.value.includes('Ahmad')) return 1850000
   return 2450000
 })
 
 const detailVisitsCount = computed(() => {
   if (detailReservations.value.length > 0) return detailReservations.value.length
-  if (detailPatient.value?.fullName.includes('Budi')) return 10
-  if (detailPatient.value?.fullName.includes('Siti')) return 5
+  if (patientName.value.includes('Budi')) return 10
+  if (patientName.value.includes('Siti')) return 5
   return 3
 })
 
 const detailLoyaltyPoints = computed(() => {
   if (detailStats.value?.loyaltyPoints) return detailStats.value.loyaltyPoints
-  if (detailPatient.value?.fullName.includes('Budi')) return 145
-  if (detailPatient.value?.fullName.includes('Siti')) return 80
+  if (patientName.value.includes('Budi')) return 145
+  if (patientName.value.includes('Siti')) return 80
   return 45
 })
 
@@ -197,7 +213,7 @@ const currentPatientTransformations = computed(() => {
   return [{
     ...defaultSmileTransformation,
     patientId: detailPatient.value.id,
-    patientName: detailPatient.value.fullName
+    patientName: patientName.value || 'Pasien Klinik'
   }]
 })
 
@@ -205,7 +221,7 @@ const spendingOption = computed<EChartsOption>(() => {
   const months = ['03', '04', '05', '06', '07', '08']
   const amounts = (detailStats.value?.monthlySpending && detailStats.value.monthlySpending.length > 0)
     ? detailStats.value.monthlySpending.map(m => m.amount)
-    : (detailPatient.value?.fullName.includes('Budi')
+    : (patientName.value.includes('Budi')
         ? [0, 0, 0, 0, 9600000, 0]
         : [150000, 350000, 450000, 1850000, 2500000, 0])
 
@@ -378,7 +394,7 @@ function openEdit(patient: Patient) {
         :ui="{ body: 'p-0 sm:p-0' }"
       >
         <UTable
-          :data="patients"
+          :data="displayPatients"
           :columns="columns"
           class="cursor-pointer"
           @select="(_e, row) => selectPatient(row.original)"
@@ -412,7 +428,7 @@ function openEdit(patient: Patient) {
         </UTable>
 
         <div class="flex items-center justify-between p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
-          <span>Menampilkan 1–{{ patients.length || 6 }} dari {{ patients.length || 6 }} data</span>
+          <span>Menampilkan 1–{{ displayPatients.length }} dari {{ displayPatients.length }} data</span>
           <div class="flex items-center gap-2">
             <UButton icon="i-lucide-chevron-left" color="neutral" variant="outline" size="xs" disabled />
             <span>Hal 1 / 1</span>
