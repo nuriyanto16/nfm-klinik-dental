@@ -192,7 +192,7 @@ function triggerPrint() {
           </div>
           <div class="text-right">
             <span class="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-full">INVOICE LUNAS</span>
-            <p class="font-mono text-xs font-bold text-gray-900 mt-1"># {{ displayInvoice.payment.id }}</p>
+            <p class="font-mono text-xs font-bold text-gray-900 mt-1">{{ formatTransactionId(displayInvoice.payment.id, displayInvoice.payment.createdAt) }}</p>
             <p class="text-[11px] text-gray-500">{{ formatDateTime(displayInvoice.payment.createdAt) }}</p>
           </div>
         </div>

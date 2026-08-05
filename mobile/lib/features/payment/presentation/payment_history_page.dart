@@ -77,7 +77,7 @@ class _PaymentTile extends StatelessWidget {
           child: Icon(Icons.receipt_outlined, color: _statusColor(context)),
         ),
         title: Text(formatIDR(payment.amount), style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text('${payment.branchName} · ${formatDateTime(payment.createdAt)}'),
+        subtitle: Text('${formatTransactionId(payment.id, payment.createdAt)}\n${payment.branchName} · ${formatDateTime(payment.createdAt)}'),
         trailing: Chip(
           label: Text(paymentStatusLabel(payment.status), style: const TextStyle(fontSize: 11)),
           visualDensity: VisualDensity.compact,

@@ -47,6 +47,13 @@ dependencies:
   flutter_svg: ^2.3.0
   cached_network_image: ^3.4.1
 
+  # In-app APK update control
+  package_info_plus: ^8.3.0      # Read current app version from pubspec
+  open_filex: ^4.5.0             # Trigger APK install after download
+  path_provider: ^2.1.6          # Get temp directory path for APK download
+  permission_handler: ^11.3.1    # Request INSTALL_PACKAGES permission
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

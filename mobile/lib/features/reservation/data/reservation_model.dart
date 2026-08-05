@@ -25,6 +25,19 @@ class Reservation {
   final String doctorName;
   final String treatments;
 
+  String get queueTicketNumber {
+    if (id.startsWith('NDC-') || id.startsWith('ANT-') || id.startsWith('RES-')) {
+      return id.toUpperCase();
+    }
+    final clean = id.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    if (clean.length >= 6) {
+      return 'NDC-${clean.substring(clean.length - 4).toUpperCase()}';
+    }
+    final match = RegExp(r'\d+').firstMatch(id);
+    final num = match != null ? match.group(0)!.padLeft(3, '0') : '001';
+    return 'NDC-$num';
+  }
+
   factory Reservation.fromJson(Map<String, dynamic> json) => Reservation(
         id: json['id'] as String? ?? 'res-${DateTime.now().millisecondsSinceEpoch}',
         patientId: json['patientId'] as String? ?? '',

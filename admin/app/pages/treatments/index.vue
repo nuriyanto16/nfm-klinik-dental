@@ -509,12 +509,14 @@ function catColor(categoryId: string): string {
             </div>
             <div class="divide-y divide-gray-100 dark:divide-gray-800">
               <div class="flex justify-between px-3 py-2.5 text-xs">
-                <span class="text-gray-500">ID Perawatan</span>
-                <span class="font-mono text-gray-700 dark:text-gray-300 text-[10px]">{{ detailTreatment.id }}</span>
+                <span class="text-gray-500">Kode Perawatan (SKU)</span>
+                <span class="font-mono font-bold text-gray-800 dark:text-gray-200 text-xs">
+                  {{ detailTreatment.id.startsWith('41') || detailTreatment.id.startsWith('cat') ? detailTreatment.id : `TRT-${detailTreatment.id.slice(0, 8).toUpperCase()}` }}
+                </span>
               </div>
               <div class="flex justify-between px-3 py-2.5 text-xs">
-                <span class="text-gray-500">Kategori ID</span>
-                <span class="font-mono text-gray-700 dark:text-gray-300 text-[10px]">{{ detailTreatment.categoryId }}</span>
+                <span class="text-gray-500">Kategori Layanan</span>
+                <span class="font-semibold text-gray-800 dark:text-gray-200 text-xs">{{ detailTreatment.categoryName || 'Umum' }}</span>
               </div>
               <div class="flex justify-between px-3 py-2.5 text-xs">
                 <span class="text-gray-500">Est. Kunjungan/Bulan</span>
@@ -568,7 +570,6 @@ function catColor(categoryId: string): string {
     <UModal
       v-model:open="showModal"
       :title="editingId ? 'Edit Perawatan' : 'Tambah Perawatan Baru'"
-      :ui="{ width: 'sm:max-w-lg' }"
     >
       <template #body>
         <!-- Tab Switcher -->

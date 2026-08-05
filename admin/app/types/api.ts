@@ -113,6 +113,14 @@ export interface Patient {
   city: string | null
   address: string | null
   photoUrl: string | null
+  nik?: string | null
+  bloodType?: string | null
+  occupation?: string | null
+  emergencyContactName?: string | null
+  emergencyContactPhone?: string | null
+  allergiesMedicalHistory?: string | null
+  insuranceType?: string | null
+  insuranceNumber?: string | null
   createdAt: string
 }
 
@@ -127,6 +135,14 @@ export interface CreatePatientInput {
   phoneWa: string | null
   city: string | null
   photoUrl: string | null
+  nik?: string | null
+  bloodType?: string | null
+  occupation?: string | null
+  emergencyContactName?: string | null
+  emergencyContactPhone?: string | null
+  allergiesMedicalHistory?: string | null
+  insuranceType?: string | null
+  insuranceNumber?: string | null
 }
 
 export interface UpdatePatientInput {
@@ -137,6 +153,14 @@ export interface UpdatePatientInput {
   address: string | null
   rmNumber: string | null
   photoUrl: string | null
+  nik?: string | null
+  bloodType?: string | null
+  occupation?: string | null
+  emergencyContactName?: string | null
+  emergencyContactPhone?: string | null
+  allergiesMedicalHistory?: string | null
+  insuranceType?: string | null
+  insuranceNumber?: string | null
 }
 
 export interface MonthlySpendingRow {

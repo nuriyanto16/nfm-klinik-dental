@@ -123,14 +123,36 @@ const stats = computed(() => {
 })
 
 const search = ref('')
+const selectedBranchFilter = ref('all')
+const selectedRoleFilter = ref('all')
 const page = ref(1)
 const pageSize = 10
 
 const displayPayrolls = computed(() => {
   return payrolls.value.filter(p => {
-    if (!search.value) return true
-    const q = search.value.toLowerCase()
-    return (p.fullName || '').toLowerCase().includes(q) || (p.nip || '').toLowerCase().includes(q) || (p.roleLabel || '').toLowerCase().includes(q)
+    // 1. Search Query Match
+    if (search.value) {
+      const q = search.value.toLowerCase().trim()
+      const matchName = (p.fullName || '').toLowerCase().includes(q)
+      const matchNip = (p.nip || '').toLowerCase().includes(q)
+      const matchRole = (p.roleLabel || '').toLowerCase().includes(q)
+      const matchBranch = (p.branchName || '').toLowerCase().includes(q)
+      if (!matchName && !matchNip && !matchRole && !matchBranch) return false
+    }
+    // 2. Branch Filter Match
+    if (selectedBranchFilter.value !== 'all' && p.branchName !== selectedBranchFilter.value) {
+      return false
+    }
+    // 3. Role Filter Match
+    if (selectedRoleFilter.value !== 'all' && p.roleLabel !== selectedRoleFilter.value) {
+      return false
+    }
+    // 4. Period Filter Match
+    if (selectedPeriod.value === '2026-08' && !p.period.includes('Agustus')) return false
+    if (selectedPeriod.value === '2026-07' && !p.period.includes('Juli')) return false
+    if (selectedPeriod.value === '2026-06' && !p.period.includes('Juni')) return false
+
+    return true
   })
 })
 
@@ -141,6 +163,44 @@ const paginatedPayrolls = computed(() => {
 })
 
 // --- CRUD Functionality ---
+const AVAILABLE_EMPLOYEES = [
+  { nip: 'NDC-DR-001', fullName: 'drg. Friski Raisis, Sp.Ort', roleLabel: 'Dokter Spesialis Ortodonti', branchName: 'Soreang', baseSalary: 6000000, bankName: 'BCA', accountNumber: '7700112233' },
+  { nip: 'NDC-DR-002', fullName: 'drg. Siti Aminah', roleLabel: 'Dokter Gigi Umum', branchName: 'Baleendah', baseSalary: 5000000, bankName: 'Mandiri', accountNumber: '13000998877' },
+  { nip: 'NDC-DR-003', fullName: 'drg. Budi Santoso, Sp.KGA', roleLabel: 'Dokter Spesialis Gigi Anak', branchName: 'Soreang', baseSalary: 6000000, bankName: 'BCA', accountNumber: '7700445566' },
+  { nip: 'NDC-DR-004', fullName: 'drg. Nina Marlina, Sp.KG', roleLabel: 'Dokter Spesialis Konservasi Gigi', branchName: 'Soreang', baseSalary: 6500000, bankName: 'BCA', accountNumber: '7700889900' },
+  { nip: 'NDC-DR-005', fullName: 'drg. Yoga Pratama', roleLabel: 'Dokter Gigi Umum', branchName: 'Soreang', baseSalary: 5000000, bankName: 'BNI', accountNumber: '0887766554' },
+  { nip: 'NDC-DR-006', fullName: 'drg. Fajar Ramadhan', roleLabel: 'Dokter Gigi Umum', branchName: 'Baleendah', baseSalary: 5000000, bankName: 'BRI', accountNumber: '4455001122' },
+  { nip: 'NDC-NR-001', fullName: 'Rina Marlina', roleLabel: 'Perawat Gigi Senior', branchName: 'Baleendah', baseSalary: 4200000, bankName: 'BCA', accountNumber: '7711223344' },
+  { nip: 'NDC-FO-001', fullName: 'Maya Putri', roleLabel: 'Kasir & Front Office', branchName: 'Soreang', baseSalary: 3800000, bankName: 'Mandiri', accountNumber: '13100223344' },
+  { nip: 'NDC-ADM-001', fullName: 'Sari Dewi Pratiwi', roleLabel: 'Admin Cabang', branchName: 'Soreang', baseSalary: 4000000, bankName: 'BCA', accountNumber: '7722334455' }
+]
+
+function formatCurrencyInput(val: number): string {
+  if (val === undefined || val === null || isNaN(val)) return '0'
+  return new Intl.NumberFormat('id-ID').format(val)
+}
+
+function parseCurrencyInput(val: string): number {
+  const clean = val.replace(/[^0-9]/g, '')
+  return clean ? parseInt(clean, 10) : 0
+}
+
+const selectedEmployeeNip = ref('')
+
+function onSelectEmployeeByNip() {
+  if (!selectedEmployeeNip.value) return
+  const emp = AVAILABLE_EMPLOYEES.find(item => item.nip === selectedEmployeeNip.value)
+  if (emp) {
+    form.nip = emp.nip
+    form.fullName = emp.fullName
+    form.roleLabel = emp.roleLabel
+    form.branchName = emp.branchName
+    form.baseSalary = emp.baseSalary
+    form.bankName = emp.bankName
+    form.accountNumber = emp.accountNumber
+  }
+}
+
 const showFormModal = ref(false)
 const editingId = ref<string | null>(null)
 const form = reactive({
@@ -152,27 +212,33 @@ const form = reactive({
   treatmentRevenue: 15000000,
   commissionRatePercent: 15,
   allowanceBonus: 500000,
+  transportAllowance: 350000,
   deductions: 100000,
+  bpjsDeduction: 150000,
+  taxDeduction: 50000,
+  bankName: 'BCA',
+  accountNumber: '7700112233',
   status: 'PAID' as 'PAID' | 'PENDING' | 'APPROVED'
 })
 
 function openCreate() {
   editingId.value = null
-  form.nip = `NDC-EMP-00${payrolls.value.length + 1}`
-  form.fullName = ''
-  form.roleLabel = 'Dokter Gigi Umum'
-  form.branchName = 'Soreang'
-  form.baseSalary = 5000000
+  selectedEmployeeNip.value = AVAILABLE_EMPLOYEES[0].nip
+  onSelectEmployeeByNip()
   form.treatmentRevenue = 15000000
   form.commissionRatePercent = 15
   form.allowanceBonus = 500000
+  form.transportAllowance = 350000
   form.deductions = 100000
+  form.bpjsDeduction = 150000
+  form.taxDeduction = 50000
   form.status = 'PAID'
   showFormModal.value = true
 }
 
 function openEdit(p: StaffPayroll) {
   editingId.value = p.id
+  selectedEmployeeNip.value = p.nip
   form.nip = p.nip
   form.fullName = p.fullName
   form.roleLabel = p.roleLabel
@@ -181,7 +247,10 @@ function openEdit(p: StaffPayroll) {
   form.treatmentRevenue = p.treatmentRevenue
   form.commissionRatePercent = p.commissionRatePercent
   form.allowanceBonus = p.allowanceBonus
+  form.transportAllowance = 350000
   form.deductions = p.deductions
+  form.bpjsDeduction = 150000
+  form.taxDeduction = 50000
   form.status = p.status
   showFormModal.value = true
 }
@@ -308,20 +377,39 @@ function printPayrollSlip(p: StaffPayroll) {
         </p>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 flex-wrap">
         <UInput
           v-model="search"
           icon="i-lucide-search"
-          placeholder="Cari pegawai / NIP..."
+          placeholder="Cari nama, NIP, jabatan..."
           class="w-48"
         />
         <select
-          v-model="selectedPeriod"
-          class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 font-medium"
+          v-model="selectedBranchFilter"
+          class="px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 font-medium cursor-pointer"
         >
-          <option value="2026-08">Periode: Agustus 2026</option>
-          <option value="2026-07">Periode: Juli 2026</option>
-          <option value="2026-06">Periode: Juni 2026</option>
+          <option value="all">Semua Cabang</option>
+          <option value="Soreang">Cabang Soreang</option>
+          <option value="Baleendah">Cabang Baleendah</option>
+        </select>
+        <select
+          v-model="selectedRoleFilter"
+          class="px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 font-medium cursor-pointer"
+        >
+          <option value="all">Semua Jabatan</option>
+          <option value="Dokter Spesialis Ortodonti">Spesialis Ortodonti</option>
+          <option value="Dokter Gigi Umum">Dokter Gigi Umum</option>
+          <option value="Dokter Spesialis Gigi Anak">Spesialis Gigi Anak</option>
+          <option value="Perawat Gigi Senior">Perawat Gigi</option>
+          <option value="Kasir & Front Office">Kasir & FO</option>
+        </select>
+        <select
+          v-model="selectedPeriod"
+          class="px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 font-medium cursor-pointer"
+        >
+          <option value="2026-08">Agustus 2026</option>
+          <option value="2026-07">Juli 2026</option>
+          <option value="2026-06">Juni 2026</option>
         </select>
         <UButton
           icon="i-lucide-plus"
@@ -494,60 +582,156 @@ function printPayrollSlip(p: StaffPayroll) {
     <UModal v-model:open="showFormModal" :title="editingId ? 'Edit Honor & Gaji Pegawai' : 'Tambah Honor & Gaji Pegawai Baru'">
       <template #body>
         <form class="space-y-3 text-xs" @submit.prevent="savePayroll">
+          <!-- Selection Pegawai Dropdown -->
+          <div class="p-3 bg-primary-50/50 dark:bg-primary-950/20 border border-primary-200 dark:border-primary-800 rounded-xl space-y-2">
+            <label class="block font-bold text-primary-700 dark:text-primary-300">Pilih Pegawai / Dokter *</label>
+            <select
+              v-model="selectedEmployeeNip"
+              class="w-full p-2.5 border border-primary-300 dark:border-primary-700 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 font-semibold cursor-pointer text-xs"
+              @change="onSelectEmployeeByNip"
+            >
+              <option v-for="emp in AVAILABLE_EMPLOYEES" :key="emp.nip" :value="emp.nip">
+                {{ emp.fullName }} — {{ emp.roleLabel }} ({{ emp.branchName }}) [{{ emp.nip }}]
+              </option>
+            </select>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-semibold mb-1">NIP Pegawai</label>
-              <input v-model="form.nip" type="text" class="w-full p-2 border rounded" required>
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">NIP Pegawai</label>
+              <input v-model="form.nip" type="text" class="w-full p-2 border rounded bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-mono" required readonly>
             </div>
             <div>
-              <label class="block font-semibold mb-1">Nama Lengkap Pegawai *</label>
-              <input v-model="form.fullName" type="text" placeholder="Nama dokter / staff..." class="w-full p-2 border rounded" required>
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Nama Lengkap Pegawai *</label>
+              <input v-model="form.fullName" type="text" class="w-full p-2 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-800 font-semibold" required>
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-semibold mb-1">Jabatan / Role</label>
-              <select v-model="form.roleLabel" class="w-full p-2 border rounded">
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Jabatan / Role</label>
+              <select v-model="form.roleLabel" class="w-full p-2 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-800">
                 <option value="Dokter Spesialis Ortodonti">Dokter Spesialis Ortodonti</option>
                 <option value="Dokter Gigi Umum">Dokter Gigi Umum</option>
                 <option value="Dokter Spesialis Gigi Anak">Dokter Spesialis Gigi Anak</option>
+                <option value="Dokter Spesialis Konservasi Gigi">Dokter Spesialis Konservasi Gigi</option>
                 <option value="Perawat Gigi Senior">Perawat Gigi Senior</option>
                 <option value="Kasir & Front Office">Kasir & Front Office</option>
+                <option value="Admin Cabang">Admin Cabang</option>
               </select>
             </div>
             <div>
-              <label class="block font-semibold mb-1">Cabang Klinik</label>
-              <select v-model="form.branchName" class="w-full p-2 border rounded">
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Cabang Klinik</label>
+              <select v-model="form.branchName" class="w-full p-2 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-800">
                 <option value="Soreang">Soreang</option>
                 <option value="Baleendah">Baleendah</option>
               </select>
             </div>
           </div>
 
+          <!-- Component Gaji Pokok & Komisi -->
           <div class="grid grid-cols-3 gap-2">
             <div>
-              <label class="block font-semibold mb-1">Gaji Pokok (Rp)</label>
-              <input v-model.number="form.baseSalary" type="number" class="w-full p-2 border rounded">
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Gaji Pokok (Rp)</label>
+              <div class="relative">
+                <span class="absolute left-2.5 top-2 text-gray-400 font-semibold text-xs">Rp</span>
+                <input
+                  :value="formatCurrencyInput(form.baseSalary)"
+                  type="text"
+                  class="w-full pl-8 pr-2 py-2 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-800 font-semibold"
+                  @input="e => form.baseSalary = parseCurrencyInput((e.target as HTMLInputElement).value)"
+                >
+              </div>
             </div>
             <div>
-              <label class="block font-semibold mb-1">Omset Tindakan (Rp)</label>
-              <input v-model.number="form.treatmentRevenue" type="number" class="w-full p-2 border rounded">
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Omset Tindakan (Rp)</label>
+              <div class="relative">
+                <span class="absolute left-2.5 top-2 text-gray-400 font-semibold text-xs">Rp</span>
+                <input
+                  :value="formatCurrencyInput(form.treatmentRevenue)"
+                  type="text"
+                  class="w-full pl-8 pr-2 py-2 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-800 font-semibold"
+                  @input="e => form.treatmentRevenue = parseCurrencyInput((e.target as HTMLInputElement).value)"
+                >
+              </div>
             </div>
             <div>
-              <label class="block font-semibold mb-1">Rate Komisi (%)</label>
-              <input v-model.number="form.commissionRatePercent" type="number" class="w-full p-2 border rounded">
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Rate Komisi (%)</label>
+              <input v-model.number="form.commissionRatePercent" type="number" class="w-full p-2 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-800 font-semibold">
             </div>
           </div>
 
+          <!-- Tunjangan & Bonus -->
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-semibold mb-1">Bonus & Tunjangan (Rp)</label>
-              <input v-model.number="form.allowanceBonus" type="number" class="w-full p-2 border rounded">
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Tunjangan Transport & Makan (Rp)</label>
+              <div class="relative">
+                <span class="absolute left-2.5 top-2 text-gray-400 font-semibold text-xs">Rp</span>
+                <input
+                  :value="formatCurrencyInput(form.transportAllowance)"
+                  type="text"
+                  class="w-full pl-8 pr-2 py-2 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-800 font-semibold"
+                  @input="e => form.transportAllowance = parseCurrencyInput((e.target as HTMLInputElement).value)"
+                >
+              </div>
             </div>
             <div>
-              <label class="block font-semibold mb-1">Potongan (Rp)</label>
-              <input v-model.number="form.deductions" type="number" class="w-full p-2 border rounded">
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Bonus Performa & Kehadiran (Rp)</label>
+              <div class="relative">
+                <span class="absolute left-2.5 top-2 text-gray-400 font-semibold text-xs">Rp</span>
+                <input
+                  :value="formatCurrencyInput(form.allowanceBonus)"
+                  type="text"
+                  class="w-full pl-8 pr-2 py-2 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-800 font-semibold"
+                  @input="e => form.allowanceBonus = parseCurrencyInput((e.target as HTMLInputElement).value)"
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Potongan BPJS & Tax -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Potongan BPJS Ketenagakerjaan/Kesehatan (Rp)</label>
+              <div class="relative">
+                <span class="absolute left-2.5 top-2 text-gray-400 font-semibold text-xs">Rp</span>
+                <input
+                  :value="formatCurrencyInput(form.bpjsDeduction)"
+                  type="text"
+                  class="w-full pl-8 pr-2 py-2 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-800 font-semibold text-red-600"
+                  @input="e => form.bpjsDeduction = parseCurrencyInput((e.target as HTMLInputElement).value)"
+                >
+              </div>
+            </div>
+            <div>
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Potongan PPh 21 / Kasbon (Rp)</label>
+              <div class="relative">
+                <span class="absolute left-2.5 top-2 text-gray-400 font-semibold text-xs">Rp</span>
+                <input
+                  :value="formatCurrencyInput(form.taxDeduction)"
+                  type="text"
+                  class="w-full pl-8 pr-2 py-2 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-800 font-semibold text-red-600"
+                  @input="e => form.taxDeduction = parseCurrencyInput((e.target as HTMLInputElement).value)"
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Rekening Transfer Pegawai -->
+          <div class="grid grid-cols-2 gap-3 p-2.5 bg-gray-50 dark:bg-gray-900 rounded-lg border">
+            <div>
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Bank Transfer</label>
+              <select v-model="form.bankName" class="w-full p-2 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-800 font-semibold">
+                <option value="BCA">Bank BCA</option>
+                <option value="Mandiri">Bank Mandiri</option>
+                <option value="BNI">Bank BNI</option>
+                <option value="BRI">Bank BRI</option>
+                <option value="Tunai">Tunai Kasir</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Nomor Rekening</label>
+              <input v-model="form.accountNumber" type="text" placeholder="No. Rekening Pegawai" class="w-full p-2 border rounded font-mono text-gray-900 dark:text-white bg-white dark:bg-gray-800">
             </div>
           </div>
 

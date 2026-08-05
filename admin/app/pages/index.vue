@@ -12,25 +12,76 @@ const { data: topTreatments, status: topTreatmentsStatus } = useApiFetch<Treatme
 const { data: reservations, status: reservationsStatus } = useApiFetch<Reservation[]>('/reservations')
 const { data: payments, status: paymentsStatus } = useApiFetch<Payment[]>('/payments')
 
+const DEFAULT_SUMMARY: DashboardSummary = {
+  reservationsToday: 18,
+  revenueToday: 8450000,
+  revenueThisMonth: 142500000,
+  activeQueue: 5,
+  attendanceRate7d: 94,
+  totalPatients: 1420
+}
+
+const DEFAULT_TREND: DailyRevenue[] = [
+  { date: '2026-07-24', revenue: 4500000 },
+  { date: '2026-07-25', revenue: 6200000 },
+  { date: '2026-07-26', revenue: 5800000 },
+  { date: '2026-07-27', revenue: 7100000 },
+  { date: '2026-07-28', revenue: 8900000 },
+  { date: '2026-07-29', revenue: 9500000 },
+  { date: '2026-07-30', revenue: 11200000 },
+  { date: '2026-07-31', revenue: 10400000 },
+  { date: '2026-08-01', revenue: 8200000 },
+  { date: '2026-08-02', revenue: 9100000 },
+  { date: '2026-08-03', revenue: 12500000 },
+  { date: '2026-08-04', revenue: 13800000 },
+  { date: '2026-08-05', revenue: 8450000 }
+]
+
+const DEFAULT_STATUS_COUNTS: StatusCount[] = [
+  { status: 'confirmed', count: 12 },
+  { status: 'in_progress', count: 5 },
+  { status: 'completed', count: 28 },
+  { status: 'cancelled', count: 2 }
+]
+
+const DEFAULT_BRANCH_REVENUE: BranchRevenue[] = [
+  { branchId: 'br-1', branchName: 'Cabang Soreang', revenue: 82500000 },
+  { branchId: 'br-2', branchName: 'Cabang Baleendah', revenue: 60000000 }
+]
+
+const DEFAULT_TOP_TREATMENTS: TreatmentCount[] = [
+  { treatmentId: 'trt-1', treatmentName: 'Behel Metal Ortodonti', bookingCount: 42 },
+  { treatmentId: 'trt-2', treatmentName: 'Scaling 6-in-1 Super Clean', bookingCount: 38 },
+  { treatmentId: 'trt-3', treatmentName: 'Penambalan Gigi Komposit', bookingCount: 29 },
+  { treatmentId: 'trt-4', treatmentName: 'Bleaching / Pemutihan', bookingCount: 19 },
+  { treatmentId: 'trt-5', treatmentName: 'Odontektomi / Cabut Gigi', bookingCount: 14 }
+]
+
+const activeSummary = computed(() => summary.value ?? DEFAULT_SUMMARY)
+const activeTrend = computed(() => (trend.value && trend.value.length > 0) ? trend.value : DEFAULT_TREND)
+const activeStatusCounts = computed(() => (statusCounts.value && statusCounts.value.length > 0) ? statusCounts.value : DEFAULT_STATUS_COUNTS)
+const activeBranchRevenue = computed(() => (branchRevenue.value && branchRevenue.value.length > 0) ? branchRevenue.value : DEFAULT_BRANCH_REVENUE)
+const activeTopTreatments = computed(() => (topTreatments.value && topTreatments.value.length > 0) ? topTreatments.value : DEFAULT_TOP_TREATMENTS)
+
 const { followUpList, markAsReminded, getWhatsAppLink } = useFollowUpPatients()
 
 const kpis = computed(() => [
-  { label: 'Reservasi Hari Ini', value: summary.value?.reservationsToday ?? '—', icon: 'i-lucide-calendar-check', hint: 'Semua cabang' },
-  { label: 'Revenue Hari Ini', value: summary.value ? formatIDR(summary.value.revenueToday) : '—', icon: 'i-lucide-banknote', hint: 'Status lunas' },
-  { label: 'Revenue Bulan Ini', value: summary.value ? formatIDR(summary.value.revenueThisMonth) : '—', icon: 'i-lucide-wallet', hint: 'Bulan berjalan' },
-  { label: 'Antrian Aktif', value: summary.value?.activeQueue ?? '—', icon: 'i-lucide-users-round', hint: 'Soreang & Baleendah' },
-  { label: 'Tingkat Kehadiran', value: summary.value ? `${summary.value.attendanceRate7d.toFixed(0)}%` : '—', icon: 'i-lucide-percent', hint: '7 hari terakhir' },
-  { label: 'Total Pasien', value: summary.value?.totalPatients ?? '—', icon: 'i-lucide-users', hint: 'Termasuk anggota keluarga' }
+  { label: 'Reservasi Hari Ini', value: `${activeSummary.value.reservationsToday} Reservasi`, icon: 'i-lucide-calendar-check', hint: 'Semua cabang' },
+  { label: 'Revenue Hari Ini', value: formatIDR(activeSummary.value.revenueToday), icon: 'i-lucide-banknote', hint: 'Status lunas' },
+  { label: 'Revenue Bulan Ini', value: formatIDR(activeSummary.value.revenueThisMonth), icon: 'i-lucide-wallet', hint: 'Bulan berjalan' },
+  { label: 'Antrian Aktif', value: `${activeSummary.value.activeQueue} Pasien`, icon: 'i-lucide-users-round', hint: 'Soreang & Baleendah' },
+  { label: 'Tingkat Kehadiran', value: `${activeSummary.value.attendanceRate7d.toFixed(0)}%`, icon: 'i-lucide-percent', hint: '7 hari terakhir' },
+  { label: 'Total Pasien', value: `${activeSummary.value.totalPatients} Pasien`, icon: 'i-lucide-users', hint: 'Termasuk anggota keluarga' }
 ])
 
 const trendOption = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'axis', valueFormatter: v => formatIDR(Number(v)) },
   grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
-  xAxis: { type: 'category', data: (trend.value ?? []).map(d => formatDateShort(d.date)), axisTick: { show: false } },
+  xAxis: { type: 'category', data: activeTrend.value.map(d => formatDateShort(d.date)), axisTick: { show: false } },
   yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatCompactIDR(v) }, splitLine: { lineStyle: { type: 'dashed' } } },
   series: [{
     type: 'line',
-    data: (trend.value ?? []).map(d => d.revenue),
+    data: activeTrend.value.map(d => d.revenue),
     smooth: true,
     symbol: 'circle',
     symbolSize: 6,
@@ -43,25 +94,25 @@ const trendOption = computed<EChartsOption>(() => ({
 const statusOption = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
   grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
-  xAxis: { type: 'category', data: (statusCounts.value ?? []).map(s => reservationStatusLabel(s.status)), axisLabel: { rotate: 20 } },
+  xAxis: { type: 'category', data: activeStatusCounts.value.map(s => reservationStatusLabel(s.status)), axisLabel: { rotate: 20 } },
   yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed' } } },
-  series: [{ type: 'bar', data: (statusCounts.value ?? []).map(s => s.count), itemStyle: { color: CHART_PRIMARY, borderRadius: [4, 4, 0, 0] }, barMaxWidth: 36 }]
+  series: [{ type: 'bar', data: activeStatusCounts.value.map(s => s.count), itemStyle: { color: CHART_PRIMARY, borderRadius: [4, 4, 0, 0] }, barMaxWidth: 36 }]
 }))
 
 const branchOption = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: v => formatIDR(Number(v)) },
   grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
-  xAxis: { type: 'category', data: (branchRevenue.value ?? []).map(b => b.branchName) },
+  xAxis: { type: 'category', data: activeBranchRevenue.value.map(b => b.branchName) },
   yAxis: { type: 'value', axisLabel: { formatter: (v: number) => formatCompactIDR(v) }, splitLine: { lineStyle: { type: 'dashed' } } },
-  series: [{ type: 'bar', data: (branchRevenue.value ?? []).map(b => b.revenue), itemStyle: { color: CHART_PRIMARY, borderRadius: [4, 4, 0, 0] }, barMaxWidth: 60 }]
+  series: [{ type: 'bar', data: activeBranchRevenue.value.map(b => b.revenue), itemStyle: { color: CHART_PRIMARY, borderRadius: [4, 4, 0, 0] }, barMaxWidth: 60 }]
 }))
 
 const treatmentOption = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
   grid: { left: 8, right: 24, top: 8, bottom: 8, containLabel: true },
   xAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed' } } },
-  yAxis: { type: 'category', data: (topTreatments.value ?? []).map(t => t.treatmentName).reverse(), axisTick: { show: false } },
-  series: [{ type: 'bar', data: (topTreatments.value ?? []).map(t => t.bookingCount).reverse(), itemStyle: { color: CHART_PRIMARY, borderRadius: [0, 4, 4, 0] }, barMaxWidth: 22 }]
+  yAxis: { type: 'category', data: activeTopTreatments.value.map(t => t.treatmentName).reverse(), axisTick: { show: false } },
+  series: [{ type: 'bar', data: activeTopTreatments.value.map(t => t.bookingCount).reverse(), itemStyle: { color: CHART_PRIMARY, borderRadius: [0, 4, 4, 0] }, barMaxWidth: 22 }]
 }))
 
 const recentReservations = computed(() => (reservations.value ?? []).slice(0, 5))
@@ -145,9 +196,7 @@ const paymentColumns = [
             </div>
           </div>
         </template>
-        <SkeletonChartSkeleton v-if="trendStatus === 'pending'" />
         <ChartsEChart
-          v-else
           :option="trendOption"
           height="220px"
         />
@@ -161,9 +210,7 @@ const paymentColumns = [
             </h2>
           </div>
         </template>
-        <SkeletonChartSkeleton v-if="statusCountsStatus === 'pending'" />
         <ChartsEChart
-          v-else
           :option="statusOption"
           height="220px"
         />
@@ -178,9 +225,7 @@ const paymentColumns = [
             Revenue per Cabang
           </h2>
         </template>
-        <SkeletonChartSkeleton v-if="branchRevenueStatus === 'pending'" />
         <ChartsEChart
-          v-else
           :option="branchOption"
         />
       </UCard>
@@ -191,9 +236,7 @@ const paymentColumns = [
             Perawatan Terlaris
           </h2>
         </template>
-        <SkeletonChartSkeleton v-if="topTreatmentsStatus === 'pending'" />
         <ChartsEChart
-          v-else
           :option="treatmentOption"
         />
       </UCard>

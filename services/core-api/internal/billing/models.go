@@ -42,6 +42,7 @@ type TreatmentStat struct {
 
 type Payment struct {
 	ID                string     `json:"id"`
+	TransactionNumber string     `json:"transactionNumber"`
 	ReservationID     string     `json:"reservationId"`
 	PatientID         string     `json:"patientId"`
 	Amount            float64    `json:"amount"`
@@ -58,6 +59,42 @@ type Payment struct {
 	CreatedAt         time.Time  `json:"createdAt"`
 	PatientName       string     `json:"patientName"`
 	BranchName        string     `json:"branchName"`
+}
+
+func FormatTransactionNumber(id string, createdAt time.Time) string {
+	if len(id) >= 6 {
+		clean := id
+		for _, c := range []string{"-", " "} {
+			clean = replaceAll(clean, c, "")
+		}
+		if len(clean) >= 6 {
+			clean = clean[len(clean)-6:]
+		}
+		return "TRX-" + createdAt.Format("20060102") + "-" + uppercase(clean)
+	}
+	return "TRX-" + createdAt.Format("20060102") + "-000000"
+}
+
+func replaceAll(s, old, newStr string) string {
+	out := ""
+	for _, c := range s {
+		if string(c) == old {
+			out += newStr
+		} else {
+			out += string(c)
+		}
+	}
+	return out
+}
+
+func uppercase(s string) string {
+	out := []rune(s)
+	for i, r := range out {
+		if r >= 'a' && r <= 'z' {
+			out[i] = r - ('a' - 'A')
+		}
+	}
+	return string(out)
 }
 
 type DashboardSummary struct {

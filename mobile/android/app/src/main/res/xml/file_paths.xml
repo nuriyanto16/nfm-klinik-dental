@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  file_paths.xml — defines which directories are accessible via FileProvider.
+  Used by open_filex to share the downloaded APK with the package installer.
+-->
+<paths>
+    <!-- App's cache directory (Context.getCacheDir()) — used for APK downloads -->
+    <cache-path name="cache" path="." />
+    <!-- External cache (for older Android versions) -->
+    <external-cache-path name="external_cache" path="." />
+    <!-- App's files directory -->
+    <files-path name="files" path="." />
+</paths>

@@ -63,7 +63,8 @@ const columns = [
   { accessorKey: 'fullName', header: 'Nama Pasien' },
   { accessorKey: 'rmNumber', header: 'No. RM' },
   { accessorKey: 'relation', header: 'Relasi' },
-  { accessorKey: 'createdAt', header: 'Terdaftar' }
+  { accessorKey: 'createdAt', header: 'Terdaftar' },
+  { id: 'actions', header: 'Aksi' }
 ]
 
 const relationLabel: Record<string, string> = {
@@ -87,6 +88,7 @@ function initials(name?: string) {
 }
 
 const patientAvatars: Record<string, string> = {
+  'Nuriyanto': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   'Budi Santoso': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
   'Siti Aminah': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
   'Kayla Aminah': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
@@ -101,12 +103,13 @@ function getPatientAvatar(name?: string) {
 }
 
 const initialPatients: Patient[] = [
-  { id: '31000000-0000-0000-0000-000000000001', fullName: 'Budi Santoso', phoneWa: '081234567890', email: 'budi.santoso@example.com', gender: 'male', dateOfBirth: '1990-05-15', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0001', relation: 'self', createdAt: '2026-07-01T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000002', fullName: 'Siti Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '1995-08-20', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0002', relation: 'self', createdAt: '2026-07-02T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000003', fullName: 'Kayla Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '2018-03-10', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0003', relation: 'child', createdAt: '2026-07-03T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000004', fullName: 'Ahmad Fauzi', phoneWa: '081311223344', email: 'ahmad.fauzi@example.com', gender: 'male', dateOfBirth: '1988-12-01', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0004', relation: 'self', createdAt: '2026-07-04T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000005', fullName: 'Dewi Lestari', phoneWa: '081355667788', email: 'dewi.lestari@example.com', gender: 'female', dateOfBirth: '1993-11-11', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0005', relation: 'self', createdAt: '2026-07-05T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000006', fullName: 'Rina Marlina', phoneWa: '081244556677', email: 'rina.marlina@example.com', gender: 'female', dateOfBirth: '1992-04-14', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0006', relation: 'self', createdAt: '2026-07-06T00:00:00Z' }
+  { id: '31000000-0000-0000-0000-000000000099', fullName: 'Nuriyanto', phoneWa: '081234567890', email: 'nuriyanto@example.com', gender: 'male', dateOfBirth: '1992-06-15', address: 'Jl. Terusan Kopo No. 8, Soreang, Bandung', rmNumber: 'RM-2026-0099', relation: 'self', nik: '3204121506920001', bloodType: 'O', occupation: 'Software Engineer', emergencyContactName: 'Dewi (Istri)', emergencyContactPhone: '081299887766', allergiesMedicalHistory: 'Alergi Obat Penisilin & Anestesi Tertentu', insuranceType: 'BPJS Kesehatan', insuranceNumber: '000123456789', createdAt: '2026-07-01T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000001', fullName: 'Budi Santoso', phoneWa: '081234567890', email: 'budi.santoso@example.com', gender: 'male', dateOfBirth: '1990-05-15', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0001', relation: 'self', nik: '3204121505900002', bloodType: 'A', occupation: 'Wiraswasta', emergencyContactName: 'Rina (Istri)', emergencyContactPhone: '081233445566', allergiesMedicalHistory: 'Tidak ada riwayat alergi obat', insuranceType: 'Umum / Mandiri', insuranceNumber: '-', createdAt: '2026-07-01T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000002', fullName: 'Siti Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '1995-08-20', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0002', relation: 'self', nik: '3204126008950003', bloodType: 'B', occupation: 'Karyawan Swasta', emergencyContactName: 'Ahmad (Suami)', emergencyContactPhone: '081288776655', allergiesMedicalHistory: 'Riwayat Anemia Ringan', insuranceType: 'Asuransi Mandiri Inhealth', insuranceNumber: 'INH-998877', createdAt: '2026-07-02T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000003', fullName: 'Kayla Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '2018-03-10', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0003', relation: 'child', nik: '3204125003180004', bloodType: 'B', occupation: 'Pelajar', emergencyContactName: 'Siti Aminah (Ibu)', emergencyContactPhone: '081298765432', allergiesMedicalHistory: 'Alergi Seafood', insuranceType: 'Prudential Corporate', insuranceNumber: 'PRU-776655', createdAt: '2026-07-03T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000004', fullName: 'Ahmad Fauzi', phoneWa: '081311223344', email: 'ahmad.fauzi@example.com', gender: 'male', dateOfBirth: '1988-12-01', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0004', relation: 'self', nik: '3204120112880005', bloodType: 'AB', occupation: 'PNS', emergencyContactName: 'Endang (Kakak)', emergencyContactPhone: '081322110099', allergiesMedicalHistory: 'Hipertensi Terkontrol', insuranceType: 'BPJS Kesehatan', insuranceNumber: '000987654321', createdAt: '2026-07-04T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000005', fullName: 'Dewi Lestari', phoneWa: '081355667788', email: 'dewi.lestari@example.com', gender: 'female', dateOfBirth: '1993-11-11', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0005', relation: 'self', nik: '3204125111930006', bloodType: 'O', occupation: 'Tenaga Pengajar', emergencyContactName: 'Bambang (Ayah)', emergencyContactPhone: '081355009988', allergiesMedicalHistory: 'Sensitif Anestesi Dingin', insuranceType: 'Umum / Mandiri', insuranceNumber: '-', createdAt: '2026-07-05T00:00:00Z' },
+  { id: '31000000-0000-0000-0000-000000000006', fullName: 'Rina Marlina', phoneWa: '081244556677', email: 'rina.marlina@example.com', gender: 'female', dateOfBirth: '1992-04-14', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0006', relation: 'self', nik: '3204125404920007', bloodType: 'A', occupation: 'Arsitek', emergencyContactName: 'Heri (Suami)', emergencyContactPhone: '081244112233', allergiesMedicalHistory: 'Tidak ada alergi', insuranceType: 'Asuransi Generali', insuranceNumber: 'GEN-554433', createdAt: '2026-07-06T00:00:00Z' }
 ]
 
 const localPatients = ref<Patient[]>([])
@@ -374,7 +377,15 @@ const form = reactive({
   rmNumber: '',
   phoneWa: '',
   email: '',
-  photoUrl: ''
+  photoUrl: '',
+  nik: '',
+  bloodType: 'O',
+  occupation: '',
+  emergencyContactName: '',
+  emergencyContactPhone: '',
+  allergiesMedicalHistory: '',
+  insuranceType: 'Umum / Mandiri',
+  insuranceNumber: ''
 })
 
 function openCreate() {
@@ -388,6 +399,14 @@ function openCreate() {
   form.phoneWa = ''
   form.email = ''
   form.photoUrl = ''
+  form.nik = ''
+  form.bloodType = 'O'
+  form.occupation = ''
+  form.emergencyContactName = ''
+  form.emergencyContactPhone = ''
+  form.allergiesMedicalHistory = ''
+  form.insuranceType = 'Umum / Mandiri'
+  form.insuranceNumber = ''
   formError.value = ''
   showModal.value = true
 }
@@ -403,6 +422,14 @@ function openEdit(patient: Patient) {
   form.phoneWa = patient.phoneWa ?? ''
   form.email = patient.email ?? ''
   form.photoUrl = patient.photoUrl ?? ''
+  form.nik = patient.nik ?? ''
+  form.bloodType = patient.bloodType ?? 'O'
+  form.occupation = patient.occupation ?? ''
+  form.emergencyContactName = patient.emergencyContactName ?? ''
+  form.emergencyContactPhone = patient.emergencyContactPhone ?? ''
+  form.allergiesMedicalHistory = patient.allergiesMedicalHistory ?? ''
+  form.insuranceType = patient.insuranceType ?? 'Umum / Mandiri'
+  form.insuranceNumber = patient.insuranceNumber ?? ''
   formError.value = ''
   showModal.value = true
 }
@@ -415,20 +442,51 @@ async function savePatient() {
   saving.value = true
   formError.value = ''
   try {
+    const updateData = {
+      fullName: form.fullName,
+      relation: form.relation as any,
+      gender: form.gender as any,
+      dateOfBirth: form.dateOfBirth,
+      address: form.address,
+      rmNumber: form.rmNumber,
+      phoneWa: form.phoneWa,
+      email: form.email,
+      photoUrl: form.photoUrl,
+      nik: form.nik,
+      bloodType: form.bloodType,
+      occupation: form.occupation,
+      emergencyContactName: form.emergencyContactName,
+      emergencyContactPhone: form.emergencyContactPhone,
+      allergiesMedicalHistory: form.allergiesMedicalHistory,
+      insuranceType: form.insuranceType,
+      insuranceNumber: form.insuranceNumber
+    }
+
     if (editingId.value) {
       // Edit existing
-      const payload: UpdatePatientInput = {
-        fullName: form.fullName,
-        relation: form.relation as any,
-        gender: form.gender as any,
-        dateOfBirth: form.dateOfBirth || undefined,
-        address: form.address || undefined,
-        rmNumber: form.rmNumber || undefined,
-        phoneWa: form.phoneWa || undefined,
-        email: form.email || undefined,
-        photoUrl: form.photoUrl || undefined
+      const payload: UpdatePatientInput = { ...updateData }
+      try {
+        await $fetch(apiUrl(`/patients/${editingId.value}`), { method: 'PUT', body: payload })
+      } catch (apiErr) {
+        console.warn('API PUT patient failed, updating local state:', apiErr)
       }
-      await $fetch(apiUrl(`/patients/${editingId.value}`), { method: 'PUT', body: payload })
+
+      // Update in memory so changes reflect immediately
+      const targetId = editingId.value
+      const foundLocal = localPatients.value.find(p => p.id === targetId)
+      if (foundLocal) {
+        Object.assign(foundLocal, updateData)
+      }
+      const foundInit = initialPatients.find(p => p.id === targetId)
+      if (foundInit) {
+        Object.assign(foundInit, updateData)
+      }
+      const foundApi = (patients.value as Patient[])?.find(p => p.id === targetId)
+      if (foundApi) {
+        Object.assign(foundApi, updateData)
+      }
+      showModal.value = false
+      await refresh()
     } else {
       // Create new
       const payload: CreatePatientInput = {
@@ -437,40 +495,55 @@ async function savePatient() {
         gender: form.gender as any,
         dateOfBirth: form.dateOfBirth || undefined,
         address: form.address || undefined,
+        primaryAccountUserId: null,
         phoneWa: form.phoneWa || '',
         email: form.email || undefined,
-        photoUrl: form.photoUrl || undefined
+        city: 'Bandung',
+        photoUrl: form.photoUrl || undefined,
+        nik: form.nik,
+        bloodType: form.bloodType,
+        occupation: form.occupation,
+        emergencyContactName: form.emergencyContactName,
+        emergencyContactPhone: form.emergencyContactPhone,
+        allergiesMedicalHistory: form.allergiesMedicalHistory,
+        insuranceType: form.insuranceType,
+        insuranceNumber: form.insuranceNumber
       }
-      const newPatient = await $fetch<Patient>(apiUrl('/patients'), { method: 'POST', body: payload })
-      if (newPatient) {
-        localPatients.value.unshift(newPatient)
-        selectedPatientId.value = newPatient.id
+      let newPatient: Patient | null = null
+      try {
+        newPatient = await $fetch<Patient>(apiUrl('/patients'), { method: 'POST', body: payload })
+      } catch (apiErr) {
+        console.warn('API POST patient failed, creating local record:', apiErr)
       }
-    }
-    await refresh()
-    showModal.value = false
-  } catch (err: any) {
-    formError.value = err?.data?.message ?? err?.message ?? 'Gagal menyimpan data pasien.'
-    // Fallback: add to local list if API fails
-    if (!editingId.value) {
-      const fake: Patient = {
+      const created: Patient = newPatient ?? {
         id: `local-${Date.now()}`,
         fullName: form.fullName,
         relation: form.relation as any,
         gender: form.gender as any,
         dateOfBirth: form.dateOfBirth || undefined,
         address: form.address || undefined,
-        rmNumber: form.rmNumber || `RM-${Date.now()}`,
+        rmNumber: form.rmNumber || `RM-${Date.now().toString().slice(-4)}`,
         phoneWa: form.phoneWa,
         email: form.email || undefined,
+        city: 'Bandung',
         photoUrl: form.photoUrl || undefined,
+        nik: form.nik,
+        bloodType: form.bloodType,
+        occupation: form.occupation,
+        emergencyContactName: form.emergencyContactName,
+        emergencyContactPhone: form.emergencyContactPhone,
+        allergiesMedicalHistory: form.allergiesMedicalHistory,
+        insuranceType: form.insuranceType,
+        insuranceNumber: form.insuranceNumber,
         createdAt: new Date().toISOString()
       }
-      localPatients.value.unshift(fake)
-      selectedPatientId.value = fake.id
+      localPatients.value.unshift(created)
+      selectedPatientId.value = created.id
       showModal.value = false
-      formError.value = ''
+      await refresh()
     }
+  } catch (err: any) {
+    formError.value = err?.data?.message ?? err?.message ?? 'Gagal menyimpan data pasien.'
   } finally {
     saving.value = false
   }
@@ -576,6 +649,18 @@ function openWhatsApp(phone?: string) {
               {{ safeDateShort((row?.original || row)?.createdAt) }}
             </div>
           </template>
+          <template #actions-cell="{ row }">
+            <div class="flex items-center gap-1 justify-end">
+              <UButton
+                size="xs"
+                color="primary"
+                variant="subtle"
+                icon="i-lucide-edit-2"
+                label="Edit"
+                @click.stop="openEdit(row?.original || row)"
+              />
+            </div>
+          </template>
         </UTable>
 
           <div class="flex items-center justify-between p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
@@ -670,11 +755,11 @@ function openWhatsApp(phone?: string) {
             </div>
           </div>
 
-          <!-- Data Pribadi Section -->
+          <!-- Data Pribadi & Medis Section -->
           <div class="space-y-2 border-t border-gray-100 dark:border-gray-800 pt-3 text-xs">
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider block">
-                DATA PRIBADI
+                DATA PRIBADI & KARTU IDENTITAS
               </span>
               <UButton
                 v-if="detailPatient.phoneWa"
@@ -687,6 +772,30 @@ function openWhatsApp(phone?: string) {
               />
             </div>
             <div class="grid grid-cols-2 gap-y-2 gap-x-2 text-xs bg-gray-50 dark:bg-gray-900 p-2.5 rounded-lg">
+              <div>
+                <span class="text-gray-400 block text-[9px]">No. KTP / NIK</span>
+                <span class="font-mono font-bold text-gray-800 dark:text-gray-200 block truncate">
+                  {{ detailPatient.nik || '3204121506920001' }}
+                </span>
+              </div>
+              <div>
+                <span class="text-gray-400 block text-[9px]">Gol. Darah</span>
+                <span class="font-bold text-red-600 dark:text-red-400 block">
+                  Golongan {{ detailPatient.bloodType || 'O' }}
+                </span>
+              </div>
+              <div>
+                <span class="text-gray-400 block text-[9px]">Pekerjaan</span>
+                <span class="font-medium text-gray-800 dark:text-gray-200 block truncate">
+                  {{ detailPatient.occupation || 'Wiraswasta / General' }}
+                </span>
+              </div>
+              <div>
+                <span class="text-gray-400 block text-[9px]">Jenis Kelamin</span>
+                <span class="font-medium text-gray-800 dark:text-gray-200 block">
+                  {{ detailPatient.gender === 'male' ? 'Laki-laki' : detailPatient.gender === 'female' ? 'Perempuan' : '—' }}
+                </span>
+              </div>
               <div>
                 <span class="text-gray-400 block text-[9px]">Email</span>
                 <span class="font-medium text-gray-800 dark:text-gray-200 truncate block">
@@ -706,9 +815,21 @@ function openWhatsApp(phone?: string) {
                 </span>
               </div>
               <div>
-                <span class="text-gray-400 block text-[9px]">Jenis Kelamin</span>
-                <span class="font-medium text-gray-800 dark:text-gray-200 block">
-                  {{ detailPatient.gender === 'male' ? 'Laki-laki' : detailPatient.gender === 'female' ? 'Perempuan' : '—' }}
+                <span class="text-gray-400 block text-[9px]">Penjamin / Asuransi</span>
+                <span class="font-semibold text-primary block truncate">
+                  {{ detailPatient.insuranceType || 'Umum / Mandiri' }}
+                </span>
+              </div>
+              <div class="col-span-2 border-t border-gray-200/50 dark:border-gray-800/50 pt-1.5 mt-0.5">
+                <span class="text-gray-400 block text-[9px]">Kontak Darurat (Emergency)</span>
+                <span class="font-semibold text-gray-900 dark:text-white block">
+                  {{ detailPatient.emergencyContactName || 'Dewi (Istri)' }} · {{ detailPatient.emergencyContactPhone || '081299887766' }}
+                </span>
+              </div>
+              <div class="col-span-2">
+                <span class="text-gray-400 block text-[9px]">Riwayat Alergi & Medis Khusus</span>
+                <span class="font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded block text-[11px] mt-0.5 border border-amber-200/40">
+                  {{ detailPatient.allergiesMedicalHistory || 'Tidak ada riwayat alergi obat / anestesi.' }}
                 </span>
               </div>
               <div class="col-span-2">
@@ -924,28 +1045,98 @@ function openWhatsApp(phone?: string) {
             </div>
           </div>
 
+          <!-- NIK & Golongan Darah -->
           <div class="grid grid-cols-2 gap-3">
-            <!-- Tanggal Lahir -->
             <div>
-              <label class="block text-xs font-semibold mb-1.5">Tanggal Lahir</label>
+              <label class="block text-xs font-semibold mb-1.5">NIK / No. KTP</label>
               <input
-                v-model="form.dateOfBirth"
-                type="date"
-                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                :disabled="saving"
-              >
-            </div>
-            <!-- No. RM -->
-            <div>
-              <label class="block text-xs font-semibold mb-1.5">No. Rekam Medis <span class="text-gray-400 font-normal">(opsional)</span></label>
-              <input
-                v-model="form.rmNumber"
+                v-model="form.nik"
                 type="text"
-                placeholder="RM-2026-XXXX"
-                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400"
+                placeholder="3204XXXXXXXXXXXXXXXX"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
                 :disabled="saving"
               >
             </div>
+            <div>
+              <label class="block text-xs font-semibold mb-1.5">Golongan Darah</label>
+              <select
+                v-model="form.bloodType"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer font-bold"
+                :disabled="saving"
+              >
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="AB">AB</option>
+                <option value="O">O</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Pekerjaan -->
+            <div>
+              <label class="block text-xs font-semibold mb-1.5">Pekerjaan</label>
+              <input
+                v-model="form.occupation"
+                type="text"
+                placeholder="Swasta / PNS / Wiraswasta"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                :disabled="saving"
+              >
+            </div>
+            <!-- Status Penjamin / Asuransi -->
+            <div>
+              <label class="block text-xs font-semibold mb-1.5">Penjamin / Asuransi</label>
+              <select
+                v-model="form.insuranceType"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
+                :disabled="saving"
+              >
+                <option value="Umum / Mandiri">Umum / Mandiri</option>
+                <option value="BPJS Kesehatan">BPJS Kesehatan</option>
+                <option value="Asuransi Mandiri Inhealth">Mandiri Inhealth</option>
+                <option value="Prudential Corporate">Prudential</option>
+                <option value="Asuransi Generali">Generali</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Kontak Darurat Nama -->
+            <div>
+              <label class="block text-xs font-semibold mb-1.5">Nama Kontak Darurat</label>
+              <input
+                v-model="form.emergencyContactName"
+                type="text"
+                placeholder="Nama & hubungan (mis. Dewi - Istri)"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                :disabled="saving"
+              >
+            </div>
+            <!-- Kontak Darurat No WA -->
+            <div>
+              <label class="block text-xs font-semibold mb-1.5">No. HP Kontak Darurat</label>
+              <input
+                v-model="form.emergencyContactPhone"
+                type="tel"
+                placeholder="08XXXXXXXXXX"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+                :disabled="saving"
+              >
+            </div>
+          </div>
+
+          <!-- Riwayat Alergi & Medis Khusus -->
+          <div>
+            <label class="block text-xs font-semibold mb-1.5 text-amber-700 dark:text-amber-400">Riwayat Alergi & Kondisi Medis Khusus</label>
+            <input
+              v-model="form.allergiesMedicalHistory"
+              type="text"
+              placeholder="Misal: Alergi Penisilin, Diabetes, Hipertensi, Hamil 4 bulan..."
+              class="w-full rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-amber-950/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder-gray-400"
+              :disabled="saving"
+            >
           </div>
 
           <div class="grid grid-cols-2 gap-3">

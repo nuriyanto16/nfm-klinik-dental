@@ -40,6 +40,7 @@ export function useAdminNav() {
 
     { type: 'label', label: 'Sistem' },
     { label: 'User & Role', icon: 'i-lucide-shield-check', to: '/users', phase: 1 },
+    { label: 'Pengguna Mobile App', icon: 'i-lucide-smartphone', to: '/mobile-users', phase: 1 },
     { label: 'Log Aktivitas', icon: 'i-lucide-activity', to: '/activity-logs', phase: 1 },
     { label: 'Dokumentasi & Panduan', icon: 'i-lucide-book-open', to: '/docs', phase: 1 }
   ]

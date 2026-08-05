@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Rekam Medis Klinik Gigi</title>
+    <style>
+        /* Pengaturan Dasar Cetak A4 */
+        @page {
+            size: A4;
+            margin: 15mm 15mm 15mm 15mm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        /* Kontainer Halaman */
+        .page {
+            page-break-after: always;
+            box-sizing: border-box;
+        }
+        .page:last-child {
+            page-break-after: avoid;
+        }
+        /* Header Klinik */
+        .header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 18pt;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+        }
+        .header h2 {
+            font-size: 14pt;
+            margin: 0 0 5px 0;
+            color: #555;
+        }
+        .header p {
+            font-size: 9pt;
+            margin: 0;
+            font-style: italic;
+        }
+        /* Judul Dokumen */
+        .doc-title {
+            text-align: center;
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-decoration: underline;
+        }
+        /* Struktur Grid & Form */
+        .section-title {
+            font-size: 11pt;
+            font-weight: bold;
+            background-color: #f2f2f2;
+            padding: 5px 10px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            border-left: 5px solid #333;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 180px 10px 1fr;
+            row-gap: 8px;
+            margin-bottom: 15px;
+        }
+        .form-label {
+            font-weight: bold;
+        }
+        /* Alergi & Checklist */
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 5px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+        .checkbox-box {
+            width: 12px;
+            height: 12px;
+            border: 1px solid #000;
+            margin-right: 8px;
+            display: inline-block;
+            text-align: center;
+            line-height: 11px;
+            font-size: 9pt;
+            font-weight: bold;
+        }
+        /* Odontogram Visual */
+        .odontogram-container {
+            border: 1px solid #ccc;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 15px;
+            background-color: #fafafa;
+        }
+        .odontogram-grid {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12pt;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin: 10px 0;
+        }
+        /* Tabel Perawatan (SOAP) */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 10pt;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 8px;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+        .soap-block p {
+            margin: 2px 0;
+        }
+        .soap-block strong {
+            display: inline-block;
+            width: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HALAMAN 1: IDENTITAS & ANAMNESIS -->
+    <div class="page">
+        <div class="header">
+            <h1>Klinik Gigi Sehat Sejahtera</h1>
+            <p>Jl. Raya Sehat No. 123, Jakarta | Telp: (021) 555-0199</p>
+        </div>
+        
+        <div class="doc-title">REKAM MEDIS PASIEN GIGI</div>
+
+        <div class="section-title">I. IDENTITAS PASIEN</div>
+        <div class="form-grid">
+            <div class="form-label">No. Rekam Medis</div><div>:</div><div><strong>RM-2026-08-0042</strong></div>
+            <div class="form-label">Tanggal Pendaftaran</div><div>:</div><div>04 / 08 / 2026</div>
+            <div class="form-label">Nama Lengkap</div><div>:</div><div>Budi Santoso &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ( Jenis Kelamin: L )</div>
+            <div class="form-label">Tempat / Tanggal Lahir</div><div>:</div><div>Jakarta, 14 / 05 / 1992 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ( Usia: 34 Tahun )</div>
+            <div class="form-label">No. Identitas (KTP)</div><div>:</div><div>3171011405920003</div>
+            <div class="form-label">Alamat Rumah</div><div>:</div><div>Jl. Veteran No. 10, RT 02/RW 04, Gambir, Jakarta Pusat</div>
+            <div class="form-label">No. HP / Telepon</div><div>:</div><div>0812-3456-7890</div>
+            <div class="form-label">Pekerjaan</div><div>:</div><div>Karyawan Swasta</div>
+            <div class="form-label">Kontak Darurat</div><div>:</div><div>Siska Putri (Istri) - 0812-9876-5432</div>
+        </div>
+
+        <div class="section-title">II. ANAMNESIS</div>
+        <div class="form-grid">
+            <div class="form-label">Keluhan Utama</div><div>:</div>
+            <div>Pasien mengeluhkan sakit berdenyut pada gigi geraham bawah kanan sejak 3 hari yang lalu. Rasa sakit makin parah saat malam hari dan sangat nyeri jika dipakai mengunyah makanan.</div>
+            
+            <div class="form-label">Riwayat Penyakit Sekarang</div><div>:</div>
+            <div>Nyeri timbul secara spontan tanpa rangsangan, sudah minum parasetamol 1 tablet tadi pagi tetapi nyeri tidak kunjung reda.</div>
+        </div>
+
+        <div class="section-title">III. RIWAYAT KESEHATAN UMUM</div>
+        <div class="checkbox-group">
+            <div class="checkbox-item"><span class="checkbox-box"></span> Tekanan Darah Tinggi</div>
+            <div class="checkbox-item"><span class="checkbox-box"></span> Penyakit Jantung</div>
+            <div class="checkbox-item"><span class="checkbox-box"></span> Diabetes / Kencing Manis</div>
+            <div class="checkbox-item"><span class="checkbox-box"></span> Hepatitis / Penyakit Hati</div>
+            <div class="checkbox-item"><span class="checkbox-box"></span> HIV / AIDS</div>
+            <div class="checkbox-item"><span class="checkbox-box"></span> Gangguan Pembekuan Darah</div>
+            <div class="checkbox-item"><span class="checkbox-box">X</span> Alergi Obat: <strong>Penicillin (Gatal-gatal)</strong></div>
+            <div class="checkbox-item"><span class="checkbox-box"></span> Alergi Makanan: -</div>
+            <div class="checkbox-item"><span class="checkbox-box"></span> Sedang Hamil (Bagi Wanita)</div>
+            <div class="checkbox-item"><span class="checkbox-box"></span> Mengonsumsi Obat Rutin: -</div>
+        </div>
+    </div>
+
+    <!-- HALAMAN 2: CLINICAL DATA & TREATMENT -->
+    <div class="page">
+        <div class="section-title">IV. PEMERIKSAAN KLINIS</div>
+        <div class="form-grid">
+            <div class="form-label">Tanda Vital</div><div>:</div><div>TD: 120 / 80 mmHg &nbsp;|&nbsp; Nadi: 82 x/menit &nbsp;|&nbsp; Suhu: 36,6 °C</div>
+            <div class="form-label">Pemeriksaan Ekstra Oral</div><div>:</div><div>Pipi simetris, tidak ada bengkak luar wajah. Kelenjar getah bening submandibula kanan teraba normal, tidak ada nyeri tekan.</div>
+        </div>
+
+        <div class="section-title">V. ODONTOGRAM (STATUS GIGI)</div>
+        <div class="odontogram-container">
+            <div class="odontogram-grid">RA: 18 17 16 15 14 13 12 11 | 21 22 23 24 25 26 27 28</div>
+            <div style="border-top: 1px dashed #999; margin: 5px auto; width: 80%;"></div>
+            <div class="odontogram-grid">RB: 48 47 46 45 44 43 42 41 | 31 32 33 34 35 36 37 38</div>
+            <p style="font-size: 9pt; margin: 10px 0 0 0; text-align: left; font-style: italic;">
+                *Keterangan: Gigi 46 terdapat karies profunda (lubang besar dan dalam) di bagian oklusal. Gigi lainnya normal.
+            </p>
+        </div>
+
+        <div class="section-title">VI. TABEL CATATAN PERAWATAN (SOAP)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 12%;">Tanggal</th>
+                    <th style="width: 8%;">Gigi</th>
+                    <th style="width: 45%;">Catatan Klinis (S-O-A-P) & Resep</th>
+                    <th style="width: 25%;">Tindakan / Perawatan</th>
+                    <th style="width: 10%;">Dokter</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Kunjungan 1 -->
+                <tr>
+                    <td style="text-align: center;">04/08/2026</td>
+                    <td style="text-align: center; font-weight: bold;">46</td>
+                    <td class="soap-block">
+                        <p><strong>S:</strong> Nyeri berdenyut spontan, makin parah di malam hari.</p>
+                        <p><strong>O:</strong> Karies profunda, perkusi (+), palpasi (-), cold test (-).</p>
+                        <p><strong>A:</strong> Nekrosis pulpa gigi 46 + periodontitis apikalis akut.</p>
+                        <p><strong>P:</strong> Perawatan Saluran Akar (PSA) - Inisiasi.</p>
+                        <p style="margin-top: 5px; font-style: italic;">Rx: Amoxicillin 500mg No. XV (3x1), Asam Mefenamat 500mg No. X (3x1 prn)</p>
+                    </td>
+                    <td>
+                        - Open access / Trepanasi<br>
+                        - Ekstirpasi jaringan pulpa<br>
+                        - Irigasi NaOCl 2.5%<br>
+                        - Sterilisasi (ChKM)<br>
+                        - Tumpatan sementara
+                    </td>
+                    <td style="text-align: center; vertical-align: bottom; font-size: 9pt;">drg. Anita</td>
+                </tr>
+                <!-- Kunjungan 2 -->
+                <tr>

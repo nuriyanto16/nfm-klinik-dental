@@ -15,7 +15,8 @@ const {
   searchQuery,
   currentPage,
   pageSize,
-  totalPages
+  totalPages,
+  refresh
 } = useActivityLog()
 
 // Detail Modal
@@ -119,7 +120,7 @@ function getCategoryLabel(category: ActivityCategory) {
           variant="outline"
           color="gray"
           label="Refresh"
-          @click="currentPage = 1"
+          @click="refresh()"
         />
       </div>
     </div>

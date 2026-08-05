@@ -80,6 +80,7 @@ func (r *Repository) ListPayments(ctx context.Context, patientID string, page pa
 		if err := rows.Scan(&p.ID, &p.ReservationID, &p.PatientID, &p.Amount, &p.DepositAmount, &p.Status, &p.Provider, &p.ProviderReference, &p.PaymentMethod, &p.PromoID, &p.PromoTitle, &p.DiscountAmount, &p.PaidAt, &p.ExpiredAt, &p.CreatedAt, &p.PatientName, &p.BranchName, &total); err != nil {
 			return nil, 0, err
 		}
+		p.TransactionNumber = FormatTransactionNumber(p.ID, p.CreatedAt)
 		payments = append(payments, p)
 	}
 	return payments, total, rows.Err()

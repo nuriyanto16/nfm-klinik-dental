@@ -43,6 +43,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   int _currentPromoPage = 0;
   String _selectedArticleCategory = 'Semua';
   bool _showDicyBubble = true;
+  late PageController _promoPageController;
 
   final List<String> _articleCategories = [
     'Semua',
@@ -51,6 +52,38 @@ class _HomePageState extends ConsumerState<HomePage> {
     'Cabut Gigi',
     'Event',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _promoPageController = PageController(viewportFraction: 0.92);
+    _startAutoScroll();
+  }
+
+  void _startAutoScroll() {
+    Future.delayed(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      final promos = ref.read(promoListProvider);
+      promos.whenData((list) {
+        if (list.isEmpty) return;
+        final next = (_currentPromoPage + 1) % list.length;
+        if (_promoPageController.hasClients) {
+          _promoPageController.animateToPage(
+            next,
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOut,
+          );
+        }
+        _startAutoScroll();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _promoPageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +107,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
-                'fdc',
+                'ndc',
                 style: TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w900,
@@ -111,18 +144,18 @@ class _HomePageState extends ConsumerState<HomePage> {
                 _buildTopAuthBanner(context, session),
                 const SizedBox(height: 16),
 
-                // Promo Carousel with Dots & Skeleton
+                // Promo Carousel with Dots & Auto-scroll
                 promos.when(
                   data: (list) => list.isEmpty
                       ? const SizedBox.shrink()
                       : Column(
                           children: [
                             SizedBox(
-                              height: 160,
+                              height: 195,
                               child: PageView.builder(
                                 itemCount: list.length,
+                                controller: _promoPageController,
                                 onPageChanged: (i) => setState(() => _currentPromoPage = i),
-                                controller: PageController(viewportFraction: 0.92),
                                 itemBuilder: (context, i) => _buildPromoCard(list[i]),
                               ),
                             ),
@@ -132,12 +165,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                               children: List.generate(
                                 list.length,
                                 (i) => AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
+                                  duration: const Duration(milliseconds: 300),
                                   margin: const EdgeInsets.symmetric(horizontal: 3),
-                                  width: _currentPromoPage == i ? 16 : 6,
+                                  width: _currentPromoPage == i ? 20 : 6,
                                   height: 6,
                                   decoration: BoxDecoration(
-                                    color: _currentPromoPage == i ? AppColors.primary : Colors.grey.shade300,
+                                    color: _currentPromoPage == i ? AppColors.pink : Colors.grey.shade300,
                                     borderRadius: BorderRadius.circular(3),
                                   ),
                                 ),
@@ -606,79 +639,91 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _buildPromoCard(Promo promo) {
     final bannerUrl = (promo.bannerImageUrl != null && promo.bannerImageUrl!.isNotEmpty)
         ? promo.bannerImageUrl!
-        : 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800';
+        : 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800&auto=format&fit=crop&q=80';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: const LinearGradient(
-              colors: [Color(0xFFE91E63), Color(0xFF9C27B0)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: GestureDetector(
+        onTap: () => context.push('/promos'),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
           child: Stack(
             fit: StackFit.expand,
             children: [
               CachedNetworkImage(
                 imageUrl: bannerUrl,
                 fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => Image.network(
-                  'https://picsum.photos/800/400?dental',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                errorWidget: (_, __, ___) => Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
                 ),
               ),
+              // Dark gradient overlay
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withValues(alpha: 0.8),
-                      Colors.black.withValues(alpha: 0.2),
-                      Colors.black.withValues(alpha: 0.7),
+                      Colors.black.withValues(alpha: 0.78),
+                      Colors.black.withValues(alpha: 0.15),
+                      Colors.black.withValues(alpha: 0.0),
                     ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                   ),
                 ),
               ),
+              // Content overlay
               Padding(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.amber,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text('PROMO SPESIAL HARI INI', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black)),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.local_offer_rounded, size: 11, color: Colors.black87),
+                              SizedBox(width: 4),
+                              Text('PROMO SPESIAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black87)),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text('Detail →', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       promo.title,
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, height: 1.2),
+                      style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900, height: 1.2, shadows: [
+                        Shadow(color: Colors.black54, blurRadius: 4),
+                      ]),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       promo.description ?? 'Konsultasi dokter gratis & diskon khusus reservasi via aplikasi mobile!',
-                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -840,25 +885,34 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildArticleCard(BuildContext context, Article article) {
-    final formattedDate = DateFormat('dd MMMM yyyy', 'id_ID').format(article.publishedAt ?? DateTime.now());
+    final formattedDate = DateFormat('dd MMM yyyy', 'id_ID').format(article.publishedAt ?? DateTime.now());
     final coverUrl = (article.coverImageUrl != null && article.coverImageUrl!.isNotEmpty)
         ? article.coverImageUrl!
-        : 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800';
+        : 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800&auto=format&fit=crop&q=80';
+
+    final categoryColors = <String, List<Color>>{
+      'Ortodonti': [const Color(0xFF667EEA), const Color(0xFF764BA2)],
+      'Tips Kesehatan': [const Color(0xFF11998E), const Color(0xFF38EF7D)],
+      'Nina Kidz': [const Color(0xFFF7971E), const Color(0xFFFFD200)],
+      'Perawatan Gigi': [const Color(0xFFFC5C7D), const Color(0xFF6A3093)],
+      'Bleaching': [const Color(0xFF00C6FF), const Color(0xFF0072FF)],
+    };
+    final catName = article.categoryName ?? 'Artikel';
+    final gradColors = categoryColors[catName] ?? [const Color(0xFF4CAF50), const Color(0xFF2E7D32)];
 
     return GestureDetector(
       onTap: () => context.push('/articles/${article.id}'),
       child: SizedBox(
-        width: 220,
+        width: 225,
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -866,28 +920,40 @@ class _HomePageState extends ConsumerState<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Container(
-                  height: 110,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                child: SizedBox(
+                  height: 120,
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
+                      // Background gradient
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: gradColors,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                      ),
+                      // Cover image
                       CachedNetworkImage(
                         imageUrl: coverUrl,
                         fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => Image.network(
-                          'https://picsum.photos/400/250?teeth',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Center(
-                            child: Icon(Icons.article_outlined, size: 40, color: Colors.white),
+                        errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                      // Bottom fade
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Colors.black.withValues(alpha: 0.5), Colors.transparent],
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                            ),
                           ),
                         ),
                       ),
@@ -896,33 +962,41 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.green.shade50,
+                            gradient: LinearGradient(colors: gradColors),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            article.categoryName ?? 'Ortodonti',
-                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            catName,
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(formattedDate, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                        const Spacer(),
+                        Text(formattedDate, style: const TextStyle(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       article.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark),
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.textDark, height: 1.4),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.menu_book_rounded, size: 12, color: gradColors[0]),
+                        const SizedBox(width: 4),
+                        Text('Baca Selengkapnya', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: gradColors[0])),
+                      ],
                     ),
                   ],
                 ),

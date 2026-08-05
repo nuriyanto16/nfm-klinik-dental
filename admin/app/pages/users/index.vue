@@ -234,19 +234,22 @@ async function onSubmit() {
     }
 
     if (editingId.value) {
-      const idx = localUsers.value.findIndex(u => u.id === editingId.value)
-      if (idx !== -1) {
-        localUsers.value[idx] = {
-          ...localUsers.value[idx],
+      const targetUser = localUsers.value.find(u => u.id === editingId.value)
+      if (targetUser) {
+        const updated: ExtendedStaffUser = {
+          id: targetUser.id,
           fullName: form.fullName,
           email: form.email,
           phoneWa: form.phoneWa || null,
           role: form.role,
           isActive: form.isActive,
+          createdAt: targetUser.createdAt,
           ...extData
         }
+        const idx = localUsers.value.findIndex(u => u.id === editingId.value)
+        if (idx !== -1) localUsers.value[idx] = updated
         if (selectedUser.value?.id === editingId.value) {
-          selectedUser.value = { ...localUsers.value[idx] }
+          selectedUser.value = updated
         }
       }
       try {
@@ -268,7 +271,7 @@ async function onSubmit() {
         const created = await $fetch<StaffUser>(apiUrl('/users'), { method: 'POST', body: payload })
         if (created?.id) newId = created.id
       } catch {}
-      localUsers.value.unshift({
+      const createdUser: ExtendedStaffUser = {
         id: newId,
         fullName: form.fullName,
         email: form.email,
@@ -277,7 +280,8 @@ async function onSubmit() {
         isActive: form.isActive,
         createdAt: new Date().toISOString(),
         ...extData
-      })
+      }
+      localUsers.value.unshift(createdUser)
     }
     showModal.value = false
   } catch (err: any) {
@@ -289,11 +293,17 @@ async function onSubmit() {
 
 async function toggleStatus(u: ExtendedStaffUser) {
   const newStatus = !u.isActive
-  const label = newStatus ? 'aktifkan' : 'nonaktifkan'
   if (!confirm(`${newStatus ? 'Aktifkan' : 'Nonaktifkan'} user "${u.fullName}"?`)) return
-  const idx = localUsers.value.findIndex(x => x.id === u.id)
-  if (idx !== -1) localUsers.value[idx] = { ...localUsers.value[idx], isActive: newStatus }
-  if (selectedUser.value?.id === u.id) selectedUser.value = { ...localUsers.value[idx] }
+  const targetUser = localUsers.value.find(x => x.id === u.id)
+  if (targetUser) {
+    const updated: ExtendedStaffUser = {
+      ...targetUser,
+      isActive: newStatus
+    }
+    const idx = localUsers.value.findIndex(x => x.id === u.id)
+    if (idx !== -1) localUsers.value[idx] = updated
+    if (selectedUser.value?.id === u.id) selectedUser.value = updated
+  }
   try { await $fetch(apiUrl(`/users/${u.id}`), { method: 'PUT', body: { fullName: u.fullName, role: u.role, isActive: newStatus } }) } catch {}
 }
 
@@ -320,205 +330,539 @@ function safeDateShort(iso?: string | null): string {
 
 const showRoleInfoModal = ref(false)
 const selectedRoleInfo = ref<string>('superadmin')
+
+// ── Mobile App User Management ──────────────────────────────────────────────
+const route = useRoute()
+const activeTab = ref<'staff' | 'mobile'>('staff')
+
+watch(() => route.query.tab, (val) => {
+  if (val === 'mobile') activeTab.value = 'mobile'
+  else if (val === 'staff') activeTab.value = 'staff'
+}, { immediate: true })
+
+export interface MobileUser {
+  id: string
+  fullName: string
+  email: string
+  phoneWa: string
+  nik: string
+  gender: 'male' | 'female'
+  dateOfBirth: string
+  city: string
+  address: string
+  registeredAt: string
+  lastLoginAt: string
+  status: 'ACTIVE' | 'BLOCKED' | 'PENDING'
+  totalReservations: number
+}
+
+const initialMobileUsers: MobileUser[] = [
+  {
+    id: 'usr-m01',
+    fullName: 'Nuriyanto',
+    email: 'nuriyanto@gmail.com',
+    phoneWa: '+6281234567890',
+    nik: '3204011405920003',
+    gender: 'male',
+    dateOfBirth: '1992-05-14',
+    city: 'Bandung',
+    address: 'Jl. Terusan Kopo No. 8, Soreang',
+    registeredAt: '2026-08-01T10:00:00Z',
+    lastLoginAt: '2026-08-04T20:15:00Z',
+    status: 'ACTIVE',
+    totalReservations: 3
+  },
+  {
+    id: 'usr-m02',
+    fullName: 'Budi Santoso',
+    email: 'budi.santoso@gmail.com',
+    phoneWa: '+6281298765432',
+    nik: '3171011405920003',
+    gender: 'male',
+    dateOfBirth: '1992-05-14',
+    city: 'Bandung',
+    address: 'Jl. Veteran No. 10, Soreang',
+    registeredAt: '2026-08-02T08:30:00Z',
+    lastLoginAt: '2026-08-04T18:20:00Z',
+    status: 'ACTIVE',
+    totalReservations: 2
+  },
+  {
+    id: 'usr-m03',
+    fullName: 'Dewi Lestari',
+    email: 'dewi.lestari@gmail.com',
+    phoneWa: '+6281311223344',
+    nik: '3204015509930005',
+    gender: 'female',
+    dateOfBirth: '1993-09-15',
+    city: 'Kab. Bandung',
+    address: 'Jl. Raya Baleendah No. 45',
+    registeredAt: '2026-08-03T11:20:00Z',
+    lastLoginAt: '2026-08-04T09:10:00Z',
+    status: 'ACTIVE',
+    totalReservations: 1
+  },
+  {
+    id: 'usr-m04',
+    fullName: 'Ahmad Fauzi',
+    email: 'ahmad.fauzi@yahoo.com',
+    phoneWa: '+6285712345678',
+    nik: '3204011202910008',
+    gender: 'male',
+    dateOfBirth: '1991-02-12',
+    city: 'Bandung',
+    address: 'Kopo Cirangrang No. 12',
+    registeredAt: '2026-08-03T14:45:00Z',
+    lastLoginAt: '2026-08-03T14:45:00Z',
+    status: 'BLOCKED',
+    totalReservations: 0
+  }
+]
+
+const mobileUsers = ref<MobileUser[]>([...initialMobileUsers])
+const mobileSearch = ref('')
+const mobileFilterStatus = ref<'all' | 'ACTIVE' | 'BLOCKED'>('all')
+
+const filteredMobileUsers = computed(() => {
+  return mobileUsers.value.filter(u => {
+    if (mobileFilterStatus.value !== 'all' && u.status !== mobileFilterStatus.value) return false
+    if (mobileSearch.value.trim()) {
+      const q = mobileSearch.value.toLowerCase().trim()
+      const matchName = u.fullName.toLowerCase().includes(q)
+      const matchEmail = u.email.toLowerCase().includes(q)
+      const matchPhone = u.phoneWa.toLowerCase().includes(q)
+      const matchNik = u.nik.toLowerCase().includes(q)
+      return matchName || matchEmail || matchPhone || matchNik
+    }
+    return true
+  })
+})
+
+const selectedMobileUser = ref<MobileUser | null>(null)
+const showMobileDetailModal = ref(false)
+
+function openMobileDetail(user: MobileUser) {
+  selectedMobileUser.value = user
+  showMobileDetailModal.value = true
+}
+
+function toggleMobileUserStatus(user: MobileUser) {
+  const newStatus = user.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE'
+  const actionLabel = newStatus === 'BLOCKED' ? 'memblokir' : 'mengaktifkan kembali'
+  if (confirm(`Apakah Anda yakin ingin ${actionLabel} akun pengguna mobile ${user.fullName}?`)) {
+    user.status = newStatus
+  }
+}
+
+function resetMobilePassword(user: MobileUser) {
+  alert(`Link reset password untuk ${user.fullName} telah dikirimkan ke WhatsApp ${user.phoneWa} dan email ${user.email}`)
+}
+
+const showCreateMobileUserModal = ref(false)
+const mobileForm = reactive({
+  fullName: '',
+  email: '',
+  phoneWa: '',
+  nik: '',
+  gender: 'male' as 'male' | 'female',
+  dateOfBirth: '1995-01-01',
+  city: 'Bandung',
+  address: '',
+  password: ''
+})
+
+function openCreateMobileUser() {
+  mobileForm.fullName = ''
+  mobileForm.email = ''
+  mobileForm.phoneWa = '+628'
+  mobileForm.nik = ''
+  mobileForm.gender = 'male'
+  mobileForm.dateOfBirth = '1995-01-01'
+  mobileForm.city = 'Bandung'
+  mobileForm.address = ''
+  mobileForm.password = ''
+  showCreateMobileUserModal.value = true
+}
+
+function saveMobileUser() {
+  if (!mobileForm.fullName || !mobileForm.phoneWa) {
+    alert('Nama dan No. WhatsApp wajib diisi.')
+    return
+  }
+  const newUser: MobileUser = {
+    id: `usr-m${Date.now()}`,
+    fullName: mobileForm.fullName,
+    email: mobileForm.email || `${mobileForm.fullName.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+    phoneWa: mobileForm.phoneWa,
+    nik: mobileForm.nik || '3204010101950001',
+    gender: mobileForm.gender,
+    dateOfBirth: mobileForm.dateOfBirth,
+    city: mobileForm.city,
+    address: mobileForm.address || 'Bandung',
+    registeredAt: new Date().toISOString(),
+    lastLoginAt: new Date().toISOString(),
+    status: 'ACTIVE',
+    totalReservations: 0
+  }
+  mobileUsers.value.unshift(newUser)
+  showCreateMobileUserModal.value = false
+  alert(`Pengguna Mobile App ${newUser.fullName} berhasil ditambahkan!`)
+}
 </script>
 
 <template>
   <div class="p-4 space-y-5 w-full max-w-none">
+    <!-- ── Tab Navigation Header ── -->
+    <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-3">
+      <UButton
+        :variant="activeTab === 'staff' ? 'solid' : 'ghost'"
+        :color="activeTab === 'staff' ? 'primary' : 'neutral'"
+        icon="i-lucide-shield-check"
+        label="Pegawai & Staf Klinik"
+        @click="activeTab = 'staff'"
+      />
+      <UButton
+        :variant="activeTab === 'mobile' ? 'solid' : 'ghost'"
+        :color="activeTab === 'mobile' ? 'primary' : 'neutral'"
+        icon="i-lucide-smartphone"
+        label="Pengguna Mobile App (Pasien Mobile)"
+        @click="activeTab = 'mobile'"
+      />
+    </div>
 
-    <!-- ── Header ── -->
-    <div class="flex items-center justify-between flex-wrap gap-3">
-      <div>
-        <h1 class="text-xl font-bold text-gray-900 dark:text-white">Manajemen Pegawai & User</h1>
-        <p class="text-xs text-gray-500 mt-0.5">
-          Kelola dokter, perawat, admin cabang, dan staff dengan CRUD lengkap, role, dan izin akses.
-        </p>
+    <!-- ── Tab 1: Staff & Pegawai Klinik ── -->
+    <div v-if="activeTab === 'staff'" class="space-y-5">
+      <!-- ── Header ── -->
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 class="text-xl font-bold text-gray-900 dark:text-white">Manajemen Pegawai & User Klinik</h1>
+          <p class="text-xs text-gray-500 mt-0.5">
+            Kelola dokter, perawat, admin cabang, dan staff dengan CRUD lengkap, role, dan izin akses.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <UButton
+            icon="i-lucide-info"
+            label="Info Role"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            @click="showRoleInfoModal = true"
+          />
+          <UButton
+            icon="i-lucide-user-plus"
+            label="+ Tambah User"
+            color="primary"
+            @click="openCreate"
+          />
+        </div>
       </div>
-      <div class="flex items-center gap-2">
-        <UButton
-          icon="i-lucide-info"
-          label="Info Role"
-          color="neutral"
-          variant="outline"
+
+      <!-- ── Stats Per Role ── -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div
+          v-for="s in statsPerRole"
+          :key="s.key"
+          class="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center gap-3 cursor-pointer hover:border-primary-300 transition-colors"
+          :class="{ 'border-primary ring-1 ring-primary/30': filterRole === s.key }"
+          @click="filterRole = filterRole === s.key ? 'all' : s.key"
+        >
+          <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-700 shrink-0">
+            <UIcon :name="s.icon" class="w-4 h-4 text-gray-600 dark:text-gray-300" />
+          </div>
+          <div class="min-w-0">
+            <div class="text-xs text-gray-500 truncate">{{ s.label }}</div>
+            <div class="text-xl font-extrabold text-gray-900 dark:text-white">{{ s.count }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Filter Toolbar ── -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+        <!-- Status Filter -->
+        <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 p-0.5 rounded-lg">
+          <button
+            v-for="opt in [{ v: 'all', l: 'Semua' }, { v: 'active', l: 'Aktif' }, { v: 'inactive', l: 'Nonaktif' }]"
+            :key="opt.v"
+            class="px-3 py-1 text-xs font-semibold rounded-md transition-all"
+            :class="filterStatus === opt.v ? 'bg-white dark:bg-gray-700 text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+            @click="filterStatus = opt.v as any"
+          >
+            {{ opt.l }}
+          </button>
+        </div>
+
+        <!-- Role Filter -->
+        <select
+          v-model="filterRole"
+          class="px-2 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-400"
+        >
+          <option value="all">Semua Role</option>
+          <option v-for="r in ROLE_OPTIONS" :key="r.value" :value="r.value">{{ r.label }}</option>
+        </select>
+
+        <!-- Search -->
+        <UInput
+          v-model="searchQuery"
+          icon="i-lucide-search"
+          placeholder="Cari nama / email / WA..."
           size="sm"
-          @click="showRoleInfoModal = true"
+          class="w-full sm:w-64 ml-auto"
         />
+
+        <span class="text-xs text-gray-400 whitespace-nowrap">{{ filteredUsers.length }} user</span>
+      </div>
+
+      <!-- ── Main Table ── -->
+      <UCard :ui="{ body: 'p-0 sm:p-0' }">
+        <div v-if="status === 'pending'" class="flex items-center justify-center py-10 text-gray-400 gap-2 text-sm">
+          <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
+          Memuat data...
+        </div>
+        <div v-else-if="filteredUsers.length === 0" class="py-12 text-center text-gray-400 text-sm">
+          <UIcon name="i-lucide-users" class="w-8 h-8 mx-auto mb-2" />
+          <p>Tidak ada user ditemukan</p>
+        </div>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-gray-700 dark:text-gray-200">
+            <thead class="bg-gray-50 dark:bg-gray-800/60 text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+              <tr>
+                <th class="px-4 py-3">Nama Pegawai</th>
+                <th class="px-4 py-3">Email & WA</th>
+                <th class="px-4 py-3">Role / Jabatan</th>
+                <th class="px-4 py-3">Cabang & Shift</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+              <tr
+                v-for="u in filteredUsers"
+                :key="u.id"
+                class="hover:bg-primary-50/40 dark:hover:bg-primary-900/10 transition-colors cursor-pointer"
+                @click="openDetail(u)"
+              >
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                      :class="u.isActive ? 'bg-primary-100 dark:bg-primary-900/40 text-primary' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'"
+                    >
+                      {{ initials(u.fullName) }}
+                    </div>
+                    <div>
+                      <div class="font-bold text-gray-900 dark:text-white">{{ u.fullName }}</div>
+                      <div v-if="u.sipNumber" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-medium">SIP: {{ u.sipNumber }}</div>
+                      <div v-if="u.nik" class="text-[10px] text-gray-400 font-mono">NIK: {{ u.nik }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <div class="text-gray-800 dark:text-gray-200">{{ u.email || '—' }}</div>
+                  <div class="text-[11px] text-gray-400 font-mono">{{ u.phoneWa || '—' }}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <UBadge
+                    :color="ROLE_CONFIG[u.role]?.color ?? 'neutral'"
+                    variant="subtle"
+                    size="xs"
+                  >
+                    <UIcon :name="ROLE_CONFIG[u.role]?.icon ?? 'i-lucide-user'" class="w-3 h-3 mr-1" />
+                    {{ ROLE_CONFIG[u.role]?.label ?? u.role }}
+                  </UBadge>
+                  <div class="text-[10px] text-gray-400 mt-0.5">{{ u.employmentStatus ?? '—' }}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <div class="font-semibold text-gray-800 dark:text-gray-200 text-xs">{{ u.branchName || '—' }}</div>
+                  <div class="text-[10px] text-gray-400">{{ u.shiftWork || '—' }}</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <UBadge :color="u.isActive ? 'success' : 'neutral'" variant="soft" size="xs">
+                    {{ u.isActive ? 'Aktif Bekerja' : 'Non-aktif' }}
+                  </UBadge>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-right" @click.stop>
+                  <div class="flex items-center justify-end gap-1">
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      color="neutral"
+                      icon="i-lucide-eye"
+                      title="Lihat Detail"
+                      @click="openDetail(u)"
+                    />
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      color="primary"
+                      icon="i-lucide-edit-2"
+                      title="Edit"
+                      @click="openEdit(u)"
+                    />
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      :color="u.isActive ? 'warning' : 'success'"
+                      :icon="u.isActive ? 'i-lucide-user-x' : 'i-lucide-user-check'"
+                      :title="u.isActive ? 'Nonaktifkan' : 'Aktifkan'"
+                      @click="toggleStatus(u)"
+                    />
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      color="error"
+                      icon="i-lucide-trash-2"
+                      title="Hapus"
+                      @click="deleteUser(u)"
+                    />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </UCard>
+    </div>
+
+    <!-- ── Tab 2: Pengguna Mobile App (Pasien Mobile) ── -->
+    <div v-else-if="activeTab === 'mobile'" class="space-y-5">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 class="text-xl font-bold text-gray-900 dark:text-white">Kelola Pengguna Aplikasi Mobile</h1>
+          <p class="text-xs text-gray-500 mt-0.5">
+            Daftar akun pasien registered pada aplikasi Android / iOS Nina Dental Care.
+          </p>
+        </div>
         <UButton
           icon="i-lucide-user-plus"
-          label="+ Tambah User"
+          label="+ Tambah Pasien Mobile"
           color="primary"
-          @click="openCreate"
+          @click="openCreateMobileUser"
         />
       </div>
-    </div>
 
-    <!-- ── Stats Per Role ── -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-      <div
-        v-for="s in statsPerRole"
-        :key="s.key"
-        class="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center gap-3 cursor-pointer hover:border-primary-300 transition-colors"
-        :class="{ 'border-primary ring-1 ring-primary/30': filterRole === s.key }"
-        @click="filterRole = filterRole === s.key ? 'all' : s.key"
-      >
-        <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-700 shrink-0">
-          <UIcon :name="s.icon" class="w-4 h-4 text-gray-600 dark:text-gray-300" />
+      <!-- Stats Bar -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between">
+          <div>
+            <p class="text-xs text-gray-500 font-medium">Total Pasien Terdaftar</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ mobileUsers.length }} Pasien</p>
+          </div>
+          <div class="p-3 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-lg">
+            <UIcon name="i-lucide-smartphone" class="w-6 h-6" />
+          </div>
         </div>
-        <div class="min-w-0">
-          <div class="text-xs text-gray-500 truncate">{{ s.label }}</div>
-          <div class="text-xl font-extrabold text-gray-900 dark:text-white">{{ s.count }}</div>
+        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between">
+          <div>
+            <p class="text-xs text-gray-500 font-medium">Akun Aktif</p>
+            <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+              {{ mobileUsers.filter(u => u.status === 'ACTIVE').length }} Aktif
+            </p>
+          </div>
+          <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 rounded-lg">
+            <UIcon name="i-lucide-user-check" class="w-6 h-6" />
+          </div>
+        </div>
+        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between">
+          <div>
+            <p class="text-xs text-gray-500 font-medium">Terverifikasi NIK</p>
+            <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
+              {{ mobileUsers.filter(u => u.nik).length }} Verifikasi
+            </p>
+          </div>
+          <div class="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 rounded-lg">
+            <UIcon name="i-lucide-shield-check" class="w-6 h-6" />
+          </div>
+        </div>
+        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between">
+          <div>
+            <p class="text-xs text-gray-500 font-medium">Diterbitkan Reservasi</p>
+            <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
+              {{ mobileUsers.reduce((sum, u) => sum + u.totalReservations, 0) }} Reservasi
+            </p>
+          </div>
+          <div class="p-3 bg-purple-50 dark:bg-purple-950/40 text-purple-600 rounded-lg">
+            <UIcon name="i-lucide-calendar-check" class="w-6 h-6" />
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- ── Filter Toolbar ── -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
-      <!-- Status Filter -->
-      <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 p-0.5 rounded-lg">
-        <button
-          v-for="opt in [{ v: 'all', l: 'Semua' }, { v: 'active', l: 'Aktif' }, { v: 'inactive', l: 'Nonaktif' }]"
-          :key="opt.v"
-          class="px-3 py-1 text-xs font-semibold rounded-md transition-all"
-          :class="filterStatus === opt.v ? 'bg-white dark:bg-gray-700 text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'"
-          @click="filterStatus = opt.v"
-        >
-          {{ opt.l }}
-        </button>
+      <!-- Filters & Search Bar -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+        <UInput
+          v-model="mobileSearch"
+          icon="i-lucide-search"
+          placeholder="Cari nama pasien mobile, email, WA, NIK..."
+          class="w-full sm:w-80"
+        />
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500 font-medium">Status:</span>
+          <select
+            v-model="mobileFilterStatus"
+            class="p-2 border rounded-lg bg-white dark:bg-gray-800 text-xs font-medium text-gray-900 dark:text-white"
+          >
+            <option value="all">Semua Status</option>
+            <option value="ACTIVE">Aktif</option>
+            <option value="BLOCKED">Terblokir</option>
+          </select>
+        </div>
       </div>
 
-      <!-- Role Filter -->
-      <select
-        v-model="filterRole"
-        class="px-2 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-400"
-      >
-        <option value="all">Semua Role</option>
-        <option v-for="r in ROLE_OPTIONS" :key="r.value" :value="r.value">{{ r.label }}</option>
-      </select>
-
-      <!-- Search -->
-      <UInput
-        v-model="searchQuery"
-        icon="i-lucide-search"
-        placeholder="Cari nama / email / WA..."
-        size="sm"
-        class="w-full sm:w-64 ml-auto"
-      />
-
-      <span class="text-xs text-gray-400 whitespace-nowrap">{{ filteredUsers.length }} user</span>
-    </div>
-
-    <!-- ── Main Table ── -->
-    <UCard :ui="{ body: 'p-0 sm:p-0' }">
-      <div v-if="status === 'pending'" class="flex items-center justify-center py-10 text-gray-400 gap-2 text-sm">
-        <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
-        Memuat data...
-      </div>
-      <div v-else-if="filteredUsers.length === 0" class="py-12 text-center text-gray-400 text-sm">
-        <UIcon name="i-lucide-users" class="w-8 h-8 mx-auto mb-2" />
-        <p>Tidak ada user ditemukan</p>
-      </div>
-      <div v-else class="overflow-x-auto">
-        <table class="w-full text-left text-xs text-gray-700 dark:text-gray-200">
-          <thead class="bg-gray-50 dark:bg-gray-800/60 text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+      <!-- Mobile Users Table -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-xs">
+        <table class="w-full text-xs text-left">
+          <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 font-bold text-gray-700 dark:text-gray-300">
             <tr>
-              <th class="px-4 py-3">Nama Pegawai</th>
-              <th class="px-4 py-3">Email & WA</th>
-              <th class="px-4 py-3">Role / Jabatan</th>
-              <th class="px-4 py-3">Cabang & Shift</th>
-              <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3">Bergabung</th>
-              <th class="px-4 py-3 text-right">Aksi</th>
+              <th class="p-3">Pengguna Mobile</th>
+              <th class="p-3">Kontak & NIK</th>
+              <th class="p-3">Kota & Alamat</th>
+              <th class="p-3">Terdaftar</th>
+              <th class="p-3 text-center">Status Akun</th>
+              <th class="p-3 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-            <tr
-              v-for="u in filteredUsers"
-              :key="u.id"
-              class="hover:bg-primary-50/40 dark:hover:bg-primary-900/10 transition-colors cursor-pointer"
-              @click="openDetail(u)"
-            >
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="flex items-center gap-3">
-                  <div
-                    class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                    :class="u.isActive ? 'bg-primary-100 dark:bg-primary-900/40 text-primary' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'"
-                  >
-                    {{ initials(u.fullName) }}
+            <tr v-for="user in filteredMobileUsers" :key="user.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <td class="p-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs">
+                    {{ user.fullName.charAt(0) }}
                   </div>
                   <div>
-                    <div class="font-bold text-gray-900 dark:text-white">{{ u.fullName }}</div>
-                    <div v-if="u.sipNumber" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-medium">SIP: {{ u.sipNumber }}</div>
-                    <div v-if="u.nik" class="text-[10px] text-gray-400 font-mono">NIK: {{ u.nik }}</div>
+                    <span class="font-bold text-gray-900 dark:text-white block">{{ user.fullName }}</span>
+                    <span class="text-[11px] text-gray-500">{{ user.email }}</span>
                   </div>
                 </div>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="text-gray-800 dark:text-gray-200">{{ u.email || '—' }}</div>
-                <div class="text-[11px] text-gray-400 font-mono">{{ u.phoneWa || '—' }}</div>
+              <td class="p-3 space-y-0.5">
+                <div class="font-medium text-gray-900 dark:text-white">{{ user.phoneWa }}</div>
+                <div class="text-[11px] text-gray-400 font-mono">NIK: {{ user.nik || '—' }}</div>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <UBadge
-                  :color="ROLE_CONFIG[u.role]?.color ?? 'neutral'"
-                  variant="subtle"
-                  size="xs"
-                >
-                  <UIcon :name="ROLE_CONFIG[u.role]?.icon ?? 'i-lucide-user'" class="w-3 h-3 mr-1" />
-                  {{ ROLE_CONFIG[u.role]?.label ?? u.role }}
-                </UBadge>
-                <div class="text-[10px] text-gray-400 mt-0.5">{{ u.employmentStatus ?? '—' }}</div>
+              <td class="p-3">
+                <div class="font-medium text-gray-900 dark:text-white">{{ user.city }}</div>
+                <div class="text-[11px] text-gray-500 line-clamp-1">{{ user.address }}</div>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="font-semibold text-gray-800 dark:text-gray-200 text-xs">{{ u.branchName || '—' }}</div>
-                <div class="text-[10px] text-gray-400">{{ u.shiftWork || '—' }}</div>
+              <td class="p-3 text-gray-500">
+                <div>{{ new Date(user.registeredAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) }}</div>
+                <div class="text-[10px] text-gray-400">Terakhir: {{ new Date(user.lastLoginAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }}</div>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <UBadge :color="u.isActive ? 'success' : 'neutral'" variant="soft" size="xs">
-                  {{ u.isActive ? 'Aktif Bekerja' : 'Non-aktif' }}
+              <td class="p-3 text-center">
+                <UBadge :color="user.status === 'ACTIVE' ? 'success' : 'error'" variant="soft" size="xs">
+                  {{ user.status === 'ACTIVE' ? 'Aktif' : 'Terblokir' }}
                 </UBadge>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-gray-400">
-                {{ u.joinDate ?? safeDateShort(u.createdAt) }}
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap text-right" @click.stop>
+              <td class="p-3 text-right">
                 <div class="flex items-center justify-end gap-1">
-                  <UButton
-                    size="xs"
-                    variant="ghost"
-                    color="neutral"
-                    icon="i-lucide-eye"
-                    title="Lihat Detail"
-                    @click="openDetail(u)"
-                  />
-                  <UButton
-                    size="xs"
-                    variant="ghost"
-                    color="primary"
-                    icon="i-lucide-edit-2"
-                    title="Edit"
-                    @click="openEdit(u)"
-                  />
-                  <UButton
-                    size="xs"
-                    variant="ghost"
-                    :color="u.isActive ? 'warning' : 'success'"
-                    :icon="u.isActive ? 'i-lucide-user-x' : 'i-lucide-user-check'"
-                    :title="u.isActive ? 'Nonaktifkan' : 'Aktifkan'"
-                    @click="toggleStatus(u)"
-                  />
-                  <UButton
-                    size="xs"
-                    variant="ghost"
-                    color="error"
-                    icon="i-lucide-trash-2"
-                    title="Hapus"
-                    @click="deleteUser(u)"
-                  />
+                  <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-eye" label="Detail" @click="openMobileDetail(user)" />
+                  <UButton size="xs" color="warning" variant="ghost" icon="i-lucide-key-round" label="Reset Pass" @click="resetMobilePassword(user)" />
+                  <UButton size="xs" :color="user.status === 'ACTIVE' ? 'error' : 'success'" variant="ghost" :icon="user.status === 'ACTIVE' ? 'i-lucide-user-x' : 'i-lucide-user-check'" :label="user.status === 'ACTIVE' ? 'Blokir' : 'Aktifkan'" @click="toggleMobileUserStatus(user)" />
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </UCard>
+    </div>
 
     <!-- ════════════════════════════════════════ -->
     <!-- Detail Slideover (Profil Lengkap) -->
@@ -747,11 +1091,11 @@ const selectedRoleInfo = ref<string>('superadmin')
 
             <!-- Role description -->
             <div v-if="form.role && ROLE_CONFIG[form.role]" class="p-2.5 bg-gray-50 dark:bg-gray-900 rounded-lg text-[11px] text-gray-600 dark:text-gray-400">
-              <p class="font-semibold mb-1">{{ ROLE_CONFIG[form.role].label }}:</p>
-              <p class="mb-1.5">{{ ROLE_CONFIG[form.role].desc }}</p>
+              <p class="font-semibold mb-1">{{ ROLE_CONFIG[form.role]?.label }}:</p>
+              <p class="mb-1.5">{{ ROLE_CONFIG[form.role]?.desc }}</p>
               <div class="flex flex-wrap gap-1">
                 <span
-                  v-for="perm in ROLE_CONFIG[form.role].perms"
+                  v-for="perm in (ROLE_CONFIG[form.role]?.perms ?? [])"
                   :key="perm"
                   class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded text-[10px]"
                 >{{ perm }}</span>

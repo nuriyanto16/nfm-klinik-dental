@@ -10,6 +10,7 @@ import '../../features/content/presentation/videos_page.dart';
 import '../../features/doctors/presentation/doctor_detail_page.dart';
 import '../../features/doctors/presentation/doctors_page.dart';
 import '../../features/home/presentation/home_page.dart';
+import '../../features/patient/presentation/complete_profile_page.dart';
 import '../../features/patient/presentation/edit_profile_page.dart';
 import '../../features/patient/presentation/insurance_page.dart';
 import '../../features/patient/presentation/login_page.dart';
@@ -33,6 +34,14 @@ final appRouter = GoRouter(
     GoRoute(path: '/home', builder: (context, state) => const HomePage()),
     GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
     GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
+    GoRoute(
+      path: '/complete-profile',
+      builder: (context, state) {
+        final email = state.uri.queryParameters['email'];
+        final name = state.uri.queryParameters['name'];
+        return CompleteProfilePage(initialEmail: email, initialName: name);
+      },
+    ),
 
     // ─── Profile / Patient ────────────────────────────────────────────────────
     GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),

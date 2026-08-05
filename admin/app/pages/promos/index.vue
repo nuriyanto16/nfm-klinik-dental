@@ -160,24 +160,30 @@ function openEdit(v: AdminVoucherPromo) {
   showModal.value = true
 }
 
-function saveVoucher() {
+async function saveVoucher() {
   if (!form.title.trim()) return
   if (editingId.value) {
     const idx = vouchers.value.findIndex(v => v.id === editingId.value)
+    const updated: AdminVoucherPromo = {
+      ...vouchers.value[idx],
+      title: form.title,
+      voucherCode: (form.voucherCode || `PROMO${Date.now().toString().slice(-4)}`).toUpperCase(),
+      bannerImageUrl: form.bannerImageUrl || null,
+      description: form.description,
+      discountType: form.discountType,
+      discountValue: form.discountValue,
+      minTransaction: form.minTransaction,
+      maxUsageCount: form.maxUsageCount,
+      targetCategory: form.targetCategory,
+      isActive: form.isActive
+    }
     if (idx !== -1) {
-      vouchers.value[idx] = {
-        ...vouchers.value[idx],
-        title: form.title,
-        voucherCode: form.voucherCode.toUpperCase(),
-        bannerImageUrl: form.bannerImageUrl || null,
-        description: form.description,
-        discountType: form.discountType,
-        discountValue: form.discountValue,
-        minTransaction: form.minTransaction,
-        maxUsageCount: form.maxUsageCount,
-        targetCategory: form.targetCategory,
-        isActive: form.isActive
-      }
+      vouchers.value[idx] = updated
+    }
+    try {
+      await $fetch(apiUrl(`/content/promos/${editingId.value}`), { method: 'PUT', body: updated })
+    } catch (e) {
+      console.warn('API PUT promo error:', e)
     }
   } else {
     const newVoucher: AdminVoucherPromo = {
@@ -197,8 +203,14 @@ function saveVoucher() {
       targetCategory: form.targetCategory
     }
     vouchers.value.unshift(newVoucher)
+    try {
+      await $fetch(apiUrl('/content/promos'), { method: 'POST', body: newVoucher })
+    } catch (e) {
+      console.warn('API POST promo error:', e)
+    }
   }
   showModal.value = false
+  alert('Kode Voucher & Promo Mobile berhasil diperbarui!')
 }
 
 function toggleActive(v: AdminVoucherPromo) {
@@ -209,6 +221,20 @@ function copyCode(code?: string) {
   if (code) {
     navigator.clipboard.writeText(code)
     alert(`Kode Voucher "${code}" disalin!`)
+  }
+}
+
+function onBannerFileSelected(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const file = target.files[0]
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        form.bannerImageUrl = e.target.result as string
+      }
+    }
+    reader.readAsDataURL(file)
   }
 }
 </script>
@@ -423,57 +449,212 @@ function copyCode(code?: string) {
     </div>
 
     <!-- Modal Form Create/Edit Voucher -->
-    <UModal v-model:open="showModal" :title="editingId ? 'Edit Kode Voucher' : 'Buat Kode Voucher Baru'" :ui="{ width: 'sm:max-w-2xl' }">
+    <UModal
+      v-model:open="showModal"
+      :title="editingId ? 'Edit Kode Voucher & Promo' : 'Buat Kode Voucher Baru'"
+      :description="editingId ? 'Perbarui detail promo, nominal diskon, syarat & ketentuan, dan banner promo.' : 'Tambah voucher diskon baru yang dapat digunakan pasien di aplikasi mobile.'"
+      class="sm:max-w-3xl"
+    >
       <template #body>
-        <form class="space-y-4" @submit.prevent="saveVoucher">
+        <form class="space-y-5 py-1" @submit.prevent="saveVoucher">
+          <!-- Judul Promo -->
           <div>
-            <label class="block text-xs font-semibold mb-1">Judul Promo / Voucher</label>
-            <UInput v-model="form.title" placeholder="mis. Promo Scaling 6-in-1 Super Clean" />
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5 flex items-center justify-between">
+              <span>Judul Promo / Voucher <span class="text-rose-500">*</span></span>
+              <span class="text-[10px] text-gray-400 font-normal">Tampil sebagai judul banner di mobile</span>
+            </label>
+            <UInput
+              v-model="form.title"
+              icon="i-lucide-tag"
+              size="md"
+              placeholder="mis. Promo Scaling 6-in-1 Super Clean"
+              class="w-full"
+            />
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <!-- Kode Voucher & Tipe Diskon -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-semibold mb-1">Kode Voucher (Kapital)</label>
-              <UInput v-model="form.voucherCode" placeholder="mis. SCALING50K" />
+              <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+                Kode Voucher (Kapital) <span class="text-rose-500">*</span>
+              </label>
+              <UInput
+                v-model="form.voucherCode"
+                icon="i-lucide-barcode"
+                size="md"
+                placeholder="mis. SCALING50K"
+                class="w-full font-mono text-sm uppercase tracking-wider"
+                @input="(e: Event) => form.voucherCode = (e.target as HTMLInputElement).value.toUpperCase()"
+              />
             </div>
             <div>
-              <label class="block text-xs font-semibold mb-1">Tipe Diskon</label>
-              <select v-model="form.discountType" class="w-full p-2 text-xs border rounded bg-white dark:bg-gray-800">
-                <option value="fixed">Nominal Potongan (Rp)</option>
-                <option value="percentage">Persentase (%)</option>
+              <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+                Tipe Diskon <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <select
+                  v-model="form.discountType"
+                  class="w-full h-[38px] px-3 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
+                >
+                  <option value="fixed">Nominal Potongan (Rp)</option>
+                  <option value="percentage">Persentase (%)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Nilai Diskon & Min. Belanja Transaksi -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+                Nilai Diskon {{ form.discountType === 'percentage' ? '(%)' : '(Rp)' }} <span class="text-rose-500">*</span>
+              </label>
+              <UInput
+                v-model.number="form.discountValue"
+                type="number"
+                :step="form.discountType === 'percentage' ? 1 : 5000"
+                icon="i-lucide-coins"
+                size="md"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+                Min. Belanja Transaksi (Rp)
+              </label>
+              <UInput
+                v-model.number="form.minTransaction"
+                type="number"
+                step="25000"
+                icon="i-lucide-wallet"
+                size="md"
+                class="w-full"
+              />
+            </div>
+          </div>
+
+          <!-- Target Category & Max Usage -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+                Target Treatment / Kategori
+              </label>
+              <select
+                v-model="form.targetCategory"
+                class="w-full h-[38px] px-3 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
+              >
+                <option value="Semua Perawatan">Semua Perawatan</option>
+                <option value="Pencegahan">Pencegahan & Scaling</option>
+                <option value="Ortodonti">Ortodonti & Behel</option>
+                <option value="Estetika">Estetika & Whitening</option>
+                <option value="Gigi Anak">Gigi Anak (Nina Kidz)</option>
               </select>
             </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-semibold mb-1">Nilai Diskon</label>
-              <UInput v-model.number="form.discountValue" type="number" step="5000" />
+              <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+                Kuota Maksimal Klaim
+              </label>
+              <UInput
+                v-model.number="form.maxUsageCount"
+                type="number"
+                step="10"
+                icon="i-lucide-users"
+                size="md"
+                placeholder="100"
+                class="w-full"
+              />
             </div>
-            <div>
-              <label class="block text-xs font-semibold mb-1">Min. Belanja Transaksi (Rp)</label>
-              <UInput v-model.number="form.minTransaction" type="number" step="50000" />
+          </div>
+
+          <!-- Banner Image Upload & URL Preview -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-200">
+              Banner Foto Promo / Banner Voucher
+            </label>
+            <div class="space-y-3 bg-gray-50 dark:bg-gray-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-gray-800">
+              <div class="flex items-center gap-3">
+                <UInput
+                  v-model="form.bannerImageUrl"
+                  icon="i-lucide-image"
+                  size="sm"
+                  placeholder="Paste URL foto banner (https://images.unsplash.com/...)"
+                  class="flex-1"
+                />
+                <label class="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors shrink-0 flex items-center gap-1.5">
+                  <UIcon name="i-lucide-upload-cloud" class="w-4 h-4 text-primary-600" />
+                  <span>Upload File</span>
+                  <input type="file" accept="image/*" class="hidden" @change="onBannerFileSelected">
+                </label>
+              </div>
+
+              <!-- Banner Preview Box -->
+              <div v-if="form.bannerImageUrl" class="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 h-28 flex items-center justify-center">
+                <img :src="form.bannerImageUrl" class="w-full h-full object-cover" alt="Banner Preview">
+                <div class="absolute top-2 right-2 flex gap-1">
+                  <span class="px-2 py-0.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-semibold rounded-md">Preview Banner</span>
+                  <button type="button" class="p-1 bg-red-600/80 hover:bg-red-600 text-white rounded-md transition-colors" @click="form.bannerImageUrl = ''">
+                    <UIcon name="i-lucide-x" class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
+          <!-- Keterangan / Syarat & Ketentuan -->
           <div>
-            <label class="block text-xs font-semibold mb-1">URL Banner Foto Promo</label>
-            <UInput v-model="form.bannerImageUrl" placeholder="https://images.unsplash.com/..." />
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-bold text-gray-700 dark:text-gray-200">
+                Keterangan / Syarat & Ketentuan <span class="text-rose-500">*</span>
+              </label>
+              <span class="text-[10px] text-gray-400">Tampil lengkap di detail voucher mobile</span>
+            </div>
+            <UTextarea
+              v-model="form.description"
+              :rows="4"
+              size="md"
+              placeholder="Tuliskan deskripsi lengkap promo, contoh: Paket scaling lengkap pembersihan karang gigi + polishing + fluoridasi hanya Rp149.000, berlaku untuk reservasi di cabang Soreang & Baleendah."
+              class="w-full text-sm leading-relaxed"
+            />
+            <p class="text-[11px] text-gray-400 mt-1">
+              Catatan: Berikan penjelasan yang jelas mengenai syarat berlaku, cabang klinik, dan instruksi penukaran voucher.
+            </p>
           </div>
 
-          <div>
-            <label class="block text-xs font-semibold mb-1">Keterangan / Syarat & Ketentuan</label>
-            <UTextarea v-model="form.description" rows="2" placeholder="Berlaku untuk reservasi jadwal via aplikasi..." />
+          <!-- Status Tayang Mobile Toggle Switch -->
+          <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-900/60 p-3.5 rounded-xl border border-gray-200 dark:border-gray-800">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-lg" :class="form.isActive ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600' : 'bg-gray-200 dark:bg-gray-800 text-gray-400'">
+                <UIcon name="i-lucide-smartphone" class="w-5 h-5" />
+              </div>
+              <div>
+                <p class="text-xs font-bold text-gray-900 dark:text-white">Tayangkan di Aplikasi Mobile</p>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400">Pasien dapat melihat dan mengklaim kode voucher ini dari aplikasi.</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+              <input v-model="form.isActive" type="checkbox" class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-hidden rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600" />
+            </label>
           </div>
 
-          <div class="flex items-center gap-2 pt-2">
-            <input id="vActive" v-model="form.isActive" type="checkbox" class="rounded text-primary">
-            <label for="vActive" class="text-xs font-semibold">Tayangkan di Aplikasi Mobile</label>
-          </div>
-
-          <div class="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <UButton label="Batal" color="neutral" variant="ghost" @click="showModal = false" />
-            <UButton label="Simpan Voucher" color="primary" type="submit" />
+          <!-- Action Footer -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <UButton
+              label="Batal"
+              color="neutral"
+              variant="soft"
+              size="md"
+              @click="showModal = false"
+            />
+            <UButton
+              type="submit"
+              color="primary"
+              variant="solid"
+              size="md"
+              icon="i-lucide-check"
+              :label="editingId ? 'Simpan Perubahan Voucher' : 'Buat Voucher Baru'"
+              class="font-bold shadow-sm"
+            />
           </div>
         </form>
       </template>

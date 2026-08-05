@@ -46,12 +46,18 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.bgLight,
       splashFactory: InkRipple.splashFactory,
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: AppColors.textDark, fontSize: 16),
+        bodyMedium: TextStyle(color: AppColors.textDark, fontSize: 14),
+        titleLarge: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold),
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
+        titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
@@ -66,7 +72,7 @@ class AppTheme {
         backgroundColor: Colors.white,
         selectedColor: AppColors.pink,
         secondarySelectedColor: AppColors.primary,
-        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark),
         side: const BorderSide(color: Color(0xFFE2E8F0)),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
@@ -78,7 +84,7 @@ class AppTheme {
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.5),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -87,7 +93,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.5),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -96,7 +102,7 @@ class AppTheme {
           side: const BorderSide(color: AppColors.pink, width: 1.5),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.5),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -112,9 +118,11 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2.0),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        labelStyle: const TextStyle(color: AppColors.textMuted),
+        hintStyle: const TextStyle(color: AppColors.textMuted),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
@@ -126,6 +134,7 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        contentTextStyle: const TextStyle(color: Colors.white),
       ),
       dividerTheme: const DividerThemeData(color: Color(0xFFEDF2F7), space: 1),
       tabBarTheme: const TabBarThemeData(
@@ -133,8 +142,8 @@ class AppTheme {
         unselectedLabelColor: AppColors.textMuted,
         indicatorColor: AppColors.primary,
         indicatorSize: TabBarIndicatorSize.tab,
+        labelStyle: TextStyle(fontWeight: FontWeight.w600),
       ),
     );
   }
 }
-

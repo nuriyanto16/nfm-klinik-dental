@@ -96,6 +96,99 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
   }
 
+  Future<void> _handleGoogleSso() async {
+    final selected = await showModalBottomSheet<Map<String, String>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final emailCtrl = TextEditingController(text: 'pasien.baru.gso@gmail.com');
+        final nameCtrl = TextEditingController(text: 'Pasien Baru NDC');
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.g_mobiledata, color: Colors.blue, size: 28),
+                  ),
+                  const SizedBox(width: 12),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Daftar via Google SSO', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text('Gunakan Akun Gmail untuk Pendaftaran Cepat', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Text('Email Gmail Google Anda:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(
+                  hintText: 'nama.anda@gmail.com',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text('Nama Lengkap Google:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  hintText: 'Nama Lengkap',
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    if (emailCtrl.text.trim().isNotEmpty) {
+                      Navigator.pop(ctx, {
+                        'email': emailCtrl.text.trim(),
+                        'name': nameCtrl.text.trim().isEmpty ? 'Pengguna Google' : nameCtrl.text.trim()
+                      });
+                    }
+                  },
+                  style: FilledButton.styleFrom(backgroundColor: Colors.blue.shade700),
+                  child: const Text('Lanjutkan & Lengkapi Profil'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null || selected['email'] == null || selected['email']!.isEmpty) return;
+
+    final email = selected['email']!;
+    final name = selected['name'] ?? 'Pengguna Google';
+
+    if (mounted) {
+      context.push('/complete-profile?email=${Uri.encodeComponent(email)}&name=${Uri.encodeComponent(name)}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,159 +197,158 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textDark,
         elevation: 0,
-        title: const Text('Daftar', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Daftar Akun Pasien Baru', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Center(
-                  child: Text(
-                    'Daftar',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('DAFTAR DENGAN GMAIL SSO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blue.shade700)),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : _handleGoogleSso,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(color: Colors.blue.shade200),
+                      backgroundColor: Colors.blue.shade50.withValues(alpha: 0.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.g_mobiledata, color: Colors.blue, size: 28),
+                        SizedBox(width: 8),
+                        Text(
+                          'Daftar dengan Google (Gmail SSO)',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 14),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
-                const Center(
-                  child: Text(
-                    'Lengkapi data dibawah untuk membuat akun.',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('ATAU DAFTAR MANUAL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Buat Akun NDC Baru ✨',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textDark,
                   ),
                 ),
-                const SizedBox(height: 28),
-                const Text('E-mail', style: TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
+                const Text(
+                  'Silakan isi formulir di bawah ini untuk mendaftarkan akun pasien.',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                ),
+                const SizedBox(height: 24),
+                const Text('Nama Lengkap Pasien *', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _fullNameCtrl,
+                  decoration: const InputDecoration(hintText: 'Contoh: Budi Santoso'),
+                  validator: (v) => v == null || v.isEmpty ? 'Nama tidak boleh kosong' : null,
+                ),
+                const SizedBox(height: 20),
+                const Text('Email (Opsional)', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(hintText: 'sayarhungs@gmail.com'),
-                  validator: (v) => v == null || v.isEmpty ? 'E-mail wajib diisi' : null,
+                  decoration: const InputDecoration(hintText: 'budi@example.com'),
                 ),
-                const SizedBox(height: 16),
-                const Text('Nama Lengkap', style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
+                const SizedBox(height: 20),
+                const Text('Nomor Whatsapp (Aktif) *', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
                 TextFormField(
-                  controller: _fullNameCtrl,
-                  decoration: const InputDecoration(hintText: 'Nuriyanto'),
-                  validator: (v) => v == null || v.isEmpty ? 'Nama lengkap wajib diisi' : null,
+                  controller: _phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    hintText: '081234567890',
+                    errorText: _phoneValid ? null : 'Nomor WhatsApp wajib diisi',
+                  ),
+                  validator: (v) => v == null || v.isEmpty ? 'Nomor WhatsApp tidak boleh kosong' : null,
                 ),
-                const SizedBox(height: 16),
-                const Text('Jenis Kelamin', style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
+                const SizedBox(height: 20),
+                const Text('Jenis Kelamin *', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
                       child: RadioListTile<String>(
-                        title: const Text('Pria', style: TextStyle(fontWeight: FontWeight.w600)),
+                        title: const Text('Laki-Laki'),
                         value: 'male',
                         groupValue: _gender,
-                        activeColor: AppColors.primary,
                         onChanged: (v) => setState(() => _gender = v!),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
                     Expanded(
                       child: RadioListTile<String>(
-                        title: const Text('Wanita', style: TextStyle(fontWeight: FontWeight.w600)),
+                        title: const Text('Perempuan'),
                         value: 'female',
                         groupValue: _gender,
-                        activeColor: AppColors.primary,
                         onChanged: (v) => setState(() => _gender = v!),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                const Text('Tanggal Lahir', style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
+                const SizedBox(height: 20),
+                const Text('Tanggal Lahir (Opsional)', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
                 InkWell(
                   onTap: _pickDob,
-                  borderRadius: BorderRadius.circular(16),
                   child: InputDecorator(
                     decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.calendar_month, color: AppColors.textMuted),
+                      hintText: 'Pilih Tanggal Lahir',
+                      suffixIcon: Icon(Icons.calendar_today),
                     ),
                     child: Text(
-                      _dob == null
-                          ? '16 Nov 1990'
-                          : DateFormat('dd MMM yyyy', 'id_ID').format(_dob!),
-                      style: TextStyle(
-                        color: _dob == null ? AppColors.textMuted : AppColors.textDark,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      _dob != null ? DateFormat('dd MMMM yyyy', 'id_ID').format(_dob!) : 'Pilih Tanggal Lahir (opsional)',
+                      style: TextStyle(color: _dob != null ? AppColors.textDark : AppColors.textMuted),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text('Kota/Kabupaten', style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
+                const SizedBox(height: 20),
+                const Text('Kota Tempat Tinggal (Opsional)', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _cityCtrl,
-                  decoration: const InputDecoration(hintText: 'Bandung'),
+                  decoration: const InputDecoration(hintText: 'Contoh: Bandung'),
                 ),
-                const SizedBox(height: 16),
-                const Text('Nomor Whatsapp', style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _phoneCtrl,
-                  keyboardType: TextInputType.phone,
-                  onChanged: (v) {
-                    setState(() => _phoneValid = v.length >= 8);
-                  },
-                  decoration: InputDecoration(
-                    prefixIcon: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 20,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              border: Border.all(color: Colors.white, width: 0.5),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Text('+62', style: TextStyle(fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                    suffixIcon: _phoneValid && _phoneCtrl.text.isNotEmpty
-                        ? const Icon(Icons.check_circle, color: Colors.green)
-                        : null,
-                    hintText: '6287823339007',
-                  ),
-                  validator: (v) => v == null || v.isEmpty ? 'Nomor WhatsApp wajib diisi' : null,
-                ),
-                if (_phoneValid && _phoneCtrl.text.isNotEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4, left: 4),
-                    child: Text(
-                      'Nomor Whatsapp tersedia!',
-                      style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Row(
                   children: [
-                    const Text('Kode Referal ', style: TextStyle(fontWeight: FontWeight.w600)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text('Opsional', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                    const Text('Punya Kode Referal? ', style: TextStyle(fontWeight: FontWeight.w600)),
+                    Text(
+                      '(Dapatkan 50 Poin Bonus)',
+                      style: TextStyle(fontSize: 12, color: Colors.orange.shade700, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -311,3 +403,4 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     );
   }
 }
+

@@ -2,6 +2,27 @@ package content
 
 import "time"
 
+// AppVersion represents a released app build that clients can update to.
+type AppVersion struct {
+	ID           int64      `json:"id"`
+	Platform     string     `json:"platform"`     // "android" | "ios"
+	VersionName  string     `json:"versionName"`  // semver string e.g. "1.1.0"
+	VersionCode  int        `json:"versionCode"`  // monotonically increasing int
+	DownloadURL  string     `json:"downloadUrl"`  // direct APK/IPA download link
+	ReleaseNotes *string    `json:"releaseNotes"` // markdown changelog
+	IsMandatory  bool       `json:"isMandatory"`  // force update if true
+	CreatedAt    time.Time  `json:"createdAt"`
+}
+
+type AppVersionInput struct {
+	Platform     string  `json:"platform"`
+	VersionName  string  `json:"versionName"`
+	VersionCode  int     `json:"versionCode"`
+	DownloadURL  string  `json:"downloadUrl"`
+	ReleaseNotes *string `json:"releaseNotes"`
+	IsMandatory  bool    `json:"isMandatory"`
+}
+
 type ArticleCategory struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`

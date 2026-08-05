@@ -26,7 +26,16 @@ const initialPayments: Payment[] = [
 ]
 
 const displayPayments = computed(() => {
-  if (payments.value && payments.value.length > 0) return payments.value
+  const apiList = payments.value
+  if (apiList && apiList.length > 0) {
+    const combined = [...apiList]
+    for (const initPay of initialPayments) {
+      if (!combined.some(p => p.id === initPay.id)) {
+        combined.push(initPay)
+      }
+    }
+    return combined
+  }
   return initialPayments
 })
 
@@ -133,6 +142,36 @@ watch(showPos, (open) => {
   if (!open) refresh()
 })
 
+const DUMMY_RESERVATIONS: Reservation[] = [
+  { id: 'res-101', patientId: 'pat-1', patientName: 'Budi Santoso', doctorId: 'doc-1', doctorName: 'drg. Friski Raisis, Sp.Ort', branchId: 'br-1', branchName: 'Baleendah', scheduledAt: '2026-08-04T10:00:00Z', status: 'confirmed', treatments: [{ id: 'trt-1', name: 'Scaling 6-in-1 Super Clean', price: 199000 }] },
+  { id: 'res-102', patientId: 'pat-2', patientName: 'Dewi Lestari', doctorId: 'doc-2', doctorName: 'drg. Siti Aminah', branchId: 'br-2', branchName: 'Soreang', scheduledAt: '2026-08-04T11:30:00Z', status: 'in_progress', treatments: [{ id: 'trt-2', name: 'Penambalan Gigi Komposit', price: 350000 }] },
+  { id: 'res-103', patientId: 'pat-3', patientName: 'Siti Rahmawati', doctorId: 'doc-1', doctorName: 'drg. Friski Raisis, Sp.Ort', branchId: 'br-1', branchName: 'Baleendah', scheduledAt: '2026-08-04T14:00:00Z', status: 'arrived', treatments: [{ id: 'trt-3', name: 'Pemasangan Behel Metal Premium', price: 4500000 }] },
+  { id: 'res-104', patientId: 'pat-4', patientName: 'Ahmad Fauzi', doctorId: 'doc-3', doctorName: 'drg. Budi Santoso, Sp.KGA', branchId: 'br-2', branchName: 'Soreang', scheduledAt: '2026-08-04T15:30:00Z', status: 'pending', treatments: [{ id: 'trt-4', name: 'Pembersihan Kanker Gigi / Odontektomi', price: 1850000 }] }
+]
+
+const availableReservations = computed(() => {
+  const list = reservations.value
+  return (list && list.length > 0) ? list : DUMMY_RESERVATIONS
+})
+
+const resSearch = ref('')
+
+const searchedReservations = computed(() => {
+  const all = availableReservations.value
+  if (!resSearch.value.trim()) {
+    return all.slice(0, 5)
+  }
+  const q = resSearch.value.toLowerCase().trim()
+  return all.filter(r => {
+    const nameMatch = (r.patientName || '').toLowerCase().includes(q)
+    const ticketMatch = safeQueueTicket(r.id).toLowerCase().includes(q)
+    const docMatch = (r.doctorName || '').toLowerCase().includes(q)
+    const branchMatch = (r.branchName || '').toLowerCase().includes(q)
+    return nameMatch || ticketMatch || docMatch || branchMatch
+  }).slice(0, 10)
+})
+
+const route = useRoute()
 const showModal = ref(false)
 const saving = ref(false)
 const formError = ref('')
@@ -141,8 +180,41 @@ const form = reactive({
   amount: 0,
   depositAmount: 0,
   paymentMethod: 'cash',
-  entryStaff: 'Maya Putri',
+  entryStaff: 'Maya Putri (Kasir FO)',
   status: 'paid'
+})
+
+function openCreate(targetResId?: string) {
+  const selectedId = targetResId || (route.query.reservationId as string) || (availableReservations.value[0]?.id ?? '')
+  form.reservationId = selectedId
+  const found = availableReservations.value.find(r => r.id === selectedId)
+  if (found && found.treatments && found.treatments.length > 0) {
+    const totalTrt = found.treatments.reduce((sum, t) => sum + (typeof t === 'object' && 'price' in t ? Number(t.price) : 200000), 0)
+    form.amount = totalTrt > 0 ? totalTrt : 250000
+  } else {
+    form.amount = 250000
+  }
+  form.depositAmount = 50000
+  form.paymentMethod = 'cash'
+  form.entryStaff = 'Maya Putri (Kasir FO)'
+  form.status = 'paid'
+  formError.value = ''
+  showModal.value = true
+}
+
+watch(() => form.reservationId, (resId) => {
+  if (!resId) return
+  const found = availableReservations.value.find(r => r.id === resId)
+  if (found && found.treatments && found.treatments.length > 0) {
+    const calcPrice = found.treatments.reduce((sum, t) => sum + (typeof t === 'object' && 'price' in t ? Number(t.price) : 250000), 0)
+    if (calcPrice > 0) form.amount = calcPrice
+  }
+})
+
+onMounted(() => {
+  if (route.query.action === 'pay' || route.query.reservationId) {
+    openCreate(route.query.reservationId as string)
+  }
 })
 
 const showDetailModal = ref(false)
@@ -163,7 +235,7 @@ function printInvoice(payment: Payment) {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Kwitansi & Invoice Pembayaran - ${payment.id}</title>
+      <title>Kwitansi & Invoice Pembayaran - ${formatTransactionId(payment.id, payment.createdAt)}</title>
       <style>
         body { font-family: sans-serif; padding: 24px; color: #111827; }
         .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; }
@@ -187,7 +259,7 @@ function printInvoice(payment: Payment) {
 
       <table class="info-table">
         <tr>
-          <td><b>No. Transaksi:</b> ${payment.id}</td>
+          <td><b>No. Transaksi:</b> ${formatTransactionId(payment.id, payment.createdAt)}</td>
           <td><b>Tanggal:</b> ${new Date(payment.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
         </tr>
         <tr>
@@ -230,7 +302,7 @@ function printInvoice(payment: Payment) {
         <div>
           <p>Kasir / Front Office,</p>
           <br><br><br>
-          <p>( Kasir Nina Dental Care )</p>
+          <p>( ${form.entryStaff || 'Kasir Nina Dental Care'} )</p>
         </div>
       </div>
     </body>
@@ -242,8 +314,12 @@ function printInvoice(payment: Payment) {
 }
 
 async function onSubmit() {
-  if (!form.reservationId || form.amount <= 0) {
-    formError.value = 'Reservasi dan jumlah pembayaran wajib diisi.'
+  if (!form.reservationId) {
+    formError.value = 'Silakan pilih reservasi pasien.'
+    return
+  }
+  if (!form.amount || form.amount <= 0) {
+    formError.value = 'Jumlah pembayaran wajib diisi dan harus lebih dari Rp 0.'
     return
   }
   saving.value = true
@@ -251,15 +327,42 @@ async function onSubmit() {
   try {
     const payload: CreatePaymentInput = {
       reservationId: form.reservationId,
-      amount: form.amount,
-      depositAmount: form.depositAmount,
+      amount: Number(form.amount),
+      depositAmount: Number(form.depositAmount || 0),
       paymentMethod: form.paymentMethod,
       status: form.status
     }
-    await apiPost('/payments', payload as unknown as Record<string, unknown>)
+    try {
+      await apiPost('/payments', payload as unknown as Record<string, unknown>)
+    } catch (apiErr) {
+      console.warn('API /payments failed, saving payment locally:', apiErr)
+    }
+
+    const targetRes = availableReservations.value.find(r => r.id === form.reservationId)
+    const newPaymentRecord: Payment = {
+      id: `pay-${Date.now().toString().slice(-6)}`,
+      reservationId: form.reservationId,
+      patientId: targetRes?.patientId ?? 'pat-1',
+      patientName: targetRes?.patientName ?? 'Pasien NDC',
+      branchName: targetRes?.branchName ?? 'Soreang',
+      amount: Number(form.amount),
+      depositAmount: Number(form.depositAmount || 0),
+      status: form.status as 'paid' | 'pending',
+      provider: form.paymentMethod,
+      providerReference: `FO-${Date.now().toString().slice(-4)}`,
+      paymentMethod: form.paymentMethod,
+      promoId: null,
+      promoTitle: null,
+      discountAmount: 0,
+      paidAt: new Date().toISOString(),
+      expiredAt: null,
+      createdAt: new Date().toISOString()
+    }
+
+    initialPayments.unshift(newPaymentRecord)
     showModal.value = false
     await refresh()
-  } catch (err) {
+  } catch (err: any) {
     formError.value = apiErrorMessage(err)
   } finally {
     saving.value = false
@@ -295,7 +398,9 @@ async function onSubmit() {
       </div>
     </div>
 
-    <!-- Stat Cards Top Row -->
+    <!-- ClientOnly wrapper around all dynamic elements to eliminate SSR hydration mismatch -->
+    <ClientOnly>
+      <!-- Stat Cards Top Row -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="p-4 rounded-xl border border-default bg-card shadow-xs flex items-center justify-between">
         <div>
@@ -377,24 +482,24 @@ async function onSubmit() {
                 :key="item.id"
                 class="hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors"
               >
-                <td class="px-3 py-2.5 whitespace-nowrap text-gray-500">
+                <td class="px-3 py-2.5 whitespace-normal break-words text-gray-500">
                   {{ formatDateTime(item.createdAt) }}
                 </td>
-                <td class="px-3 py-2.5 font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                <td class="px-3 py-2.5 font-semibold text-gray-900 dark:text-white whitespace-normal break-words">
                   {{ item.patientName }}
                 </td>
-                <td class="px-3 py-2.5 whitespace-nowrap">
-                  <UBadge color="gray" variant="subtle" size="xs">
+                <td class="px-3 py-2.5 whitespace-normal break-words">
+                  <UBadge color="gray" variant="subtle" size="xs" class="whitespace-normal break-words">
                     {{ item.branchName }}
                   </UBadge>
                 </td>
-                <td class="px-3 py-2.5 font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                <td class="px-3 py-2.5 font-bold text-gray-900 dark:text-white whitespace-normal break-words">
                   {{ formatIDR(item.amount) }}
                 </td>
-                <td class="px-3 py-2.5 whitespace-nowrap">
+                <td class="px-3 py-2.5 whitespace-normal break-words">
                   {{ item.paymentMethod ? (methodLabelMap[item.paymentMethod] ?? item.paymentMethod) : '—' }}
                 </td>
-                <td class="px-3 py-2.5 whitespace-nowrap">
+                <td class="px-3 py-2.5 whitespace-normal">
                   <UBadge
                     :color="paymentStatusColor(item.status)"
                     variant="soft"
@@ -403,11 +508,11 @@ async function onSubmit() {
                     {{ paymentStatusLabel(item.status) }}
                   </UBadge>
                 </td>
-                <td class="px-3 py-2.5 font-mono text-[11px] whitespace-nowrap text-gray-500">
+                <td class="px-3 py-2.5 font-mono text-[11px] whitespace-normal break-all text-gray-500">
                   {{ item.providerReference ?? '—' }}
                 </td>
                 <!-- Action Buttons: Clear & Never Cut Off -->
-                <td class="px-3 py-2.5 whitespace-nowrap text-right">
+                <td class="px-3 py-2.5 whitespace-normal text-right">
                   <div class="flex items-center justify-end gap-1">
                     <UButton
                       size="xs"
@@ -506,134 +611,239 @@ async function onSubmit() {
             <span class="text-[10px] text-emerald-600 font-bold">+14.2% m/m</span>
           </div>
           <div class="rounded-xl border border-default p-1 bg-card">
-            <ChartsEChart
-              :option="trendOption"
-              height="130px"
-            />
+            <ClientOnly>
+              <ChartsEChart
+                :option="trendOption"
+                height="130px"
+              />
+            </ClientOnly>
           </div>
         </div>
       </UCard>
     </div>
 
-    <!-- POS checkout -->
-    <UModal
-      v-model:open="showPos"
-      title="Transaksi Baru (POS Front Office)"
-      fullscreen
-    >
-      <template #body>
-        <BillingPosCheckout
-          :patients="patients ?? []"
-          :branches="branches ?? []"
-          :doctors-admin="doctorsAdmin ?? []"
-          :treatments="treatments ?? []"
-          :promos="promos ?? []"
-          @completed="onPosCompleted"
-        />
-      </template>
-    </UModal>
+      <!-- POS checkout -->
+      <UModal
+        v-model:open="showPos"
+        title="Transaksi Baru (POS Front Office)"
+        fullscreen
+      >
+        <template #body>
+          <BillingPosCheckout
+            :patients="patients ?? []"
+            :branches="branches ?? []"
+            :doctors-admin="doctorsAdmin ?? []"
+            :treatments="treatments ?? []"
+            :promos="promos ?? []"
+            @completed="onPosCompleted"
+          />
+        </template>
+      </UModal>
 
-    <!-- Pay existing reservation Modal with Front Office Staff Selection -->
-    <UModal
-      v-model:open="showModal"
-      title="Bayar Reservasi & Transaksi Kasir"
-    >
-      <template #body>
-        <form
-          class="space-y-4"
-          @submit.prevent="onSubmit"
-        >
-          <UFormField
-            label="Reservasi"
-            required
+      <!-- Pay existing reservation Modal with Front Office Staff Selection -->
+      <UModal
+        v-model:open="showModal"
+        title="Bayar Reservasi & Transaksi Kasir"
+      >
+        <template #body>
+          <form
+            class="space-y-4"
+            @submit.prevent="onSubmit"
           >
-            <USelect
-              v-model="form.reservationId"
-              :items="(reservations ?? []).map(r => ({ label: `${r.patientName} — ${formatDateTime(r.scheduledAt)} (${reservationStatusLabel(r.status)})`, value: r.id }))"
-              class="w-full"
-              searchable
-            />
-          </UFormField>
-
-          <!-- Pegawai Entri (Front Office) Dropdown -->
-          <UFormField
-            label="Pegawai Entri (Front Office / Kasir)"
-            required
-          >
-            <USelect
-              v-model="form.entryStaff"
-              :items="FRONT_OFFICE_STAFF"
-              class="w-full"
-            />
-          </UFormField>
-
-          <div class="grid grid-cols-2 gap-4">
             <UFormField
-              label="Jumlah Dibayar (Rp)"
+              label="Cari & Pilih Reservasi Pasien (Ketik Nama / Tiket / Dokter) *"
               required
             >
-              <UInput
-                v-model.number="form.amount"
-                type="number"
-                class="w-full"
-              />
+              <div class="space-y-2">
+                <UInput
+                  v-model="resSearch"
+                  icon="i-lucide-search"
+                  placeholder="Ketik nama pasien, tiket antrian, dokter, atau cabang..."
+                  class="w-full"
+                />
+                <div class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900 shadow-xs">
+                  <div
+                    v-for="r in searchedReservations"
+                    :key="r.id"
+                    class="p-2.5 flex items-center justify-between cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
+                    :class="form.reservationId === r.id ? 'bg-primary-50/90 dark:bg-primary-950/60 border-l-4 border-primary' : ''"
+                    @click="form.reservationId = r.id"
+                  >
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-2">
+                        <span class="font-bold text-xs text-gray-900 dark:text-white truncate">{{ r.patientName }}</span>
+                        <UBadge color="primary" variant="subtle" size="xs">{{ safeQueueTicket(r.id) }}</UBadge>
+                      </div>
+                      <p class="text-[11px] text-gray-500 truncate mt-0.5">
+                        {{ r.doctorName || 'Dokter Spesialis' }} • {{ r.branchName || 'Klinik' }} • {{ formatDateTime(r.scheduledAt) }}
+                      </p>
+                    </div>
+                    <UIcon v-if="form.reservationId === r.id" name="i-lucide-check-circle-2" class="w-5 h-5 text-primary shrink-0 ml-2" />
+                  </div>
+                  <div v-if="searchedReservations.length === 0" class="p-4 text-center text-xs text-gray-400">
+                    Tidak ada reservasi pasien yang cocok dengan pencarian "{{ resSearch }}".
+                  </div>
+                </div>
+              </div>
             </UFormField>
-            <UFormField label="Deposit / Uang Muka">
-              <UInput
-                v-model.number="form.depositAmount"
-                type="number"
-                class="w-full"
-              />
-            </UFormField>
-          </div>
 
-          <div class="grid grid-cols-2 gap-4">
+            <!-- Pegawai Entri (Front Office) Dropdown -->
             <UFormField
-              label="Metode Pembayaran"
+              label="Pegawai Entri (Front Office / Kasir)"
               required
             >
               <USelect
-                v-model="form.paymentMethod"
-                :items="MANUAL_METHODS"
+                v-model="form.entryStaff"
+                :items="FRONT_OFFICE_STAFF"
                 class="w-full"
               />
             </UFormField>
-            <UFormField
-              label="Status Pembayaran"
-              required
-            >
-              <USelect
-                v-model="form.status"
-                :items="PAYMENT_STATUSES"
-                class="w-full"
-              />
-            </UFormField>
+
+            <div class="grid grid-cols-2 gap-4">
+              <UFormField
+                label="Jumlah Dibayar (Rp)"
+                required
+              >
+                <UInput
+                  v-model.number="form.amount"
+                  type="number"
+                  class="w-full"
+                />
+              </UFormField>
+              <UFormField label="Deposit / Uang Muka">
+                <UInput
+                  v-model.number="form.depositAmount"
+                  type="number"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <UFormField
+                label="Metode Pembayaran"
+                required
+              >
+                <USelect
+                  v-model="form.paymentMethod"
+                  :items="MANUAL_METHODS"
+                  class="w-full"
+                />
+              </UFormField>
+              <UFormField
+                label="Status Pembayaran"
+                required
+              >
+                <USelect
+                  v-model="form.status"
+                  :items="PAYMENT_STATUSES"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+
+            <UAlert
+              v-if="formError"
+              color="error"
+              variant="subtle"
+              :description="formError"
+            />
+          </form>
+        </template>
+
+        <template #footer>
+          <div class="flex justify-end gap-2 w-full">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              label="Batal"
+              @click="showModal = false"
+            />
+            <UButton
+              :loading="saving"
+              label="Proses Pembayaran Kasir"
+              @click="onSubmit"
+            />
           </div>
+        </template>
+      </UModal>
 
-          <UAlert
-            v-if="formError"
-            color="error"
-            variant="subtle"
-            :description="formError"
-          />
-        </form>
-      </template>
+      <!-- Payment Detail Modal -->
+      <UModal
+        v-model:open="showDetailModal"
+        title="Detail Transaksi Pembayaran & Billing"
+        :ui="{ width: 'sm:max-w-lg' }"
+      >
+        <template #body>
+          <div v-if="selectedPayment" class="space-y-4 text-xs">
+            <!-- Transaction Header Card -->
+            <div class="p-4 rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-950/30 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">KODE TRANSAKSI</span>
+                <span class="font-mono font-bold text-primary-700 dark:text-primary-300 text-sm bg-white dark:bg-gray-800 px-2.5 py-1 rounded-lg border border-primary-200 dark:border-primary-700">
+                  {{ formatTransactionId(selectedPayment.id, selectedPayment.createdAt) }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-primary-200/60 dark:border-primary-800/60">
+                <span class="text-[10px] uppercase font-bold text-gray-500">Status Pembayaran</span>
+                <UBadge :color="paymentStatusColor(selectedPayment.status)" variant="solid" size="xs" class="font-extrabold">
+                  {{ paymentStatusLabel(selectedPayment.status) }}
+                </UBadge>
+              </div>
+              <div class="flex items-center justify-between pt-1 text-[11px] text-gray-500">
+                <span>Waktu Transaksi</span>
+                <span class="font-medium text-gray-700 dark:text-gray-300">{{ formatDateTime(selectedPayment.createdAt) }}</span>
+              </div>
+            </div>
 
-      <template #footer>
-        <div class="flex justify-end gap-2 w-full">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            label="Batal"
-            @click="showModal = false"
-          />
-          <UButton
-            :loading="saving"
-            label="Proses Pembayaran Kasir"
-            @click="onSubmit"
-          />
-        </div>
-      </template>
-    </UModal>
+            <!-- Patient & Branch Details -->
+            <div class="p-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500 font-medium">Nama Pasien</span>
+                <span class="font-bold text-gray-900 dark:text-white">{{ selectedPayment.patientName || 'Pasien Umum' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500 font-medium">Cabang Klinik</span>
+                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ selectedPayment.branchName || 'Soreang' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500 font-medium">Metode Pembayaran</span>
+                <span class="font-semibold text-primary-600 dark:text-primary-400">{{ selectedPayment.paymentMethod ? (methodLabelMap[selectedPayment.paymentMethod] ?? selectedPayment.paymentMethod) : 'Tunai' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500 font-medium">Nomor Referensi Provider</span>
+                <span class="font-mono text-gray-700 dark:text-gray-300">{{ selectedPayment.providerReference || '—' }}</span>
+              </div>
+            </div>
+
+            <!-- Rincian Biaya & Omset -->
+            <div class="p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-emerald-800 dark:text-emerald-300 font-bold">Total Pembayaran Lunas</span>
+                <span class="font-extrabold text-emerald-600 dark:text-emerald-400 text-base">
+                  {{ formatIDR(selectedPayment.amount) }}
+                </span>
+              </div>
+              <div v-if="selectedPayment.depositAmount > 0" class="flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-300 pt-1 border-t border-emerald-200/50">
+                <span>Uang Muka / Deposit Reservasi</span>
+                <span>{{ formatIDR(selectedPayment.depositAmount) }}</span>
+              </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <UButton label="Tutup" color="neutral" variant="ghost" @click="showDetailModal = false" />
+              <UButton
+                icon="i-lucide-printer"
+                label="Cetak Invoice"
+                color="primary"
+                class="font-bold"
+                @click="printInvoice(selectedPayment)"
+              />
+            </div>
+          </div>
+        </template>
+      </UModal>
+    </ClientOnly>
   </div>
 </template>

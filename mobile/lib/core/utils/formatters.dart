@@ -52,3 +52,16 @@ String paymentStatusLabel(String status) {
       return status;
   }
 }
+
+String formatTransactionId(String? id, [DateTime? createdAt]) {
+  if (id == null || id.isEmpty) return 'TRX-00000000-0000';
+  if (id.startsWith('TRX-') || id.startsWith('INV-')) return id;
+  final date = createdAt ?? DateTime.now();
+  final year = date.year.toString();
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  final clean = id.replaceAll('-', '').toUpperCase();
+  final shortCode = clean.length >= 6 ? clean.substring(clean.length - 6) : clean.padLeft(6, '0');
+  return 'TRX-$year$month$day-$shortCode';
+}
+

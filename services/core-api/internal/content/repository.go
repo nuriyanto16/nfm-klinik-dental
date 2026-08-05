@@ -255,3 +255,85 @@ func (r *Repository) DeleteVideo(ctx context.Context, id string) error {
 	_, err := r.pool.Exec(ctx, `DELETE FROM content.videos WHERE id = $1`, id)
 	return err
 }
+
+// --- App versions (in-app update control) ---
+
+// GetLatestAppVersion returns the highest version_code record for the given platform.
+// Returns dberr.ErrNotFound if no version has been published yet.
+func (r *Repository) GetLatestAppVersion(ctx context.Context, platform string) (AppVersion, error) {
+	if platform == "" {
+		platform = "android"
+	}
+	var v AppVersion
+	err := r.pool.QueryRow(ctx, `
+		SELECT id, platform, version_name, version_code, download_url,
+		       release_notes, is_mandatory, created_at
+		FROM content.app_versions
+		WHERE platform = $1
+		ORDER BY version_code DESC
+		LIMIT 1
+	`, platform).Scan(
+		&v.ID, &v.Platform, &v.VersionName, &v.VersionCode,
+		&v.DownloadURL, &v.ReleaseNotes, &v.IsMandatory, &v.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return AppVersion{}, dberr.ErrNotFound
+		}
+		return AppVersion{}, err
+	}
+	return v, nil
+}
+
+// ListAppVersions returns all app versions for a platform ordered by version_code DESC.
+func (r *Repository) ListAppVersions(ctx context.Context, platform string) ([]AppVersion, error) {
+	if platform == "" {
+		platform = "android"
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, platform, version_name, version_code, download_url,
+		       release_notes, is_mandatory, created_at
+		FROM content.app_versions
+		WHERE platform = $1
+		ORDER BY version_code DESC
+	`, platform)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	versions := []AppVersion{}
+	for rows.Next() {
+		var v AppVersion
+		if err := rows.Scan(
+			&v.ID, &v.Platform, &v.VersionName, &v.VersionCode,
+			&v.DownloadURL, &v.ReleaseNotes, &v.IsMandatory, &v.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		versions = append(versions, v)
+	}
+	return versions, rows.Err()
+}
+
+// CreateAppVersion inserts a new app version record.
+func (r *Repository) CreateAppVersion(ctx context.Context, in AppVersionInput) (AppVersion, error) {
+	if in.Platform == "" {
+		in.Platform = "android"
+	}
+	var v AppVersion
+	err := r.pool.QueryRow(ctx, `
+		INSERT INTO content.app_versions
+		    (platform, version_name, version_code, download_url, release_notes, is_mandatory)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, platform, version_name, version_code, download_url,
+		          release_notes, is_mandatory, created_at
+	`,
+		in.Platform, in.VersionName, in.VersionCode, in.DownloadURL,
+		in.ReleaseNotes, in.IsMandatory,
+	).Scan(
+		&v.ID, &v.Platform, &v.VersionName, &v.VersionCode,
+		&v.DownloadURL, &v.ReleaseNotes, &v.IsMandatory, &v.CreatedAt,
+	)
+	return v, err
+}
+

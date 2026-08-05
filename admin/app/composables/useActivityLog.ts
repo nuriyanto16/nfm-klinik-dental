@@ -146,6 +146,14 @@ const initialLogs: ActivityLog[] = [
 export function useActivityLog() {
   const logsState = useState<ActivityLog[]>('activity-logs-store', () => initialLogs)
 
+  // Fetch real-time logs from backend API
+  const { data: apiLogs, refresh } = useApiFetch<ActivityLog[]>('/activity-logs')
+  watch(apiLogs, (val) => {
+    if (val && Array.isArray(val) && val.length > 0) {
+      logsState.value = val
+    }
+  }, { immediate: true })
+
   // Reactive filters
   const scopeFilter = ref<'all' | ActivityScope>('all')
   const categoryFilter = ref<'all' | ActivityCategory>('all')
@@ -166,11 +174,11 @@ export function useActivityLog() {
       // Search query match
       if (searchQuery.value.trim()) {
         const q = searchQuery.value.toLowerCase().trim()
-        const matchUser = log.userName.toLowerCase().includes(q)
+        const matchUser = (log.userName || '').toLowerCase().includes(q)
         const matchEmail = (log.userEmail || '').toLowerCase().includes(q)
-        const matchDesc = log.description.toLowerCase().includes(q)
-        const matchAction = log.action.toLowerCase().includes(q)
-        const matchIp = log.ipAddress.toLowerCase().includes(q)
+        const matchDesc = (log.description || '').toLowerCase().includes(q)
+        const matchAction = (log.action || '').toLowerCase().includes(q)
+        const matchIp = (log.ipAddress || '').toLowerCase().includes(q)
         return matchUser || matchEmail || matchDesc || matchAction || matchIp
       }
 
@@ -194,13 +202,19 @@ export function useActivityLog() {
     return { total, adminCount, mobileCount, securityCount }
   })
 
-  function addLog(log: Omit<ActivityLog, 'id' | 'createdAt'>) {
+  async function addLog(log: Omit<ActivityLog, 'id' | 'createdAt'>) {
     const newLog: ActivityLog = {
       ...log,
       id: `log-${Date.now()}`,
       createdAt: new Date().toISOString()
     }
     logsState.value.unshift(newLog)
+    try {
+      await apiPost('/activity-logs', log as unknown as Record<string, unknown>)
+      await refresh()
+    } catch (_) {
+      // keep local fallback
+    }
   }
 
   function clearLogs() {
@@ -219,6 +233,7 @@ export function useActivityLog() {
     pageSize,
     totalPages,
     addLog,
-    clearLogs
+    clearLogs,
+    refresh
   }
 }

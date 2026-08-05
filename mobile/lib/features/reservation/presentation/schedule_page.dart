@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/skeleton_loader.dart';
 import '../../patient/application/session_controller.dart';
 import '../data/reservation_model.dart';
@@ -262,17 +263,22 @@ class _ReservationCard extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _showDetail(context),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -330,9 +336,30 @@ class _ReservationCard extends StatelessWidget {
                         ],
                       ),
                       const Divider(height: 20),
-                      Text(
-                        formattedDate,
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0284C7).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.3)),
+                            ),
+                            child: Text(
+                              'Tiket: ${reservation.queueTicketNumber}',
+                              style: const TextStyle(
+                                color: Color(0xFF0284C7),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            formattedDate,
+                            style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -345,6 +372,88 @@ class _ReservationCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    ),
+  ),
+);
+  }
+
+  void _showDetail(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Detail Tiket Reservasi',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0284C7).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF0284C7).withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    'Tiket: ${reservation.queueTicketNumber}',
+                    style: const TextStyle(color: Color(0xFF0284C7), fontWeight: FontWeight.w800, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            _DetailRow(icon: Icons.person_outline, label: 'Nama Pasien', value: reservation.patientName ?? 'Pasien NDC'),
+            const SizedBox(height: 10),
+            _DetailRow(icon: Icons.badge_outlined, label: 'Dokter Spesialis', value: reservation.doctorName),
+            const SizedBox(height: 10),
+            _DetailRow(icon: Icons.storefront_outlined, label: 'Cabang Klinik', value: reservation.branchName),
+            const SizedBox(height: 10),
+            _DetailRow(icon: Icons.event_outlined, label: 'Jadwal Periksa', value: formatDateTime(reservation.scheduledAt)),
+            const SizedBox(height: 10),
+            _DetailRow(icon: Icons.cleaning_services_outlined, label: 'Perawatan Gigi', value: reservation.treatments.isNotEmpty ? reservation.treatments : 'Konsultasi & Pemeriksaan Gigi'),
+            const SizedBox(height: 10),
+            _DetailRow(icon: Icons.check_circle_outline, label: 'Status Antrian', value: _statusLabel(reservation.status)),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.check),
+                label: const Text('Tutup Detail'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0284C7),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -363,5 +472,30 @@ class _ReservationCard extends StatelessWidget {
       default:
         return status.toUpperCase();
     }
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.icon, required this.label, required this.value});
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.grey.shade600),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 110,
+          child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        ),
+        Expanded(
+          child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
   }
 }

@@ -51,6 +51,15 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Delete("/notifications/templates/:id", h.deleteNotificationTemplate)
 	router.Get("/notifications/logs", h.listNotificationLogs)
 	router.Post("/notifications/send", h.sendNotification)
+
+	// App version check — public, no auth required (mobile app calls this on startup)
+	router.Get("/app/version", h.getLatestAppVersion)
+}
+
+// RegisterAppAdminRoutes registers admin-only version management endpoints.
+func (h *Handler) RegisterAppAdminRoutes(admin fiber.Router) {
+	admin.Get("/app/versions", h.listAppVersions)
+	admin.Post("/app/versions", h.createAppVersion)
 }
 
 func (h *Handler) listNotificationTemplates(c *fiber.Ctx) error {
@@ -309,4 +318,46 @@ func (h *Handler) deleteVideo(c *fiber.Ctx) error {
 		return apperr.Internal(c, err)
 	}
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// --- App Version handlers ---
+
+// getLatestAppVersion returns the latest released version for the requested platform.
+// Query param: platform=android (default) | ios
+// This endpoint is public — called by the Flutter app on startup without auth.
+func (h *Handler) getLatestAppVersion(c *fiber.Ctx) error {
+	platform := c.Query("platform", "android")
+	v, err := h.repo.GetLatestAppVersion(c.Context(), platform)
+	if err != nil {
+		// No version published yet — return 404 so the client knows there's nothing to compare.
+		return fiber.NewError(fiber.StatusNotFound, "no app version published yet")
+	}
+	return c.JSON(v)
+}
+
+// listAppVersions returns all recorded versions for a platform (admin use).
+func (h *Handler) listAppVersions(c *fiber.Ctx) error {
+	platform := c.Query("platform", "android")
+	versions, err := h.repo.ListAppVersions(c.Context(), platform)
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.JSON(versions)
+}
+
+// createAppVersion publishes a new app version (admin only).
+// Body: { platform, versionName, versionCode, downloadUrl, releaseNotes, isMandatory }
+func (h *Handler) createAppVersion(c *fiber.Ctx) error {
+	var in AppVersionInput
+	if err := c.BodyParser(&in); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if in.VersionName == "" || in.VersionCode <= 0 || in.DownloadURL == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "versionName, versionCode, and downloadUrl are required")
+	}
+	v, err := h.repo.CreateAppVersion(c.Context(), in)
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.Status(fiber.StatusCreated).JSON(v)
 }

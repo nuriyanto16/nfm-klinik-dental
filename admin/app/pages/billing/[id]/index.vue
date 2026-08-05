@@ -180,7 +180,7 @@ const methodLabel: Record<string, string> = {
             Detail Transaksi Pembayaran
           </h1>
           <p class="text-xs font-mono text-gray-500 mt-0.5">
-            ID Invoice: {{ displayInvoice.payment.id }}
+            Nomor Transaksi: {{ formatTransactionId(displayInvoice.payment.id, displayInvoice.payment.createdAt) }}
           </p>
         </div>
       </div>

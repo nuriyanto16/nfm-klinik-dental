@@ -80,6 +80,7 @@ func (r *Repository) GetPayment(ctx context.Context, id string) (Payment, error)
 		method := "bank_transfer_bca"
 		return Payment{
 			ID:                id,
+			TransactionNumber: FormatTransactionNumber(id, now),
 			ReservationID:     "res-1",
 			PatientID:         "pat-1",
 			Amount:            199000,
@@ -95,6 +96,7 @@ func (r *Repository) GetPayment(ctx context.Context, id string) (Payment, error)
 			BranchName:        "Nina Dental Care - Soreang",
 		}, nil
 	}
+	p.TransactionNumber = FormatTransactionNumber(p.ID, p.CreatedAt)
 	return p, nil
 }
 

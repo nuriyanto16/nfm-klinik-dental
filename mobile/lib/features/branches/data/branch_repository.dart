@@ -6,8 +6,8 @@ import 'branch_model.dart';
 
 final List<Branch> _fallbackBranches = [
   const Branch(
-    id: '11000000-0000-0000-0000-000000000001',
-    name: 'Klinik Soreang Utama',
+    id: '10000000-0000-0000-0000-000000000001',
+    name: 'Nina Dental Care - Soreang',
     slug: 'soreang',
     city: 'Kab. Bandung',
     address: 'Jl. Raya Soreang No. 88, Soreang, Kab. Bandung',
@@ -17,8 +17,8 @@ final List<Branch> _fallbackBranches = [
     isActive: true,
   ),
   const Branch(
-    id: '11000000-0000-0000-0000-000000000002',
-    name: 'Klinik Baleendah',
+    id: '10000000-0000-0000-0000-000000000002',
+    name: 'Nina Dental Care - Baleendah',
     slug: 'baleendah',
     city: 'Kab. Bandung',
     address: 'Jl. Raya Baleendah No. 45, Baleendah, Kab. Bandung',

@@ -50,6 +50,159 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
   }
 
+  Future<void> _handleGoogleSso() async {
+    final selected = await showModalBottomSheet<Map<String, String>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final emailCtrl = TextEditingController();
+        final nameCtrl = TextEditingController();
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.g_mobiledata, color: Colors.blue, size: 28),
+                      ),
+                      const SizedBox(width: 12),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Google Sign-In (Gmail SSO)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          Text('Pilih Akun Gmail atau Masukkan Email', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const CircleAvatar(
+                      backgroundColor: Colors.blueAccent,
+                      child: Text('BS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                    title: const Text('Budi Santoso', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('budi.santoso@example.com (Terdaftar)', style: TextStyle(fontSize: 12, color: Colors.green)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                    onTap: () => Navigator.pop(ctx, {'email': 'budi.santoso@example.com', 'name': 'Budi Santoso'}),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const CircleAvatar(
+                      backgroundColor: Colors.pinkAccent,
+                      child: Text('ND', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                    title: const Text('Akun Gmail Baru', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: const Text('pasien.baru.gso@gmail.com (Belum Terdaftar)', style: TextStyle(fontSize: 12, color: Colors.orange)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                    onTap: () => Navigator.pop(ctx, {'email': 'pasien.baru.gso@gmail.com', 'name': 'Pasien Baru NDC'}),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Atau Masukkan Email Gmail Lain:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: emailCtrl,
+                    decoration: const InputDecoration(
+                      hintText: 'nama.anda@gmail.com',
+                      isDense: true,
+                      prefixIcon: Icon(Icons.email_outlined, size: 18),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(
+                      hintText: 'Nama Lengkap Google',
+                      isDense: true,
+                      prefixIcon: Icon(Icons.person_outline, size: 18),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (emailCtrl.text.trim().isNotEmpty) {
+                          Navigator.pop(ctx, {
+                            'email': emailCtrl.text.trim(),
+                            'name': nameCtrl.text.trim().isEmpty ? 'Pengguna Google' : nameCtrl.text.trim()
+                          });
+                        }
+                      },
+                      child: const Text('Lanjutkan SSO Google'),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    if (selected == null || selected['email'] == null || selected['email']!.isEmpty) return;
+
+    final email = selected['email']!;
+    final name = selected['name'] ?? 'Pengguna Google';
+
+    setState(() => _isLoading = true);
+
+    try {
+      final res = await ref.read(sessionControllerProvider.notifier).handleGoogleSso(
+        email: email,
+        displayName: name,
+      );
+
+      if (!mounted) return;
+
+      if (!res.isNewUser) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login Gmail SSO Berhasil! Selamat datang, ${res.displayName}.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.go('/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Akun Gmail belum terdaftar. Silakan lengkapi profil Anda terlebih dahulu.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        context.push('/complete-profile?email=${Uri.encodeComponent(email)}&name=${Uri.encodeComponent(name)}');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal SSO Google: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,6 +276,40 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         : const Text('Login'),
                   ),
                 ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('ATAU MASUK DENGAN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : _handleGoogleSso,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(color: Colors.grey.shade300),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.g_mobiledata, color: Colors.red, size: 28),
+                        SizedBox(width: 8),
+                        Text(
+                          'Masuk dengan Google (Gmail SSO)',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -145,3 +332,4 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 }
+

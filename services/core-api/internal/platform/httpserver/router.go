@@ -64,6 +64,7 @@ func New(deps Dependencies) *fiber.App {
 
 	contentHandler := content.NewHandler(content.NewRepository(deps.DB))
 	contentHandler.RegisterRoutes(api)
+	contentHandler.RegisterAppAdminRoutes(api.Group("/admin"))
 
 	activityLogHandler := activitylog.NewHandler()
 	activityLogHandler.RegisterRoutes(api)

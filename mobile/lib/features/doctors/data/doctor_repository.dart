@@ -7,20 +7,26 @@ import 'doctor_model.dart';
 final List<Doctor> _fallbackDoctors = [
   const Doctor(
     id: '21000000-0000-0000-0000-000000000001',
-    fullName: 'drg. Friski Raisis, Sp.Ort',
-    specialization: 'Spesialis Ortodonti',
-    photoUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=800',
+    fullName: 'drg. Nina Marlina, Sp.KG',
+    specialization: 'Spesialis Konservasi Gigi',
+    photoUrl: 'https://images.unsplash.com/photo-1594824813571-24a69c100c3f?w=800',
   ),
   const Doctor(
     id: '21000000-0000-0000-0000-000000000002',
-    fullName: 'drg. Siti Aminah',
+    fullName: 'drg. Fajar Ramadhan',
+    specialization: 'Dokter Gigi Umum',
+    photoUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=800',
+  ),
+  const Doctor(
+    id: '21000000-0000-0000-0000-000000000003',
+    fullName: 'drg. Siti Rahmawati',
     specialization: 'Dokter Gigi Umum',
     photoUrl: 'https://images.unsplash.com/photo-1594824813571-24a69c100c3f?w=800',
   ),
   const Doctor(
-    id: '21000000-0000-0000-0000-000000000003',
-    fullName: 'drg. Budi Santoso, Sp.KGA',
-    specialization: 'Spesialis Gigi Anak',
+    id: '21000000-0000-0000-0000-000000000004',
+    fullName: 'drg. Yoga Pratama',
+    specialization: 'Spesialis Bedah Mulut',
     photoUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=800',
   ),
 ];
@@ -52,23 +58,23 @@ class DoctorRepository {
         specialization: 'Dokter Gigi Spesialis',
         photoUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=800',
         isActive: true,
-        branchIds: const ['11000000-0000-0000-0000-000000000001', '11000000-0000-0000-0000-000000000002'],
+        branchIds: const ['10000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002'],
         schedules: [
           for (int day = 0; day <= 6; day++) ...[
             DoctorSchedule(
-              branchId: '11000000-0000-0000-0000-000000000001',
+              branchId: '10000000-0000-0000-0000-000000000001',
               dayOfWeek: day,
               startTime: '08:00',
               endTime: '12:00',
             ),
             DoctorSchedule(
-              branchId: '11000000-0000-0000-0000-000000000001',
+              branchId: '10000000-0000-0000-0000-000000000001',
               dayOfWeek: day,
               startTime: '13:00',
               endTime: '17:00',
             ),
             DoctorSchedule(
-              branchId: '11000000-0000-0000-0000-000000000001',
+              branchId: '10000000-0000-0000-0000-000000000001',
               dayOfWeek: day,
               startTime: '18:00',
               endTime: '21:00',

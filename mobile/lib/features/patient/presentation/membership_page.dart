@@ -81,7 +81,7 @@ class _MembershipPageState extends ConsumerState<MembershipPage> with SingleTick
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
-                              'fdc',
+                              'ndc',
                               style: TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w900,

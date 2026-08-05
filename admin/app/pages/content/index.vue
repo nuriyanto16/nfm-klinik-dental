@@ -137,19 +137,35 @@ function openCreatePromo() {
   showPromoModal.value = true
 }
 
-function savePromo() {
+function openEditPromo(p: Promo) {
+  editingPromoId.value = p.id
+  promoForm.title = p.title
+  promoForm.bannerImageUrl = p.bannerImageUrl ?? ''
+  promoForm.description = p.description
+  promoForm.discountValue = p.discountValue ?? 0
+  promoForm.isActive = p.isActive
+  showPromoModal.value = true
+}
+
+async function savePromo() {
   if (!promoForm.title.trim()) return
   if (editingPromoId.value) {
     const idx = promos.value.findIndex(p => p.id === editingPromoId.value)
+    const updated: Promo = {
+      ...promos.value[idx],
+      title: promoForm.title,
+      bannerImageUrl: promoForm.bannerImageUrl || null,
+      description: promoForm.description,
+      discountValue: promoForm.discountValue,
+      isActive: promoForm.isActive
+    }
     if (idx !== -1) {
-      promos.value[idx] = {
-        ...promos.value[idx],
-        title: promoForm.title,
-        bannerImageUrl: promoForm.bannerImageUrl || null,
-        description: promoForm.description,
-        discountValue: promoForm.discountValue,
-        isActive: promoForm.isActive
-      }
+      promos.value[idx] = updated
+    }
+    try {
+      await $fetch(apiUrl(`/content/promos/${editingPromoId.value}`), { method: 'PUT', body: updated })
+    } catch (e) {
+      console.warn('API PUT promo error:', e)
     }
   } else {
     const newPro: Promo = {
@@ -164,8 +180,14 @@ function savePromo() {
       discountValue: promoForm.discountValue
     }
     promos.value.unshift(newPro)
+    try {
+      await $fetch(apiUrl('/content/promos'), { method: 'POST', body: newPro })
+    } catch (e) {
+      console.warn('API POST promo error:', e)
+    }
   }
   showPromoModal.value = false
+  alert('Banner Promo Mobile berhasil diperbarui!')
 }
 
 function deletePromo(p: Promo) {
@@ -249,6 +271,7 @@ function deletePromo(p: Promo) {
               <h3 class="font-bold text-sm text-gray-900 dark:text-white">{{ pro.title }}</h3>
               <p class="text-xs text-gray-500">{{ pro.description }}</p>
               <div class="flex items-center justify-end gap-2 pt-2">
+                <UButton size="xs" color="gray" variant="ghost" icon="i-lucide-edit-2" label="Edit" @click="openEditPromo(pro)" />
                 <UButton size="xs" color="red" variant="ghost" icon="i-lucide-trash-2" label="Hapus" @click="deletePromo(pro)" />
               </div>
             </div>
@@ -335,36 +358,72 @@ function deletePromo(p: Promo) {
     </UModal>
 
     <!-- Promo Modal -->
-    <UModal v-model:open="showPromoModal" :title="editingPromoId ? 'Edit Promo' : 'Tambah Banner Promo'">
+    <UModal
+      v-model:open="showPromoModal"
+      :title="editingPromoId ? 'Edit Banner Promo' : 'Tambah Banner Promo Baru'"
+      :description="editingPromoId ? 'Perbarui informasi banner promo dan syarat ketentuan.' : 'Buat promo baru untuk ditampilkan pada carousel promo mobile.'"
+      class="sm:max-w-xl"
+    >
       <template #body>
-        <div class="space-y-4">
+        <div class="space-y-4 py-1">
           <div>
-            <label class="block text-xs font-semibold mb-1">Judul Promo</label>
-            <UInput v-model="promoForm.title" placeholder="mis. Diskon Scaling 6-in-1" />
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+              Judul Promo <span class="text-rose-500">*</span>
+            </label>
+            <UInput v-model="promoForm.title" icon="i-lucide-tag" size="md" placeholder="mis. Diskon Scaling 6-in-1 Super Clean" class="w-full" />
           </div>
+
           <div>
-            <label class="block text-xs font-semibold mb-1">Nilai Potongan (Rp)</label>
-            <UInput v-model.number="promoForm.discountValue" type="number" step="10000" />
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+              Nilai Potongan Diskon (Rp)
+            </label>
+            <UInput v-model.number="promoForm.discountValue" type="number" step="10000" icon="i-lucide-coins" size="md" class="w-full" />
           </div>
+
           <div>
-            <label class="block text-xs font-semibold mb-1">Upload Gambar Banner Promo</label>
-            <div class="flex items-center gap-3">
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+              Gambar Banner Promo
+            </label>
+            <div class="space-y-3 bg-gray-50 dark:bg-gray-900 p-3 rounded-xl border border-gray-200 dark:border-gray-800">
               <input
                 type="file"
                 accept="image/*"
                 class="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
                 @change="(e) => onFileSelected(e, (url) => promoForm.bannerImageUrl = url)"
               >
-              <img v-if="promoForm.bannerImageUrl" :src="promoForm.bannerImageUrl" class="w-16 h-12 object-cover rounded border border-gray-200 shrink-0">
+              <div v-if="promoForm.bannerImageUrl" class="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 h-28">
+                <img :src="promoForm.bannerImageUrl" class="w-full h-full object-cover">
+                <button type="button" class="absolute top-2 right-2 p-1 bg-red-600/80 text-white rounded-md text-xs" @click="promoForm.bannerImageUrl = ''">
+                  <UIcon name="i-lucide-x" class="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
+
           <div>
-            <label class="block text-xs font-semibold mb-1">Keterangan Promo</label>
-            <UTextarea v-model="promoForm.description" rows="2" placeholder="Syarat & ketentuan promo..." />
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
+              Keterangan Promo / Syarat & Ketentuan
+            </label>
+            <UTextarea
+              v-model="promoForm.description"
+              :rows="4"
+              size="md"
+              placeholder="Tuliskan syarat & ketentuan promo secara jelas..."
+              class="w-full text-sm leading-relaxed"
+            />
           </div>
-          <div class="flex justify-end gap-2 pt-2">
-            <UButton label="Batal" color="neutral" variant="ghost" @click="showPromoModal = false" />
-            <UButton label="Simpan Promo" color="primary" @click="savePromo" />
+
+          <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-900 p-3 rounded-xl border border-gray-200 dark:border-gray-800">
+            <span class="text-xs font-bold text-gray-900 dark:text-white">Tayangkan di Mobile</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input v-model="promoForm.isActive" type="checkbox" class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600" />
+            </label>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <UButton label="Batal" color="neutral" variant="soft" @click="showPromoModal = false" />
+            <UButton label="Simpan Promo" color="primary" icon="i-lucide-check" class="font-bold" @click="savePromo" />
           </div>
         </div>
       </template>

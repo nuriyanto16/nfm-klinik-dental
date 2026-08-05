@@ -16,7 +16,48 @@ interface CartLine {
   name: string
   price: number
   qty: number
+  itemType: 'treatment' | 'medicine'
+  categoryName: string
 }
+
+const DEFAULT_MEDICINES = [
+  { id: 'med-01', name: 'Paracetamol 500mg (Strip)', categoryName: 'Obat Anti-Nyeri & Demam', price: 15000, type: 'medicine' },
+  { id: 'med-02', name: 'Amoxicillin 500mg Antibiotik (Strip)', categoryName: 'Obat Antibiotik', price: 25000, type: 'medicine' },
+  { id: 'med-03', name: 'Cataflam / Kalium Diklofenak 50mg (Strip)', categoryName: 'Obat Anti-Inflamasi', price: 35000, type: 'medicine' },
+  { id: 'med-04', name: 'Asam Mefenamat 500mg (Strip)', categoryName: 'Obat Anti-Nyeri Gigi', price: 18000, type: 'medicine' },
+  { id: 'med-05', name: 'Betadine Gargle Antiseptik 190ml', categoryName: 'Obat Kumur & Antiseptik', price: 32000, type: 'medicine' },
+  { id: 'med-06', name: 'Sensodyne Repair & Protect Toothpaste 100g', categoryName: 'Pasta Gigi Sensitif', price: 45000, type: 'medicine' },
+  { id: 'med-07', name: 'Behel Relief Wax Ortodonti (Pcs)', categoryName: 'Aksesoris Behel', price: 25000, type: 'medicine' },
+  { id: 'med-08', name: 'Orthodontic Dental Floss Mint (Pcs)', categoryName: 'Perawatan Mulut', price: 20000, type: 'medicine' },
+  { id: 'med-09', name: 'Sikat Gigi Khusus Behel Ortho (Pcs)', categoryName: 'Perawatan Mulut', price: 30000, type: 'medicine' },
+  { id: 'med-10', name: 'Benzocaine Topical Anesthetic Gel (Tube)', categoryName: 'Anestesi Lokal', price: 55000, type: 'medicine' }
+]
+
+const catalogTypeFilter = ref<'all' | 'treatment' | 'medicine'>('all')
+
+const allCatalogItems = computed(() => {
+  const treatmentItems = (props.treatments ?? []).map(t => ({
+    id: t.id,
+    name: t.name,
+    categoryName: t.categoryName || 'Jasa Gigi',
+    price: t.price,
+    durationMinutes: t.durationMinutes,
+    itemType: 'treatment' as const,
+    isActive: t.isActive
+  }))
+
+  const medicineItems = DEFAULT_MEDICINES.map(m => ({
+    id: m.id,
+    name: m.name,
+    categoryName: m.categoryName,
+    price: m.price,
+    durationMinutes: null,
+    itemType: 'medicine' as const,
+    isActive: true
+  }))
+
+  return [...treatmentItems, ...medicineItems]
+})
 
 const PAYMENT_METHODS = [
   { value: 'cash', label: 'Tunai', icon: 'i-lucide-banknote', color: 'emerald' },
@@ -33,7 +74,54 @@ const activeCategory = ref('all')
 const cart = ref<CartLine[]>([])
 const discount = ref(0)
 const promoId = ref('')
-const activePromos = computed(() => props.promos.filter(p => p.isActive))
+
+const DEFAULT_PROMOS: Promo[] = [
+  {
+    id: 'pro-1',
+    title: 'Diskon Soft Opening 20%',
+    description: 'Diskon 20% untuk semua jenis perawatan',
+    discountType: 'percentage',
+    discountValue: 20,
+    isActive: true,
+    startsAt: '2026-08-01T00:00:00Z',
+    endsAt: '2026-08-31T23:59:59Z'
+  },
+  {
+    id: 'pro-2',
+    title: 'Voucher Potongan Rp 50.000',
+    description: 'Potongan Rp 50.000 tunai',
+    discountType: 'fixed',
+    discountValue: 50000,
+    isActive: true,
+    startsAt: '2026-08-01T00:00:00Z',
+    endsAt: '2026-08-31T23:59:59Z'
+  },
+  {
+    id: 'pro-3',
+    title: 'Promo Merdeka Diskon 17%',
+    description: 'Diskon Kemerdekaan 17%',
+    discountType: 'percentage',
+    discountValue: 17,
+    isActive: true,
+    startsAt: '2026-08-01T00:00:00Z',
+    endsAt: '2026-08-31T23:59:59Z'
+  },
+  {
+    id: 'pro-4',
+    title: 'Voucher Behel Hemat Rp 500.000',
+    description: 'Potongan Rp 500.000 khusus Behel Ortodonti',
+    discountType: 'fixed',
+    discountValue: 500000,
+    isActive: true,
+    startsAt: '2026-08-01T00:00:00Z',
+    endsAt: '2026-08-31T23:59:59Z'
+  }
+]
+
+const activePromos = computed(() => {
+  const source = (props.promos && props.promos.length > 0) ? props.promos : DEFAULT_PROMOS
+  return source.filter(p => p.isActive)
+})
 const selectedPromo = computed(() => activePromos.value.find(p => p.id === promoId.value) ?? null)
 const paymentMethod = ref('cash')
 const cashReceived = ref<number>(0)
@@ -47,7 +135,6 @@ const DUMMY_DOCTORS: DoctorDetail[] = [
   { id: '21000000-0000-0000-0000-000000000003', fullName: 'drg. Budi Santoso, Sp.KGA', specialization: 'Spesialis Gigi Anak', email: 'budi@fdc.co.id', phoneWa: '08123456781', bio: 'Spesialis Kedokteran Gigi Anak', commissionRate: 12, isActive: true, branchIds: [], schedules: [], skills: [] }
 ]
 
-// Robust Doctor Filtering with automatic fallback so doctor is NEVER empty
 const doctorsForBranch = computed(() => {
   const source = (props.doctorsAdmin && props.doctorsAdmin.length > 0) ? props.doctorsAdmin : DUMMY_DOCTORS
   const filtered = source.filter(d => {
@@ -58,7 +145,6 @@ const doctorsForBranch = computed(() => {
   return filtered.length > 0 ? filtered : source
 })
 
-// Auto select first available doctor whenever branch or list changes
 watch([doctorsForBranch, branchId], () => {
   if (doctorsForBranch.value.length > 0) {
     if (!doctorsForBranch.value.some(d => d.id === staffId.value)) {
@@ -70,22 +156,30 @@ watch([doctorsForBranch, branchId], () => {
 }, { immediate: true })
 
 const categories = computed(() => {
-  const names = new Set(props.treatments.map(t => t.categoryName))
+  const names = new Set(allCatalogItems.value.map(t => t.categoryName))
   return ['all', ...Array.from(names)]
 })
 
-const filteredTreatments = computed(() => props.treatments.filter((t) => {
+const filteredTreatments = computed(() => allCatalogItems.value.filter((t) => {
+  const matchesType = catalogTypeFilter.value === 'all' || t.itemType === catalogTypeFilter.value
   const matchesCategory = activeCategory.value === 'all' || t.categoryName === activeCategory.value
-  const matchesSearch = !search.value || t.name.toLowerCase().includes(search.value.toLowerCase())
-  return matchesCategory && matchesSearch && t.isActive
+  const matchesSearch = !search.value || t.name.toLowerCase().includes(search.value.toLowerCase()) || t.categoryName.toLowerCase().includes(search.value.toLowerCase())
+  return matchesType && matchesCategory && matchesSearch && t.isActive
 }))
 
-function addToCart(t: Treatment) {
+function addToCart(t: { id: string; name: string; price: number; itemType?: 'treatment' | 'medicine'; categoryName?: string }) {
   const existing = cart.value.find(line => line.treatmentId === t.id)
   if (existing) {
     existing.qty++
   } else {
-    cart.value.push({ treatmentId: t.id, name: t.name, price: t.price, qty: 1 })
+    cart.value.push({
+      treatmentId: t.id,
+      name: t.name,
+      price: t.price,
+      qty: 1,
+      itemType: t.itemType || 'treatment',
+      categoryName: t.categoryName || 'Jasa Gigi'
+    })
   }
 }
 
@@ -94,22 +188,85 @@ function incQty(line: CartLine) {
 }
 
 function decQty(line: CartLine) {
-  line.qty--
-  if (line.qty <= 0) cart.value = cart.value.filter(l => l !== line)
+  if (line.qty > 1) {
+    line.qty--
+  } else {
+    removeLine(line)
+  }
 }
 
 function removeLine(line: CartLine) {
-  cart.value = cart.value.filter(l => l !== line)
+  cart.value = cart.value.filter(l => l.treatmentId !== line.treatmentId)
 }
 
 const subtotal = computed(() => cart.value.reduce((sum, l) => sum + l.price * l.qty, 0))
 
-watch([selectedPromo, subtotal], ([promo, sub]) => {
-  if (!promo || !promo.discountType) return
-  discount.value = promo.discountType === 'percentage'
-    ? Math.round(sub * (promo.discountValue ?? 0) / 100)
-    : (promo.discountValue ?? 0)
+// Bank Transfer State
+const selectedBank = ref('BCA')
+const bankAccounts: Record<string, { bankName: string, accountName: string, accountNumber: string }> = {
+  BCA: { bankName: 'Bank BCA', accountName: 'PT Nina Dental Care', accountNumber: '7700-1122-3344' },
+  Mandiri: { bankName: 'Bank Mandiri', accountName: 'PT Nina Dental Care', accountNumber: '130-00-9988-7766' },
+  BNI: { bankName: 'Bank BNI', accountName: 'PT Nina Dental Care', accountNumber: '088-7766-554' },
+  BRI: { bankName: 'Bank BRI', accountName: 'PT Nina Dental Care', accountNumber: '4455-01-009988-53-1' }
+}
+const transferRefCode = ref('')
+
+function calculateDiscount() {
+  if (!promoId.value || promoId.value === 'none') {
+    discount.value = 0
+    return
+  }
+  const promo = activePromos.value.find(p => p.id === promoId.value)
+  if (!promo) {
+    discount.value = 0
+    return
+  }
+  const type = promo.discountType || (promo.discountValue && promo.discountValue <= 100 ? 'percentage' : 'fixed')
+  const val = promo.discountValue ?? 0
+  if (type === 'percentage' || type === 'percent') {
+    discount.value = Math.min(subtotal.value, Math.round((subtotal.value * val) / 100))
+  } else {
+    discount.value = Math.min(subtotal.value, val)
+  }
+}
+
+watch([() => promoId.value, () => subtotal.value], () => {
+  calculateDiscount()
+}, { immediate: true })
+
+const recommendedPromo = computed(() => {
+  if (subtotal.value <= 0 || activePromos.value.length === 0) return null
+  let bestPromo: Promo | null = null
+  let maxDiscount = 0
+
+  for (const p of activePromos.value) {
+    let calcDisc = 0
+    const type = p.discountType || (p.discountValue && p.discountValue <= 100 ? 'percentage' : 'fixed')
+    const val = p.discountValue ?? 0
+    if (type === 'percentage' || type === 'percent') {
+      calcDisc = Math.round((subtotal.value * val) / 100)
+    } else {
+      calcDisc = val
+    }
+    calcDisc = Math.min(subtotal.value, calcDisc)
+    if (calcDisc > maxDiscount) {
+      maxDiscount = calcDisc
+      bestPromo = p
+    }
+  }
+
+  if (bestPromo && maxDiscount > 0) {
+    return { promo: bestPromo, savingsAmount: maxDiscount }
+  }
+  return null
 })
+
+function applyRecommendedPromo() {
+  if (recommendedPromo.value) {
+    promoId.value = recommendedPromo.value.promo.id
+    calculateDiscount()
+  }
+}
 
 const total = computed(() => Math.max(0, subtotal.value - discount.value))
 const change = computed(() => Math.max(0, cashReceived.value - total.value))
@@ -327,11 +484,39 @@ async function processPayment() {
 
           <!-- Catalog Search & Category Filters -->
           <div class="space-y-3">
+            <!-- Catalog Type Switcher -->
+            <div class="flex items-center gap-1.5 border-b border-default pb-2">
+              <UButton
+                size="xs"
+                :variant="catalogTypeFilter === 'all' ? 'solid' : 'ghost'"
+                :color="catalogTypeFilter === 'all' ? 'primary' : 'gray'"
+                icon="i-lucide-grid"
+                label="Semua Katalog"
+                @click="catalogTypeFilter = 'all'"
+              />
+              <UButton
+                size="xs"
+                :variant="catalogTypeFilter === 'treatment' ? 'solid' : 'ghost'"
+                :color="catalogTypeFilter === 'treatment' ? 'primary' : 'gray'"
+                icon="i-lucide-stethoscope"
+                label="🩺 Perawatan Gigi"
+                @click="catalogTypeFilter = 'treatment'"
+              />
+              <UButton
+                size="xs"
+                :variant="catalogTypeFilter === 'medicine' ? 'solid' : 'ghost'"
+                :color="catalogTypeFilter === 'medicine' ? 'primary' : 'gray'"
+                icon="i-lucide-pill"
+                label="💊 Obat & Produk Mulut"
+                @click="catalogTypeFilter = 'medicine'"
+              />
+            </div>
+
             <div class="flex items-center gap-2">
               <UInput
                 v-model="search"
                 icon="i-lucide-search"
-                placeholder="Cari nama perawatan / tindakan medis..."
+                placeholder="Cari perawatan gigi, obat-obatan, pasta gigi, antiseptik..."
                 class="w-full"
               />
             </div>
@@ -341,7 +526,7 @@ async function processPayment() {
               <UButton
                 v-for="cat in categories"
                 :key="cat"
-                :label="cat === 'all' ? 'Semua Perawatan' : cat"
+                :label="cat === 'all' ? 'Semua Kategori' : cat"
                 size="xs"
                 :variant="activeCategory === cat ? 'solid' : 'soft'"
                 :color="activeCategory === cat ? 'primary' : 'neutral'"
@@ -351,10 +536,10 @@ async function processPayment() {
             </div>
           </div>
 
-          <!-- Treatment Cards Grid -->
+          <!-- Item Cards Grid -->
           <div
             class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto pr-1"
-            style="max-height: calc(100vh - 280px);"
+            style="max-height: calc(100vh - 320px);"
           >
             <div
               v-for="t in filteredTreatments"
@@ -364,8 +549,11 @@ async function processPayment() {
             >
               <div>
                 <div class="flex items-start justify-between gap-1">
-                  <span class="text-[10px] font-bold uppercase tracking-wider text-primary px-2 py-0.5 rounded-md bg-primary-50 dark:bg-primary-950/40">
-                    {{ t.categoryName }}
+                  <span
+                    :class="t.itemType === 'medicine' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600' : 'bg-primary-50 dark:bg-primary-950/40 text-primary'"
+                    class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
+                  >
+                    {{ t.itemType === 'medicine' ? '💊 ' + t.categoryName : '🩺 ' + t.categoryName }}
                   </span>
                   <UIcon name="i-lucide-plus-circle" class="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                 </div>
@@ -375,7 +563,7 @@ async function processPayment() {
               </div>
               <div class="mt-3 pt-2 border-t border-default/60 flex items-center justify-between">
                 <span class="text-xs font-bold text-primary">{{ formatIDR(t.price) }}</span>
-                <span class="text-[10px] text-muted">{{ t.durationMinutes ?? 30 }}m</span>
+                <span class="text-[10px] text-muted">{{ t.durationMinutes ? `${t.durationMinutes}m` : 'Stok Ada' }}</span>
               </div>
             </div>
 
@@ -384,7 +572,7 @@ async function processPayment() {
               class="col-span-full py-12 text-center border border-dashed border-default rounded-xl"
             >
               <UIcon name="i-lucide-search-x" class="w-8 h-8 text-muted mx-auto mb-2" />
-              <p class="text-sm font-medium text-muted">Tidak ada perawatan yang cocok dengan pencarian.</p>
+              <p class="text-sm font-medium text-muted">Tidak ada perawatan atau obat yang cocok dengan pencarian.</p>
             </div>
           </div>
         </div>
@@ -412,7 +600,7 @@ async function processPayment() {
               class="py-10 text-center border border-dashed border-default rounded-xl"
             >
               <UIcon name="i-lucide-shopping-cart" class="w-8 h-8 text-muted mx-auto mb-2 opacity-50" />
-              <p class="text-xs text-muted">Keranjang masih kosong.<br>Klik katalog di sebelah kiri untuk memilih perawatan.</p>
+              <p class="text-xs text-muted">Keranjang masih kosong.<br>Klik katalog perawatan atau obat di sebelah kiri untuk menambahkan item.</p>
             </div>
 
             <div
@@ -424,9 +612,12 @@ async function processPayment() {
                 <p class="font-semibold text-gray-900 dark:text-white truncate">
                   {{ line.name }}
                 </p>
-                <p class="text-[11px] text-muted">
-                  {{ formatIDR(line.price) }}
-                </p>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <UBadge :color="line.itemType === 'medicine' ? 'green' : 'blue'" variant="subtle" size="xs">
+                    {{ line.itemType === 'medicine' ? '💊 Obat / Produk' : '🩺 Jasa Gigi' }}
+                  </UBadge>
+                  <span class="text-[11px] text-muted">{{ formatIDR(line.price) }}</span>
+                </div>
               </div>
 
               <!-- Quantity Controls -->
@@ -467,6 +658,28 @@ async function processPayment() {
             <div class="flex justify-between text-muted">
               <span>Subtotal</span>
               <span class="font-semibold text-gray-900 dark:text-white tabular-nums">{{ formatIDR(subtotal) }}</span>
+            </div>
+
+            <!-- Rekomendasi Sistem Promo Banner -->
+            <div
+              v-if="recommendedPromo && promoId !== recommendedPromo.promo.id"
+              class="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center justify-between gap-2 text-xs"
+            >
+              <div class="flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
+                <UIcon name="i-lucide-sparkles" class="w-4 h-4 text-emerald-600 shrink-0 animate-pulse" />
+                <div>
+                  <span class="font-bold">Rekomendasi Promo Terbaik:</span> {{ recommendedPromo.promo.title }}
+                  <span class="text-[11px] block text-emerald-600 dark:text-emerald-400 font-semibold">Hemat {{ formatIDR(recommendedPromo.savingsAmount) }}</span>
+                </div>
+              </div>
+              <UButton
+                size="xs"
+                color="emerald"
+                label="Pakai Promo Ini"
+                icon="i-lucide-check-circle"
+                class="shrink-0 font-bold"
+                @click="applyRecommendedPromo"
+              />
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -512,7 +725,60 @@ async function processPayment() {
             </div>
           </div>
 
-          <!-- Cash Payment Inputs & Preset Buttons -->
+          <!-- Bank Transfer Payment Inputs -->
+          <div v-if="paymentMethod === 'manual_transfer'" class="space-y-2.5 p-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/20 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-indigo-800 dark:text-indigo-300 flex items-center gap-1.5">
+                <UIcon name="i-lucide-landmark" class="w-4 h-4 text-indigo-600" />
+                Detail Transfer Bank Klinik
+              </span>
+              <UBadge color="indigo" variant="subtle" size="xs">Manual Verify</UBadge>
+            </div>
+
+            <!-- Pilih Bank -->
+            <div class="space-y-1">
+              <label class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300">Pilih Rekening Bank Tujuan:</label>
+              <div class="grid grid-cols-4 gap-1.5">
+                <UButton
+                  v-for="(b, key) in bankAccounts"
+                  :key="key"
+                  :label="key"
+                  size="xs"
+                  :variant="selectedBank === key ? 'solid' : 'outline'"
+                  :color="selectedBank === key ? 'indigo' : 'neutral'"
+                  class="font-bold text-center justify-center"
+                  @click="selectedBank = key"
+                />
+              </div>
+            </div>
+
+            <!-- Detail Rekening Info Box -->
+            <div class="p-2 bg-white dark:bg-gray-800 rounded-lg border border-indigo-200 dark:border-indigo-700 text-[11px] space-y-1">
+              <div class="flex justify-between text-gray-500">
+                <span>Nama Bank:</span>
+                <span class="font-bold text-gray-900 dark:text-white">{{ bankAccounts[selectedBank].bankName }}</span>
+              </div>
+              <div class="flex justify-between text-gray-500">
+                <span>Nomor Rekening:</span>
+                <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{{ bankAccounts[selectedBank].accountNumber }}</span>
+              </div>
+              <div class="flex justify-between text-gray-500">
+                <span>Atas Nama:</span>
+                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ bankAccounts[selectedBank].accountName }}</span>
+              </div>
+            </div>
+
+            <!-- Kode Referensi Transfer -->
+            <div>
+              <label class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Nomor Referensi / Struk Transfer (Opsional)</label>
+              <input
+                v-model="transferRefCode"
+                type="text"
+                placeholder="Contoh: TRX-BCA-998877"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+            </div>
+          </div>
           <div v-if="paymentMethod === 'cash'" class="space-y-2 p-3 rounded-xl border border-default bg-emerald-50/50 dark:bg-emerald-950/20 text-xs">
             <div class="flex items-center justify-between">
               <span class="font-semibold text-emerald-800 dark:text-emerald-300">Pembayaran Cash</span>

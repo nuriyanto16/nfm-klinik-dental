@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// `--dart-define=API_BASE_URL=https://api.ninadentalcare.com/api/v1`.
 const _defaultApiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://localhost:8080/api/v1',
+  defaultValue: 'http://43.133.150.102:8092/api/v1',
 );
 
 final dioProvider = Provider<Dio>((ref) {
@@ -17,3 +17,30 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 });
+
+Future<void> postActivityLog(
+  Dio dio, {
+  required String category,
+  required String action,
+  required String description,
+  required String userName,
+  String? userEmail,
+  Map<String, dynamic>? details,
+}) async {
+  try {
+    await dio.post('/activity-logs', data: {
+      'scope': 'mobile',
+      'category': category,
+      'action': action,
+      'description': description,
+      'userName': userName,
+      'userRole': 'Pasien Mobile',
+      'userEmail': userEmail,
+      'status': 'SUCCESS',
+      'severity': 'INFO',
+      'details': details,
+    });
+  } catch (_) {
+    // silent fail
+  }
+}
