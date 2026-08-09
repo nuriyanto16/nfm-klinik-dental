@@ -539,7 +539,7 @@ function printPayrollSlip(p: StaffPayroll) {
                   <UButton
                     size="xs"
                     color="primary"
-                    variant="subtle"
+                    variant="outline"
                     icon="i-lucide-printer"
                     label="Cetak"
                     @click="printPayrollSlip(item)"

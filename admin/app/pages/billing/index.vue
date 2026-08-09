@@ -462,7 +462,11 @@ async function onSubmit() {
         class="lg:col-span-8 xl:col-span-9 w-full shadow-xs"
         :ui="{ body: 'p-0 sm:p-0' }"
       >
-        <div class="overflow-x-auto min-w-full">
+        <SkeletonTableSkeleton
+          v-if="status === 'pending'"
+          :columns="8"
+        />
+        <div v-else class="overflow-x-auto min-w-full">
           <table class="w-full text-left text-xs text-gray-700 dark:text-gray-200">
             <thead class="bg-gray-50 dark:bg-gray-800 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
               <tr>
@@ -525,7 +529,7 @@ async function onSubmit() {
                     <UButton
                       size="xs"
                       color="primary"
-                      variant="subtle"
+                      variant="outline"
                       icon="i-lucide-printer"
                       label="Cetak Invoice"
                       @click="printInvoice(item)"

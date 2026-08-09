@@ -207,6 +207,7 @@ const columns = [
 
 const STATUS_OPTIONS = [
   { label: 'Semua Status', value: 'all' },
+  { label: 'Draft (Belum Submit)', value: 'draft' },
   { label: 'Menunggu Konfirmasi', value: 'pending' },
   { label: 'Terkonfirmasi', value: 'confirmed' },
   { label: 'Pasien Check-In (Klinik)', value: 'checked_in' },
@@ -219,7 +220,8 @@ const STATUS_OPTIONS = [
 const STATUS_SELECT_ITEMS = STATUS_OPTIONS.filter(o => o.value !== 'all')
 
 const STATUS_CONFIG: Record<string, { label: string, color: string, icon: string, nextStatus?: string, nextLabel?: string, nextColor: string }> = {
-  pending: { label: 'Menunggu', color: 'amber', icon: 'i-lucide-clock', nextStatus: 'confirmed', nextLabel: 'Konfirmasi', nextColor: 'primary' },
+  draft: { label: 'Draft', color: 'amber', icon: 'i-lucide-file-edit', nextStatus: 'pending', nextLabel: 'Submit Antrian', nextColor: 'primary' },
+  pending: { label: 'Menunggu', color: 'yellow', icon: 'i-lucide-clock', nextStatus: 'confirmed', nextLabel: 'Konfirmasi', nextColor: 'primary' },
   confirmed: { label: 'Terkonfirmasi', color: 'blue', icon: 'i-lucide-check-circle', nextStatus: 'checked_in', nextLabel: 'Check-In', nextColor: 'purple' },
   checked_in: { label: 'Check-In', color: 'purple', icon: 'i-lucide-user-check', nextStatus: 'in_progress', nextLabel: 'Ditangani', nextColor: 'orange' },
   in_progress: { label: 'Sedang Ditangani', color: 'orange', icon: 'i-lucide-stethoscope', nextStatus: 'completed', nextLabel: 'Selesaikan', nextColor: 'green' },
@@ -271,10 +273,13 @@ function stepNextStatus(reservation: Reservation) {
   }
 }
 
-// --- Create reservation modal ---
+// --- Create & Edit reservation modal ---
 const showModal = ref(false)
 const saving = ref(false)
 const formError = ref('')
+const editingReservationId = ref<string | null>(null)
+const isEditMode = computed(() => Boolean(editingReservationId.value))
+
 const form = reactive({
   patientId: '',
   branchId: '',
@@ -284,6 +289,47 @@ const form = reactive({
   complaintNote: '',
   treatmentIds: [] as string[]
 })
+
+// Multi-treatment live calculation
+const selectedTreatmentsCount = computed(() => form.treatmentIds.length)
+const selectedTreatmentsList = computed(() => {
+  const ids = form.treatmentIds
+  return (treatments.value ?? []).filter(t => ids.includes(t.id))
+})
+const selectedTreatmentsTotalPrice = computed(() => {
+  return selectedTreatmentsList.value.reduce((sum, t) => sum + (Number(t.price) || 0), 0)
+})
+const selectedTreatmentsTotalDuration = computed(() => {
+  return selectedTreatmentsList.value.reduce((sum, t) => sum + (Number(t.durationMinutes) || 30), 0)
+})
+
+const selectedPatientDetail = computed(() => {
+  return (patients.value ?? []).find(p => p.id === form.patientId)
+})
+const selectedDoctorDetail = computed(() => {
+  return displayDoctorsList.value.find(d => d.id === form.staffId)
+})
+
+const quickTimeSlots = ['09:00', '10:30', '13:00', '14:30', '16:00', '17:30', '19:00']
+
+const quickComplaintTags = [
+  'Pemeriksaan Rutin & Konsultasi',
+  'Kontrol Behel Bulanan',
+  'Nyeri Gigi Sensitif / Linu',
+  'Scaling & Karang Gigi',
+  'Gigi Berlubang Parah',
+  'Tambal Gigi Estetika',
+  'Pemasangan Behel Baru',
+  'Konsultasi Gigi Anak (Kidz)'
+]
+
+function addComplaintTag(tag: string) {
+  if (!form.complaintNote) {
+    form.complaintNote = tag
+  } else if (!form.complaintNote.includes(tag)) {
+    form.complaintNote += `, ${tag}`
+  }
+}
 
 // Dynamic Doctor List for selected branch with automatic fallback!
 const doctorsForBranch = computed(() => {
@@ -312,6 +358,7 @@ watch([() => form.branchId, doctorsForBranch], () => {
 }, { immediate: true })
 
 function openCreate() {
+  editingReservationId.value = null
   form.patientId = patients.value?.[0]?.id ?? 'pat-1'
   form.branchId = branches.value?.[0]?.id ?? ''
   form.staffId = doctorsForBranch.value[0]?.id ?? 'dr-1'
@@ -323,7 +370,33 @@ function openCreate() {
   showModal.value = true
 }
 
-async function onSubmit() {
+function openEditDraft(item: Reservation) {
+  editingReservationId.value = item.id
+  form.patientId = item.patientId || patients.value?.[0]?.id || ''
+  form.branchId = item.branchId || branches.value?.[0]?.id || ''
+  form.staffId = item.staffId || doctorsForBranch.value[0]?.id || ''
+  
+  const dt = new Date(item.scheduledAt)
+  form.scheduledDate = !isNaN(dt.getTime()) ? dt.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
+  form.scheduledTime = !isNaN(dt.getTime()) ? dt.toTimeString().slice(0, 5) : '09:00'
+  form.complaintNote = item.complaintNote || ''
+  
+  const tList = getTreatmentsList(item.treatments)
+  const ids: string[] = []
+  for (const t of tList) {
+    if (t?.id) ids.push(t.id)
+    else if (t?.treatmentId) ids.push(t.treatmentId)
+    else if (typeof t === 'string') {
+      const match = (treatments.value ?? []).find(tm => tm.name.toLowerCase().includes(t.toLowerCase()))
+      if (match) ids.push(match.id)
+    }
+  }
+  form.treatmentIds = ids
+  formError.value = ''
+  showModal.value = true
+}
+
+async function onSubmit(statusToSave: 'draft' | 'pending' = 'pending') {
   if (!form.patientId || !form.branchId || !form.staffId || !form.scheduledDate || !form.scheduledTime) {
     formError.value = 'Pasien, cabang, dokter, dan jadwal wajib diisi.'
     return
@@ -335,41 +408,124 @@ async function onSubmit() {
     const selectedBranch = (branches.value ?? []).find(b => b.id === form.branchId)
     const selectedDoctor = displayDoctorsList.value.find(d => d.id === form.staffId)
     const selectedTreatments = (treatments.value ?? []).filter(t => form.treatmentIds.includes(t.id))
+    const scheduledAtIso = new Date(`${form.scheduledDate}T${form.scheduledTime}:00`).toISOString()
 
-    const newRes: Reservation = {
-      id: `res-${Date.now()}`,
-      patientId: form.patientId,
-      patientName: selectedPatient?.fullName ?? 'Budi Santoso',
-      branchId: form.branchId,
-      branchName: selectedBranch?.name ?? 'Nina Dental Care - Soreang',
-      staffId: form.staffId,
-      doctorName: selectedDoctor?.fullName ?? 'drg. Siti Rahmawati',
-      scheduledAt: new Date(`${form.scheduledDate}T${form.scheduledTime}:00`).toISOString(),
-      status: 'pending',
-      complaintNote: form.complaintNote || null,
-      treatments: selectedTreatments.length ? selectedTreatments : [{ id: 't-1', name: 'Konsultasi & Perawatan Gigi', price: 150000, categoryName: 'Umum' }]
+    if (editingReservationId.value) {
+      const idx = localReservations.value.findIndex(r => r.id === editingReservationId.value)
+      if (idx !== -1) {
+        localReservations.value[idx] = {
+          ...localReservations.value[idx],
+          patientId: form.patientId,
+          patientName: selectedPatient?.fullName ?? localReservations.value[idx].patientName,
+          branchId: form.branchId,
+          branchName: selectedBranch?.name ?? localReservations.value[idx].branchName,
+          staffId: form.staffId,
+          doctorName: selectedDoctor?.fullName ?? localReservations.value[idx].doctorName,
+          scheduledAt: scheduledAtIso,
+          status: statusToSave,
+          complaintNote: form.complaintNote || null,
+          treatments: selectedTreatments.length ? selectedTreatments : localReservations.value[idx].treatments
+        }
+      }
+
+      try {
+        await apiPut(`/reservations/${editingReservationId.value}`, {
+          patientId: form.patientId,
+          branchId: form.branchId,
+          staffId: form.staffId,
+          scheduledAt: scheduledAtIso,
+          complaintNote: form.complaintNote || null,
+          treatmentIds: form.treatmentIds,
+          status: statusToSave
+        })
+      } catch (_) {}
+
+      notifyStatusUpdate(selectedPatient?.fullName ?? 'Pasien', statusToSave)
+    } else {
+      const newRes: Reservation = {
+        id: `res-${Date.now()}`,
+        patientId: form.patientId,
+        patientName: selectedPatient?.fullName ?? 'Pasien Baru',
+        branchId: form.branchId,
+        branchName: selectedBranch?.name ?? 'Nina Dental Care - Soreang',
+        staffId: form.staffId,
+        doctorName: selectedDoctor?.fullName ?? 'drg. Nina Marlina, Sp.KG',
+        scheduledAt: scheduledAtIso,
+        status: statusToSave,
+        complaintNote: form.complaintNote || null,
+        treatments: selectedTreatments.length ? selectedTreatments : [{ id: '41000000-0000-0000-0000-000000000001', name: 'Scaling Gigi (Pembersihan Karang Gigi)', price: 350000, categoryName: 'Pencegahan' }]
+      }
+
+      localReservations.value.unshift(newRes)
+
+      try {
+        const payload = {
+          patientId: form.patientId,
+          branchId: form.branchId,
+          staffId: form.staffId,
+          scheduledAt: scheduledAtIso,
+          complaintNote: form.complaintNote || null,
+          treatmentIds: form.treatmentIds,
+          status: statusToSave
+        }
+        const created = await apiPost<any>('/reservations', payload)
+        if (created && created.id) {
+          newRes.id = created.id
+        }
+      } catch (_) {}
+
+      notifyStatusUpdate(newRes.patientName, statusToSave)
     }
 
-    localReservations.value.unshift(newRes)
-
-    try {
-      const payload: CreateReservationInput = {
-        patientId: form.patientId,
-        branchId: form.branchId,
-        staffId: form.staffId,
-        scheduledAt: new Date(`${form.scheduledDate}T${form.scheduledTime}:00`).toISOString(),
-        complaintNote: form.complaintNote || null,
-        treatmentIds: form.treatmentIds
-      }
-      await apiPost('/reservations', payload as unknown as Record<string, unknown>)
-    } catch (_) {}
-
     showModal.value = false
-    notifyStatusUpdate(newRes.patientName, 'pending')
+    editingReservationId.value = null
   } catch (err) {
     formError.value = apiErrorMessage(err)
   } finally {
     saving.value = false
+  }
+}
+
+// Soft delete confirmation modal
+const showDeleteConfirmModal = ref(false)
+const reservationToDelete = ref<Reservation | null>(null)
+const deleting = ref(false)
+
+function openDeleteConfirm(item: Reservation) {
+  reservationToDelete.value = item
+  showDeleteConfirmModal.value = true
+}
+
+async function executeSoftDelete() {
+  if (!reservationToDelete.value) return
+  deleting.value = true
+  try {
+    const id = reservationToDelete.value.id
+    localReservations.value = localReservations.value.filter(r => r.id !== id)
+    
+    try {
+      await apiDelete(`/reservations/${id}`)
+      await apiPost('/activity-logs', {
+        scope: 'admin',
+        category: 'booking',
+        action: 'DELETE_RESERVATION',
+        description: `Admin menghapus reservasi antrian ${reservationToDelete.value.patientName} (${safeQueueTicket(id)})`,
+        userName: 'Admin Klinik',
+        userRole: 'Admin Operasional',
+        details: { reservationId: safeQueueTicket(id) }
+      })
+    } catch (_) {}
+
+    toastMessage.value = `Reservasi ${reservationToDelete.value.patientName} berhasil dihapus.`
+    showToast.value = true
+    setTimeout(() => { showToast.value = false }, 3500)
+    showDeleteConfirmModal.value = false
+    reservationToDelete.value = null
+  } catch (err) {
+    toastMessage.value = 'Gagal menghapus reservasi: ' + apiErrorMessage(err)
+    showToast.value = true
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -768,10 +924,24 @@ function printReservationTicket(item: Reservation) {
               <!-- Actions Cell -->
               <td class="px-3 py-2.5 text-right whitespace-normal">
                 <div class="flex items-center justify-end gap-1.5">
+                  <!-- Edit Draft Button (when status is draft) -->
+                  <UButton
+                    v-if="item.status === 'draft'"
+                    size="xs"
+                    color="amber"
+                    variant="solid"
+                    icon="i-lucide-pencil"
+                    title="Edit Draft Reservasi"
+                    class="font-bold shadow-xs hover:scale-105 transition-transform"
+                    @click="openEditDraft(item)"
+                  >
+                    <span>Edit Draft</span>
+                  </UButton>
+
                   <UButton
                     size="xs"
                     color="neutral"
-                    variant="ghost"
+                    variant="outline"
                     icon="i-lucide-eye"
                     title="Lihat Detail Reservasi"
                     @click="openReservationDetail(item)"
@@ -780,16 +950,17 @@ function printReservationTicket(item: Reservation) {
                   <UButton
                     size="xs"
                     color="primary"
-                    variant="subtle"
+                    variant="outline"
                     icon="i-lucide-printer"
                     title="Cetak Tiket Antrian"
+                    class="font-bold shadow-2xs hover:bg-primary-50 dark:hover:bg-primary-950/50"
                     @click="printReservationTicket(item)"
                   />
 
                   <UButton
                     size="xs"
                     color="emerald"
-                    variant="soft"
+                    variant="outline"
                     icon="i-lucide-credit-card"
                     title="Bayar Reservasi di Kasir Billing"
                     :to="`/billing?reservationId=${item.id}&action=pay`"
@@ -821,14 +992,14 @@ function printReservationTicket(item: Reservation) {
                     </option>
                   </select>
 
+                  <!-- Soft Delete Button -->
                   <UButton
-                    v-if="item.status !== 'cancelled' && item.status !== 'completed'"
                     size="xs"
                     color="red"
                     variant="ghost"
-                    icon="i-lucide-x"
-                    title="Batalkan Reservasi"
-                    @click="onStatusChange(item, 'cancelled')"
+                    icon="i-lucide-trash-2"
+                    title="Hapus Reservasi (Soft Delete)"
+                    @click="openDeleteConfirm(item)"
                   />
                 </div>
               </td>
@@ -874,125 +1045,357 @@ function printReservationTicket(item: Reservation) {
 
     <!-- Modals wrapped in ClientOnly -->
     <ClientOnly>
-      <!-- Modal Create / Edit Reservasi Pasien -->
+      <!-- Modal Create / Edit Reservasi Pasien (Expanded & High-End Design) -->
       <UModal
         v-model:open="showModal"
-        title="Buat Reservasi & Jadwal Pasien Baru"
+        :title="isEditMode ? 'Edit Draft Reservasi Pasien' : 'Buat Reservasi & Jadwal Pasien Baru'"
+        :ui="{ width: 'sm:max-w-4xl' }"
       >
         <template #body>
           <form
-            class="space-y-4"
-            @submit.prevent="onSubmit"
+            class="space-y-5"
+            @submit.prevent="onSubmit('pending')"
           >
-            <UFormField
-              label="Pasien"
-              required
-            >
-              <select
-                v-model="form.patientId"
-                class="w-full p-2 text-xs font-semibold border rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-              >
-                <option
-                  v-for="p in patients"
-                  :key="p.id"
-                  :value="p.id"
-                >
-                  {{ p.fullName }} ({{ p.rmNumber || 'RM Baru' }})
-                </option>
-              </select>
-            </UFormField>
-
-            <div class="grid grid-cols-2 gap-4">
-              <UFormField
-                label="Cabang Klinik"
-                required
-              >
-                <USelect
-                  v-model="form.branchId"
-                  :items="(branches ?? []).length > 0 ? (branches ?? []).map(b => ({ label: b.name, value: b.id })) : [{ label: 'Nina Dental Care - Soreang', value: 'br-1' }, { label: 'Nina Dental Care - Baleendah', value: 'br-2' }]"
-                  class="w-full"
-                />
-              </UFormField>
-
-              <UFormField
-                label="Dokter Penanggung Jawab"
-                required
-              >
-                <select
-                  v-model="form.staffId"
-                  class="w-full p-2 text-xs font-semibold border rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                >
-                  <option
-                    v-for="d in doctorsForBranch"
-                    :key="d.id"
-                    :value="d.id"
-                  >
-                    {{ d.fullName }} ({{ d.specialization }})
-                  </option>
-                </select>
-              </UFormField>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <UFormField
-                label="Tanggal Jadwal"
-                required
-              >
-                <UInput
-                  v-model="form.scheduledDate"
-                  type="date"
-                  class="w-full"
-                />
-              </UFormField>
-              <UFormField
-                label="Jam Jadwal"
-                required
-              >
-                <UInput
-                  v-model="form.scheduledTime"
-                  type="time"
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
-
-            <!-- Rencana Perawatan Checklist -->
-            <div>
-              <label class="block text-xs font-semibold mb-1">Rencana Perawatan (Opsional)</label>
-              <div class="max-h-32 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg space-y-1.5 text-xs">
-                <label v-for="t in (treatments ?? [])" :key="t.id" class="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded">
-                  <input v-model="form.treatmentIds" type="checkbox" :value="t.id" class="rounded text-primary">
-                  <span>{{ t.name }} — {{ formatIDR(t.price) }}</span>
-                </label>
+            <!-- Top Informational Stepper Header -->
+            <div class="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-primary-500/10 border border-emerald-500/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm">
+                  📋
+                </div>
+                <div>
+                  <p class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    Form Pendaftaran Jadwal Pasien
+                    <UBadge color="emerald" variant="solid" size="xs">Live Operational</UBadge>
+                  </p>
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400">Pilih pasien, jadwal dokter, serta tindakan medis yang direncanakan.</p>
+                </div>
+              </div>
+              <div v-if="selectedPatientDetail" class="flex items-center gap-2 px-3 py-1 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 shadow-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                <UIcon name="i-lucide-user" class="w-3.5 h-3.5" />
+                <span>{{ selectedPatientDetail.fullName }}</span>
+                <span class="text-[10px] text-gray-400 font-normal">({{ selectedPatientDetail.rmNumber || 'RM Baru' }})</span>
               </div>
             </div>
 
-            <div>
-              <label class="block text-xs font-semibold mb-1">Keluhan Pasien (Opsional)</label>
-              <UTextarea v-model="form.complaintNote" rows="2" placeholder="Keluhan utama pasien..." />
+            <!-- Main 2-Column Responsive Grid Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              <!-- Left Column: Patient, Branch, Doctor & Schedule (Span 6) -->
+              <div class="lg:col-span-6 space-y-4">
+                <!-- Section 1: Pasien & Cabang -->
+                <div class="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-gray-200/80 dark:border-gray-700/80 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                      <UIcon name="i-lucide-user-check" class="w-4 h-4 text-emerald-500" />
+                      1. Identitas Pasien & Cabang
+                    </h3>
+                    <UBadge v-if="selectedPatientDetail?.phoneWa" color="neutral" variant="subtle" size="xs">
+                      📱 {{ selectedPatientDetail.phoneWa }}
+                    </UBadge>
+                  </div>
+
+                  <UFormField
+                    label="Pilih Pasien Terdaftar"
+                    required
+                  >
+                    <select
+                      v-model="form.patientId"
+                      class="w-full p-2.5 text-xs font-semibold border rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 shadow-xs"
+                    >
+                      <option
+                        v-for="p in patients"
+                        :key="p.id"
+                        :value="p.id"
+                      >
+                        {{ p.fullName }} ({{ p.rmNumber || 'RM Baru' }}) - {{ p.phoneWa || 'No WA N/A' }}
+                      </option>
+                    </select>
+                  </UFormField>
+
+                  <UFormField
+                    label="Cabang Klinik Tempat Perawatan"
+                    required
+                  >
+                    <USelect
+                      v-model="form.branchId"
+                      :items="(branches ?? []).length > 0 ? (branches ?? []).map(b => ({ label: b.name, value: b.id })) : [{ label: 'Nina Dental Care - Soreang', value: 'br-1' }, { label: 'Nina Dental Care - Baleendah', value: 'br-2' }]"
+                      class="w-full"
+                      size="lg"
+                    />
+                  </UFormField>
+                </div>
+
+                <!-- Section 2: Dokter & Penjadwalan -->
+                <div class="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-gray-200/80 dark:border-gray-700/80 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                      <UIcon name="i-lucide-stethoscope" class="w-4 h-4 text-emerald-500" />
+                      2. Dokter & Waktu Konsultasi
+                    </h3>
+                    <UBadge v-if="selectedDoctorDetail?.specialization" color="emerald" variant="soft" size="xs">
+                      {{ selectedDoctorDetail.specialization }}
+                    </UBadge>
+                  </div>
+
+                  <UFormField
+                    label="Dokter Penanggung Jawab"
+                    required
+                  >
+                    <select
+                      v-model="form.staffId"
+                      class="w-full p-2.5 text-xs font-semibold border rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 shadow-xs"
+                    >
+                      <option
+                        v-for="d in doctorsForBranch"
+                        :key="d.id"
+                        :value="d.id"
+                      >
+                        {{ d.fullName }} ({{ d.specialization }})
+                      </option>
+                    </select>
+                  </UFormField>
+
+                  <div class="grid grid-cols-2 gap-3">
+                    <UFormField
+                      label="Tanggal Praktek"
+                      required
+                    >
+                      <UInput
+                        v-model="form.scheduledDate"
+                        type="date"
+                        class="w-full"
+                        size="md"
+                      />
+                    </UFormField>
+                    <UFormField
+                      label="Jam Sesi"
+                      required
+                    >
+                      <UInput
+                        v-model="form.scheduledTime"
+                        type="time"
+                        class="w-full"
+                        size="md"
+                      />
+                    </UFormField>
+                  </div>
+
+                  <!-- Quick Time Slots Preset Pills -->
+                  <div class="space-y-1.5">
+                    <label class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                      <UIcon name="i-lucide-clock" class="w-3.5 h-3.5 text-amber-500" />
+                      Pilih Cepat Jam Slot Praktik:
+                    </label>
+                    <div class="flex flex-wrap gap-1.5">
+                      <button
+                        v-for="timeSlot in quickTimeSlots"
+                        :key="timeSlot"
+                        type="button"
+                        class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer border"
+                        :class="form.scheduledTime === timeSlot ? 'bg-emerald-500 text-white border-emerald-600 shadow-xs' : 'bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'"
+                        @click="form.scheduledTime = timeSlot"
+                      >
+                        {{ timeSlot }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Column: Rencana Perawatan, Total Estimation & Keluhan (Span 6) -->
+              <div class="lg:col-span-6 space-y-4">
+                <!-- Section 3: Rencana Perawatan -->
+                <div class="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-gray-200/80 dark:border-gray-700/80 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                      <UIcon name="i-lucide-receipt-text" class="w-4 h-4 text-emerald-500" />
+                      3. Layanan & Tindakan Medis
+                    </h3>
+                    <UBadge color="emerald" variant="solid" size="xs">
+                      {{ selectedTreatmentsCount }} Dipilih
+                    </UBadge>
+                  </div>
+
+                  <div class="max-h-52 overflow-y-auto pr-1 space-y-1.5 text-xs">
+                    <label
+                      v-for="t in (treatments ?? [])"
+                      :key="t.id"
+                      class="flex items-center justify-between p-2.5 rounded-xl border border-gray-200/60 dark:border-gray-700/60 bg-white dark:bg-slate-900 hover:border-emerald-400 dark:hover:border-emerald-500 transition-all cursor-pointer group shadow-2xs"
+                    >
+                      <div class="flex items-center gap-2.5">
+                        <input
+                          v-model="form.treatmentIds"
+                          type="checkbox"
+                          :value="t.id"
+                          class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
+                        >
+                        <div>
+                          <p class="font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                            {{ t.name }}
+                          </p>
+                          <p class="text-[10px] text-gray-400 font-medium">
+                            Kategori: {{ t.categoryName || 'Umum' }} · Estimasi {{ t.durationMinutes || 30 }} Menit
+                          </p>
+                        </div>
+                      </div>
+                      <span class="font-extrabold text-gray-900 dark:text-white font-mono shrink-0 ml-2">
+                        {{ formatIDR(t.price) }}
+                      </span>
+                    </label>
+                  </div>
+
+                  <!-- Rich Live Calculation Panel -->
+                  <div v-if="selectedTreatmentsCount > 0" class="p-3.5 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                        <UIcon name="i-lucide-calculator" class="w-4 h-4 text-emerald-500" />
+                        Ringkasan Estimasi Biaya
+                      </span>
+                      <span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <UIcon name="i-lucide-clock" class="w-3.5 h-3.5" />
+                        Durasi Total ~{{ selectedTreatmentsTotalDuration }} Mnt
+                      </span>
+                    </div>
+
+                    <div class="flex flex-wrap gap-1">
+                      <span
+                        v-for="t in selectedTreatmentsList"
+                        :key="t.id"
+                        class="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold border border-emerald-500/30"
+                      >
+                        {{ t.name }}
+                      </span>
+                    </div>
+
+                    <div class="pt-2 border-t border-emerald-500/20 flex items-center justify-between">
+                      <div>
+                        <p class="text-[10px] text-gray-500 font-medium">Estimasi Biaya Total</p>
+                        <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">*DP Deposit 20%: {{ formatIDR(selectedTreatmentsTotalPrice * 0.2) }}</p>
+                      </div>
+                      <span class="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                        {{ formatIDR(selectedTreatmentsTotalPrice) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section 4: Keluhan Pasien & Quick Tags -->
+                <div class="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-gray-200/80 dark:border-gray-700/80 space-y-2.5">
+                  <div class="flex items-center justify-between">
+                    <label class="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                      <UIcon name="i-lucide-file-text" class="w-4 h-4 text-emerald-500" />
+                      4. Catatan Keluhan Pasien
+                    </label>
+                    <span class="text-[10px] text-gray-400">Klik tag untuk menambahkan</span>
+                  </div>
+
+                  <!-- Quick Symptom Tags Chips -->
+                  <div class="flex flex-wrap gap-1.5">
+                    <button
+                      v-for="tag in quickComplaintTags"
+                      :key="tag"
+                      type="button"
+                      class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-emerald-400 hover:text-emerald-600 transition-all cursor-pointer"
+                      @click="addComplaintTag(tag)"
+                    >
+                      + {{ tag }}
+                    </button>
+                  </div>
+
+                  <UTextarea
+                    v-model="form.complaintNote"
+                    rows="2.5"
+                    placeholder="Contoh: Keluhan utama gigi geraham kanan terasa ngilu saat minum dingin..."
+                    class="w-full"
+                  />
+                </div>
+              </div>
             </div>
 
             <UAlert
               v-if="formError"
               color="error"
               variant="subtle"
+              icon="i-lucide-alert-circle"
               :description="formError"
+              class="rounded-xl"
             />
           </form>
         </template>
 
+        <template #footer>
+          <div class="flex flex-wrap items-center justify-between gap-3 w-full pt-1">
+            <div class="flex items-center gap-2">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                label="Batal"
+                @click="showModal = false"
+              />
+              <div v-if="selectedTreatmentsCount > 0" class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300 font-semibold">
+                <span>Ringkasan: {{ selectedTreatmentsCount }} Layanan</span>
+                <span>•</span>
+                <span class="font-mono font-bold">{{ formatIDR(selectedTreatmentsTotalPrice) }}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+              <UButton
+                :loading="saving"
+                color="amber"
+                variant="soft"
+                icon="i-lucide-file-edit"
+                label="Simpan Draft"
+                class="font-semibold"
+                @click="onSubmit('draft')"
+              />
+              <UButton
+                :loading="saving"
+                color="emerald"
+                variant="solid"
+                icon="i-lucide-send"
+                label="Submit Reservasi Pasien"
+                class="font-bold shadow-lg shadow-emerald-500/20 hover:brightness-105"
+                @click="onSubmit('pending')"
+              />
+            </div>
+          </div>
+        </template>
+      </UModal>
+
+      <!-- Modal Konfirmasi Hapus (Soft Delete) Reservasi -->
+      <UModal
+        v-model:open="showDeleteConfirmModal"
+        title="Konfirmasi Hapus Reservasi"
+      >
+        <template #body>
+          <div v-if="reservationToDelete" class="space-y-3 text-xs">
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300">
+              <UIcon name="i-lucide-alert-triangle" class="w-6 h-6 flex-shrink-0 text-red-600" />
+              <div>
+                <p class="font-bold text-sm">Hapus Reservasi Ini?</p>
+                <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
+                  Reservasi pasien <strong class="text-red-700 dark:text-red-300">{{ reservationToDelete.patientName }}</strong> dengan tiket <span class="font-mono font-bold">{{ safeQueueTicket(reservationToDelete.id) }}</span> akan dihapus (soft delete).
+                </p>
+              </div>
+            </div>
+          </div>
+        </template>
         <template #footer>
           <div class="flex justify-end gap-2 w-full">
             <UButton
               color="neutral"
               variant="ghost"
               label="Batal"
-              @click="showModal = false"
+              :disabled="deleting"
+              @click="showDeleteConfirmModal = false"
             />
             <UButton
-              :loading="saving"
-              label="Buat Reservasi"
-              @click="onSubmit"
+              color="red"
+              variant="solid"
+              icon="i-lucide-trash-2"
+              :loading="deleting"
+              label="Ya, Hapus Reservasi"
+              @click="executeSoftDelete"
             />
           </div>
         </template>
