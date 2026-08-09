@@ -941,30 +941,33 @@ function printReservationTicket(item: Reservation) {
                   <UButton
                     size="xs"
                     color="neutral"
-                    variant="outline"
-                    icon="i-lucide-eye"
+                    variant="ghost"
                     title="Lihat Detail Reservasi"
                     @click="openReservationDetail(item)"
-                  />
+                  >
+                    <UIcon name="i-lucide-eye" class="w-4 h-4" />
+                  </UButton>
 
                   <UButton
                     size="xs"
                     color="primary"
-                    variant="outline"
-                    icon="i-lucide-printer"
+                    variant="solid"
                     title="Cetak Tiket Antrian"
-                    class="font-bold shadow-2xs hover:bg-primary-50 dark:hover:bg-primary-950/50"
+                    class="font-bold"
                     @click="printReservationTicket(item)"
-                  />
+                  >
+                    <UIcon name="i-lucide-printer" class="w-4 h-4" />
+                  </UButton>
 
                   <UButton
                     size="xs"
                     color="emerald"
-                    variant="outline"
-                    icon="i-lucide-credit-card"
+                    variant="ghost"
                     title="Bayar Reservasi di Kasir Billing"
                     :to="`/billing?reservationId=${item.id}&action=pay`"
-                  />
+                  >
+                    <UIcon name="i-lucide-credit-card" class="w-4 h-4" />
+                  </UButton>
 
                   <UButton
                     v-if="STATUS_CONFIG[item.status]?.nextStatus"
