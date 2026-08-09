@@ -10,6 +10,17 @@ export default defineNuxtConfig({
     fallback: 'light'
   },
 
+  icon: {
+    clientBundle: {
+      include: [
+        'i-lucide-printer',
+        'i-lucide-eye',
+        'i-lucide-credit-card',
+        'i-lucide-trash-2'
+      ]
+    }
+  },
+
   devtools: {
     enabled: true
   },
