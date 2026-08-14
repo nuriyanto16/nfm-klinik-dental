@@ -774,7 +774,7 @@ function printReservationTicket(item: Reservation) {
           <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ totalReservationsCount }}</p>
         </div>
         <div class="p-3 rounded-lg bg-primary-50 dark:bg-primary-950/40 text-primary">
-          <UIcon name="i-heroicons-calendar" class="w-6 h-6" />
+          <UIcon name="i-lucide-calendar" class="w-6 h-6" />
         </div>
       </div>
       <div class="rounded-xl border border-default bg-card p-4 flex items-center justify-between shadow-xs">
@@ -783,7 +783,7 @@ function printReservationTicket(item: Reservation) {
           <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ pendingReservationsCount }}</p>
         </div>
         <div class="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600">
-          <UIcon name="i-heroicons-clock" class="w-6 h-6" />
+          <UIcon name="i-lucide-clock" class="w-6 h-6" />
         </div>
       </div>
       <div class="rounded-xl border border-default bg-card p-4 flex items-center justify-between shadow-xs">
@@ -792,7 +792,7 @@ function printReservationTicket(item: Reservation) {
           <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{{ confirmedReservationsCount }}</p>
         </div>
         <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600">
-          <UIcon name="i-heroicons-check-circle" class="w-6 h-6" />
+          <UIcon name="i-lucide-check-circle" class="w-6 h-6" />
         </div>
       </div>
       <div class="rounded-xl border border-default bg-card p-4 flex items-center justify-between shadow-xs">
@@ -801,7 +801,7 @@ function printReservationTicket(item: Reservation) {
           <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{{ completedReservationsCount }}</p>
         </div>
         <div class="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600">
-          <UIcon name="i-heroicons-check-badge" class="w-6 h-6" />
+          <UIcon name="i-lucide-badge-check" class="w-6 h-6" />
         </div>
       </div>
     </div>
@@ -951,7 +951,7 @@ function printReservationTicket(item: Reservation) {
                     size="xs"
                     color="primary"
                     variant="ghost"
-                    icon="i-heroicons-printer"
+                    icon="i-lucide-printer"
                     title="Cetak Tiket Antrian"
                     @click="printReservationTicket(item)"
                   />

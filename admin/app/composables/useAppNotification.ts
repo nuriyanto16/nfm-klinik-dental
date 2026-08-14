@@ -5,7 +5,7 @@ export function useAppNotification() {
     toast.add({
       title,
       description: message,
-      icon: 'i-heroicons-check-circle',
+      icon: 'i-lucide-check-circle',
       color: 'green'
     })
   }
@@ -14,7 +14,7 @@ export function useAppNotification() {
     toast.add({
       title,
       description: message,
-      icon: 'i-heroicons-exclamation-circle',
+      icon: 'i-lucide-alert-circle',
       color: 'red'
     })
   }
@@ -23,7 +23,7 @@ export function useAppNotification() {
     toast.add({
       title,
       description: message,
-      icon: 'i-heroicons-information-circle',
+      icon: 'i-lucide-info',
       color: 'blue'
     })
   }
@@ -32,7 +32,7 @@ export function useAppNotification() {
     toast.add({
       title,
       description: message,
-      icon: 'i-heroicons-exclamation-triangle',
+      icon: 'i-lucide-triangle-alert',
       color: 'yellow'
     })
   }
