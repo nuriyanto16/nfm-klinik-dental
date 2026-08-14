@@ -1024,7 +1024,7 @@ function printReservationTicket(item: Reservation) {
       <UModal
         v-model:open="showModal"
         :title="isEditMode ? 'Edit Draft Reservasi Pasien' : 'Buat Reservasi & Jadwal Pasien Baru'"
-        :ui="{ width: 'sm:max-w-4xl' }"
+        :ui="{ width: 'w-full sm:max-w-4xl lg:max-w-6xl xl:max-w-7xl' }"
       >
         <template #body>
           <form
@@ -1190,7 +1190,7 @@ function printReservationTicket(item: Reservation) {
                     </UBadge>
                   </div>
 
-                  <div class="max-h-52 overflow-y-auto pr-1 space-y-1.5 text-xs">
+                  <div class="max-h-64 overflow-y-auto pr-1 space-y-1.5 text-xs">
                     <label
                       v-for="t in (treatments ?? [])"
                       :key="t.id"
