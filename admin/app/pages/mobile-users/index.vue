@@ -30,6 +30,7 @@ export interface MobileUserAccount {
   phoneWa: string
   rmNumber: string
   gender: string
+  points: number
   deviceId: string
   appVersion: string
   deviceOs: string
@@ -52,6 +53,7 @@ const mobileUsers = ref<MobileUserAccount[]>([
     phoneWa: '081234567890',
     rmNumber: 'RM-2026-0099',
     gender: 'Laki-laki',
+    points: 350,
     deviceId: 'Android-Pixel-7a-a19f',
     appVersion: 'v1.0.0 (Build 12)',
     deviceOs: 'Android 14 (API 34)',

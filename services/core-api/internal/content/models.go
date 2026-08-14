@@ -57,15 +57,19 @@ type Promo struct {
 	StartsAt       *time.Time `json:"startsAt"`
 	EndsAt         *time.Time `json:"endsAt"`
 	IsActive       bool       `json:"isActive"`
+	DiscountType   *string    `json:"discountType"`
+	DiscountValue  *float64   `json:"discountValue"`
 }
 
 type PromoInput struct {
-	Title          string  `json:"title"`
-	BannerImageURL *string `json:"bannerImageUrl"`
-	Description    *string `json:"description"`
-	StartsAt       *string `json:"startsAt"`
-	EndsAt         *string `json:"endsAt"`
-	IsActive       bool    `json:"isActive"`
+	Title          string   `json:"title"`
+	BannerImageURL *string  `json:"bannerImageUrl"`
+	Description    *string  `json:"description"`
+	StartsAt       *string  `json:"startsAt"`
+	EndsAt         *string  `json:"endsAt"`
+	IsActive       bool     `json:"isActive"`
+	DiscountType   *string  `json:"discountType"`
+	DiscountValue  *float64 `json:"discountValue"`
 }
 
 type Testimonial struct {

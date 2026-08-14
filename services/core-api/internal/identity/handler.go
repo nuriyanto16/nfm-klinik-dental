@@ -53,6 +53,13 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Put("/users/:id", h.updateUser)
 	router.Delete("/users/:id", h.deactivateUser)
 	router.Get("/roles", h.listRoles)
+
+	// Point system endpoints
+	router.Get("/admin/point-settings", h.getPointSettings)
+	router.Put("/admin/point-settings", h.updatePointSettings)
+	router.Get("/admin/patients/:id/points", h.getPatientPoints)
+	router.Post("/admin/patients/:id/points/adjust", h.adjustPatientPoints)
+	router.Get("/patient/points", h.getMyPoints)
 }
 
 func (h *Handler) login(c *fiber.Ctx) error {
@@ -277,4 +284,78 @@ func (h *Handler) deactivateUser(c *fiber.Ctx) error {
 		return apperr.Internal(c, err)
 	}
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func (h *Handler) getPointSettings(c *fiber.Ctx) error {
+	ps, err := h.repo.GetPointSettings(c.Context())
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.JSON(ps)
+}
+
+func (h *Handler) updatePointSettings(c *fiber.Ctx) error {
+	var in PointSettings
+	if err := c.BodyParser(&in); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	ps, err := h.repo.UpdatePointSettings(c.Context(), in)
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.JSON(ps)
+}
+
+func (h *Handler) getPatientPoints(c *fiber.Ctx) error {
+	patientID := c.Params("id")
+	data, err := h.repo.GetUserPointsData(c.Context(), patientID)
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.JSON(data)
+}
+
+func (h *Handler) adjustPatientPoints(c *fiber.Ctx) error {
+	patientID := c.Params("id")
+	var body struct {
+		Points      int    `json:"points"`
+		Description string `json:"description"`
+		Type        string `json:"type"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if body.Points == 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "points must be non-zero")
+	}
+	if body.Description == "" {
+		body.Description = "Penyesuaian Point oleh Admin"
+	}
+	newBalance, err := h.repo.AdjustPatientPoints(c.Context(), patientID, body.Points, body.Description, body.Type)
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.JSON(fiber.Map{
+		"newBalance":  newBalance,
+		"patientId":   patientID,
+		"description": body.Description,
+	})
+}
+
+func (h *Handler) getMyPoints(c *fiber.Ctx) error {
+	userID := c.Query("userId")
+	if userID == "" {
+		// Attempt from bearer token
+		if claimedID, err := h.currentUserID(c); err == nil && claimedID != "" {
+			userID = claimedID
+		} else {
+			// Fallback sample user ID if unauthenticated
+			userID = "user-1"
+		}
+	}
+	data, err := h.repo.GetUserPointsData(c.Context(), userID)
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.JSON(data)
 }

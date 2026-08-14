@@ -113,7 +113,7 @@ func (r *Repository) ListReservations(ctx context.Context, filter ReservationFil
 		JOIN identity.users su ON su.id = s.user_id
 		LEFT JOIN scheduling.reservation_treatments rt ON rt.reservation_id = res.id
 		LEFT JOIN billing.treatments t ON t.id = rt.treatment_id
-		WHERE 1 = 1`
+		WHERE res.deleted_at IS NULL`
 
 	args := []any{}
 	if filter.BranchID != "" {

@@ -145,6 +145,23 @@ class ReservationRepository {
       rethrow;
     }
   }
+
+  Future<Reservation?> getReservation(String id) async {
+    try {
+      final res = await _dio.get<dynamic>('/reservations/$id');
+      if (res.data != null && res.data is Map) {
+        return Reservation.fromJson(Map<String, dynamic>.from(res.data as Map));
+      }
+    } catch (_) {}
+
+    for (final r in _localCreatedReservations) {
+      if (r.id == id) return r;
+    }
+    for (final r in sampleReservations) {
+      if (r.id == id) return r;
+    }
+    return null;
+  }
 }
 
 final reservationRepositoryProvider = Provider<ReservationRepository>((ref) {
@@ -154,3 +171,8 @@ final reservationRepositoryProvider = Provider<ReservationRepository>((ref) {
 final myReservationsProvider = FutureProvider.autoDispose.family<List<Reservation>, String>((ref, patientId) {
   return ref.watch(reservationRepositoryProvider).listMyReservations(patientId);
 });
+
+final reservationDetailProvider = FutureProvider.autoDispose.family<Reservation?, String>((ref, id) {
+  return ref.watch(reservationRepositoryProvider).getReservation(id);
+});
+

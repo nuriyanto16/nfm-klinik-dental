@@ -108,6 +108,16 @@ const form = reactive({
   itemsUsed: [] as ItemUsageFormRow[]
 })
 
+const selectedPatient = computed(() => {
+  if (!form.patientId) return null
+  return (patients.value ?? []).find(p => p.id === form.patientId)
+})
+
+const selectedDoctor = computed(() => {
+  if (!form.staffId) return null
+  return (doctorsAdmin.value ?? []).find(d => d.id === form.staffId)
+})
+
 watch(() => form.patientId, (newId) => {
   if (!newId) return
   const p = (patients.value ?? []).find(pt => pt.id === newId)
@@ -160,7 +170,7 @@ function openCreate() {
   showModal.value = true
 }
 
-function openEdit(record: MedicalRecord) {
+async function openEdit(record: MedicalRecord) {
   editingId.value = record.id
   activeTab.value = 'identitas'
   form.patientId = record.patientId || patients.value?.[0]?.id || ''
@@ -168,45 +178,94 @@ function openEdit(record: MedicalRecord) {
   form.staffId = record.staffId || doctorsAdmin.value?.[0]?.id || ''
   form.diagnosis = record.diagnosis || ''
   form.treatmentNotes = record.treatmentNotes || ''
-  form.nik = (record as any).nik || '3171011405920003'
-  form.occupation = (record as any).occupation || 'Karyawan Swasta'
-  form.emergencyContact = (record as any).emergencyContact || 'Siska Putri (Istri) - 0812-9876-5432'
-  form.chiefComplaint = (record as any).chiefComplaint || 'Pasien mengeluhkan sakit berdenyut pada gigi.'
-  form.presentIllnessHistory = (record as any).presentIllnessHistory || 'Nyeri timbul secara spontan tanpa rangsangan.'
-  form.hasHypertension = (record as any).hasHypertension ?? false
-  form.hasHeartDisease = (record as any).hasHeartDisease ?? false
-  form.hasDiabetes = (record as any).hasDiabetes ?? false
-  form.hasHepatitis = (record as any).hasHepatitis ?? false
-  form.hasHiv = (record as any).hasHiv ?? false
-  form.hasBleedingDisorder = (record as any).hasBleedingDisorder ?? false
-  form.drugAllergies = (record as any).drugAllergies || 'Penicillin (Gatal-gatal)'
-  form.foodAllergies = (record as any).foodAllergies || '-'
-  form.isPregnant = (record as any).isPregnant ?? false
-  form.routineMedications = (record as any).routineMedications || '-'
-  form.vitalBloodPressure = (record as any).vitalBloodPressure || '120 / 80 mmHg'
-  form.vitalPulse = (record as any).vitalPulse || '82 x/menit'
-  form.vitalTemperature = (record as any).vitalTemperature || '36.6 °C'
-  form.extraOralExam = (record as any).extraOralExam || 'Pipi simetris, tidak ada bengkak luar wajah.'
-  form.toothNumber = (record as any).toothNumber || '46'
-  form.soapS = (record as any).soapS || 'Nyeri berdenyut spontan.'
-  form.soapO = (record as any).soapO || 'Karies profunda, perkusi (+).'
-  form.soapP = (record as any).soapP || 'Perawatan Saluran Akar (PSA) - Inisiasi'
-  form.prescription = (record as any).prescription || 'Rx: Amoxicillin 500mg No. XV (3x1), Asam Mefenamat 500mg No. X (3x1 prn)'
-  form.odontogram = (record as any).odontogram || []
+  form.nik = record.nik || ''
+  form.occupation = record.occupation || ''
+  form.emergencyContact = record.emergencyContact || ''
+  form.chiefComplaint = record.chiefComplaint || ''
+  form.presentIllnessHistory = record.presentIllnessHistory || ''
+  form.hasHypertension = record.hasHypertension ?? false
+  form.hasHeartDisease = record.hasHeartDisease ?? false
+  form.hasDiabetes = record.hasDiabetes ?? false
+  form.hasHepatitis = record.hasHepatitis ?? false
+  form.hasHiv = record.hasHiv ?? false
+  form.hasBleedingDisorder = record.hasBleedingDisorder ?? false
+  form.drugAllergies = record.drugAllergies || ''
+  form.foodAllergies = record.foodAllergies || ''
+  form.isPregnant = record.isPregnant ?? false
+  form.routineMedications = record.routineMedications || ''
+  form.vitalBloodPressure = record.vitalBloodPressure || ''
+  form.vitalPulse = record.vitalPulse || ''
+  form.vitalTemperature = record.vitalTemperature || ''
+  form.extraOralExam = record.extraOralExam || ''
+  form.toothNumber = record.toothNumber || ''
+  form.soapS = record.soapS || ''
+  form.soapO = record.soapO || ''
+  form.soapP = record.soapP || ''
+  form.prescription = record.prescription || ''
+  form.odontogram = record.odontogram || []
   form.itemsUsed = []
   formError.value = ''
   showModal.value = true
+
+  try {
+    const fullDetail = await apiGet<MedicalRecordDetail>(`/medical-records/${record.id}`)
+    if (fullDetail) {
+      form.patientId = fullDetail.patientId || form.patientId
+      form.reservationId = fullDetail.reservationId || form.reservationId
+      form.staffId = fullDetail.staffId || form.staffId
+      form.diagnosis = fullDetail.diagnosis || form.diagnosis
+      form.treatmentNotes = fullDetail.treatmentNotes || form.treatmentNotes
+      form.nik = fullDetail.nik || form.nik
+      form.occupation = fullDetail.occupation || form.occupation
+      form.emergencyContact = fullDetail.emergencyContact || form.emergencyContact
+      form.chiefComplaint = fullDetail.chiefComplaint || form.chiefComplaint
+      form.presentIllnessHistory = fullDetail.presentIllnessHistory || form.presentIllnessHistory
+      form.hasHypertension = fullDetail.hasHypertension ?? form.hasHypertension
+      form.hasHeartDisease = fullDetail.hasHeartDisease ?? form.hasHeartDisease
+      form.hasDiabetes = fullDetail.hasDiabetes ?? form.hasDiabetes
+      form.hasHepatitis = fullDetail.hasHepatitis ?? form.hasHepatitis
+      form.hasHiv = fullDetail.hasHiv ?? form.hasHiv
+      form.hasBleedingDisorder = fullDetail.hasBleedingDisorder ?? form.hasBleedingDisorder
+      form.drugAllergies = fullDetail.drugAllergies || form.drugAllergies
+      form.foodAllergies = fullDetail.foodAllergies || form.foodAllergies
+      form.isPregnant = fullDetail.isPregnant ?? form.isPregnant
+      form.routineMedications = fullDetail.routineMedications || form.routineMedications
+      form.vitalBloodPressure = fullDetail.vitalBloodPressure || form.vitalBloodPressure
+      form.vitalPulse = fullDetail.vitalPulse || form.vitalPulse
+      form.vitalTemperature = fullDetail.vitalTemperature || form.vitalTemperature
+      form.extraOralExam = fullDetail.extraOralExam || form.extraOralExam
+      form.toothNumber = fullDetail.toothNumber || form.toothNumber
+      form.soapS = fullDetail.soapS || form.soapS
+      form.soapO = fullDetail.soapO || form.soapO
+      form.soapP = fullDetail.soapP || form.soapP
+      form.prescription = fullDetail.prescription || form.prescription
+
+      if (fullDetail.odontogram && fullDetail.odontogram.length > 0) {
+        form.odontogram = fullDetail.odontogram.map(o => ({
+          toothNumber: o.toothNumber,
+          condition: o.condition,
+          notes: o.notes || '',
+          photoUrl: o.photoUrl || ''
+        }))
+      }
+    }
+  } catch (_) {}
 }
+
 
 async function deleteRecord(record: MedicalRecord) {
   if (!confirm(`Hapus rekam medis pasien ${record.patientName || ''}?`)) return
   try {
     await apiDelete(`/medical-records/${record.id}`)
-  } catch (_) {
-    if (records.value) {
-      const idx = records.value.findIndex(r => r.id === record.id)
-      if (idx !== -1) records.value.splice(idx, 1)
-    }
+    useAppNotification().success(
+      `Rekam medis pasien ${record.patientName || ''} berhasil dihapus.`,
+      'Rekam Medis Dihapus'
+    )
+  } catch (err: any) {
+    useAppNotification().error(
+      err?.data?.message ?? err?.message ?? 'Gagal menghapus rekam medis.',
+      'Gagal Menghapus'
+    )
   }
   await refresh()
 }
@@ -220,81 +279,96 @@ function removeOdontogramRow(i: number) {
 
 async function onSubmit() {
   if (!form.patientId || !form.staffId) {
-    formError.value = 'Pasien dan dokter wajib dipilih.'
+    formError.value = 'Pasien dan Dokter Spesialis wajib dipilih.'
     return
   }
   saving.value = true
   formError.value = ''
   try {
-    const payload: CreateMedicalRecordInput = {
+    const payload: any = {
       patientId: form.patientId,
-      reservationId: form.reservationId || null,
+      reservationId: form.reservationId ? form.reservationId : null,
       staffId: form.staffId,
       diagnosis: form.diagnosis || null,
       treatmentNotes: form.treatmentNotes || null,
+      nik: form.nik || null,
+      occupation: form.occupation || null,
+      emergencyContact: form.emergencyContact || null,
+      chiefComplaint: form.chiefComplaint || null,
+      presentIllnessHistory: form.presentIllnessHistory || null,
+      hasHypertension: form.hasHypertension,
+      hasHeartDisease: form.hasHeartDisease,
+      hasDiabetes: form.hasDiabetes,
+      hasHepatitis: form.hasHiv,
+      hasHiv: form.hasHiv,
+      hasBleedingDisorder: form.hasBleedingDisorder,
+      drugAllergies: form.drugAllergies || null,
+      foodAllergies: form.foodAllergies || null,
+      isPregnant: form.isPregnant,
+      routineMedications: form.routineMedications || null,
+      vitalBloodPressure: form.vitalBloodPressure || null,
+      vitalPulse: form.vitalPulse || null,
+      vitalTemperature: form.vitalTemperature || null,
+      extraOralExam: form.extraOralExam || null,
+      toothNumber: form.toothNumber || null,
+      soapS: form.soapS || null,
+      soapO: form.soapO || null,
+      soapP: form.soapP || null,
+      prescription: form.prescription || null,
       odontogram: form.odontogram.map(o => ({ ...o, notes: o.notes || null, photoUrl: o.photoUrl || null })),
       itemsUsed: form.itemsUsed.map(u => ({ ...u, notes: u.notes || null }))
     }
 
-    Object.assign(payload, {
-      nik: form.nik,
-      occupation: form.occupation,
-      emergencyContact: form.emergencyContact,
-      chiefComplaint: form.chiefComplaint,
-      presentIllnessHistory: form.presentIllnessHistory,
-      hasHypertension: form.hasHypertension,
-      hasHeartDisease: form.hasHeartDisease,
-      hasDiabetes: form.hasDiabetes,
-      hasHepatitis: form.hasHepatitis,
-      hasHiv: form.hasHiv,
-      hasBleedingDisorder: form.hasBleedingDisorder,
-      drugAllergies: form.drugAllergies,
-      foodAllergies: form.foodAllergies,
-      isPregnant: form.isPregnant,
-      routineMedications: form.routineMedications,
-      vitalBloodPressure: form.vitalBloodPressure,
-      vitalPulse: form.vitalPulse,
-      vitalTemperature: form.vitalTemperature,
-      extraOralExam: form.extraOralExam,
-      toothNumber: form.toothNumber,
-      soapS: form.soapS,
-      soapO: form.soapO,
-      soapP: form.soapP,
-      prescription: form.prescription
-    })
+    const patientName = selectedPatient.value?.fullName || 'Pasien'
+    const doctorName = selectedDoctor.value?.fullName || 'Dokter Spesialis'
 
     if (editingId.value) {
-      await apiPut(`/medical-records/${editingId.value}`, payload as unknown as Record<string, unknown>)
-      await apiPost('/activity-logs', {
-        scope: 'admin',
-        category: 'medical',
-        action: 'UPDATE_MEDICAL_RECORD',
-        description: `Dokter memperbarui Rekam Medis & Odontogram pasien ${selectedPatient?.fullName || 'Pasien'}`,
-        userName: selectedDoctor?.fullName || 'Dokter Spesialis',
-        userRole: 'Dokter Spesialis',
-        details: { diagnosis: form.diagnosis, toothNumber: form.toothNumber }
-      })
+      await apiPut(`/medical-records/${editingId.value}`, payload)
+      try {
+        await apiPost('/activity-logs', {
+          scope: 'admin',
+          category: 'medical',
+          action: 'UPDATE_MEDICAL_RECORD',
+          description: `Dokter memperbarui Rekam Medis & Odontogram pasien ${patientName}`,
+          userName: doctorName,
+          userRole: 'Dokter Spesialis',
+          details: { diagnosis: form.diagnosis, toothNumber: form.toothNumber }
+        })
+      } catch (_) {}
     } else {
-      await apiPost('/medical-records', payload as unknown as Record<string, unknown>)
-      await apiPost('/activity-logs', {
-        scope: 'admin',
-        category: 'medical',
-        action: 'CREATE_MEDICAL_RECORD',
-        description: `Dokter menginput Rekam Medis & Odontogram pasien baru ${selectedPatient?.fullName || 'Pasien'}`,
-        userName: selectedDoctor?.fullName || 'Dokter Spesialis',
-        userRole: 'Dokter Spesialis',
-        details: { diagnosis: form.diagnosis, toothNumber: form.toothNumber }
-      })
+      await apiPost<MedicalRecord>('/medical-records', payload)
+      try {
+        await apiPost('/activity-logs', {
+          scope: 'admin',
+          category: 'medical',
+          action: 'CREATE_MEDICAL_RECORD',
+          description: `Dokter menginput Rekam Medis & Odontogram pasien baru ${patientName}`,
+          userName: doctorName,
+          userRole: 'Dokter Spesialis',
+          details: { diagnosis: form.diagnosis, toothNumber: form.toothNumber }
+        })
+      } catch (_) {}
     }
 
+    useAppNotification().success(
+      `Data rekam medis pasien ${patientName} berhasil disimpan dengan aman.`,
+      'Rekam Medis Disimpan'
+    )
+
     showModal.value = false
+    editingId.value = null
     await refresh()
-  } catch (err) {
-    formError.value = apiErrorMessage(err)
+  } catch (err: any) {
+    formError.value = err?.data?.message ?? err?.message ?? 'Gagal menyimpan rekam medis. Periksa kelengkapan isian form.'
+    useAppNotification().error(
+      formError.value,
+      'Gagal Menyimpan'
+    )
   } finally {
     saving.value = false
   }
 }
+
 
 // --- Search, Filter & Pagination ---
 const search = ref('')

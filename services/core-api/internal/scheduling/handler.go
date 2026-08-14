@@ -32,10 +32,11 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Get("/doctors/:id/stats", h.doctorStats)
 	router.Post("/doctors", h.createDoctor)
 	router.Put("/doctors/:id", h.updateDoctor)
-	router.Delete("/doctors/:id", h.deactivateDoctor)
-
 	router.Get("/reservations", h.listReservations)
+	router.Get("/reservations/:id", h.getReservation)
 	router.Post("/reservations", h.createReservation)
+	router.Put("/reservations/:id", h.updateReservation)
+	router.Delete("/reservations/:id", h.deleteReservation)
 	router.Patch("/reservations/:id/status", h.updateReservationStatus)
 	router.Get("/reservation-statuses", h.listReservationStatuses)
 }
@@ -172,10 +173,53 @@ func (h *Handler) createReservation(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(reservation)
 }
 
+func (h *Handler) getReservation(c *fiber.Ctx) error {
+	reservation, err := h.repo.GetReservation(c.Context(), c.Params("id"))
+	if errors.Is(err, dberr.ErrNotFound) {
+		return fiber.NewError(fiber.StatusNotFound, "reservation not found")
+	}
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.JSON(reservation)
+}
+
+func (h *Handler) updateReservation(c *fiber.Ctx) error {
+	var in UpdateReservationInput
+	if err := c.BodyParser(&in); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if in.Status != nil && *in.Status != "" && !slices.Contains(ReservationStatuses, *in.Status) {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid status")
+	}
+	reservation, err := h.repo.UpdateReservation(c.Context(), c.Params("id"), in)
+	if errors.Is(err, dberr.ErrNotFound) {
+		return fiber.NewError(fiber.StatusNotFound, "reservation not found")
+	}
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.JSON(reservation)
+}
+
+func (h *Handler) deleteReservation(c *fiber.Ctx) error {
+	err := h.repo.SoftDeleteReservation(c.Context(), c.Params("id"))
+	if errors.Is(err, dberr.ErrNotFound) {
+		return fiber.NewError(fiber.StatusNotFound, "reservation not found")
+	}
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
 func (h *Handler) updateReservationStatus(c *fiber.Ctx) error {
 	var in UpdateReservationStatusInput
 	if err := c.BodyParser(&in); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if !slices.Contains(ReservationStatuses, in.Status) {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid status")
 	}
 	reservation, err := h.repo.UpdateReservationStatus(c.Context(), c.Params("id"), in.Status)
 	if errors.Is(err, dberr.ErrNotFound) {
@@ -190,3 +234,4 @@ func (h *Handler) updateReservationStatus(c *fiber.Ctx) error {
 func (h *Handler) listReservationStatuses(c *fiber.Ctx) error {
 	return c.JSON(ReservationStatuses)
 }
+

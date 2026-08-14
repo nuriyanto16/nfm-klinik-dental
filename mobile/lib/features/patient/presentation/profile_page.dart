@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/update/app_update_notifier.dart';
 import '../application/session_controller.dart';
 import 'add_patient_sheet.dart';
 import 'connect_medical_record_sheet.dart';
@@ -235,6 +236,72 @@ class ProfilePage extends ConsumerWidget {
                   'Patient QR',
                   style: TextStyle(color: AppColors.pink, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+            // App Version & Check Update Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.system_update_rounded, color: AppColors.primary, size: 20),
+                          SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Versi Aplikasi',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textDark),
+                              ),
+                              Text(
+                                'v1.0.1 (Build 2)',
+                                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      FilledButton.icon(
+                        onPressed: () async {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Memeriksa versi terbaru aplikasi...'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+                          await ref.read(appUpdateNotifierProvider.notifier).checkForUpdate();
+                          final updateState = ref.read(appUpdateNotifierProvider);
+                          if (updateState is UpdateUpToDate && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Aplikasi Nina Dental Care Anda sudah versi terbaru (v1.0.1+2).'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.refresh_rounded, size: 16),
+                        label: const Text('Cek Update', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],

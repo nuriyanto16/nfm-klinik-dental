@@ -839,21 +839,78 @@ class _BookingFlowPageState extends ConsumerState<BookingFlowPage> {
             error: (err, _) => Center(child: Text('Error: $err')),
           ),
         ),
-        // Submit Button
-        Padding(
+        // Live calculation summary & Submit Button
+        Container(
           padding: const EdgeInsets.all(20),
-          child: SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _isSubmitting ? null : _submitReservation,
-              child: _isSubmitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Text('Buat Reservasi'),
-            ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              treatmentsAsync.maybeWhen(
+                data: (treatments) {
+                  double total = 0;
+                  int count = 0;
+                  for (final item in treatments) {
+                    if (_selectedTreatmentIds.contains(item.id)) {
+                      total += item.price;
+                      count++;
+                    }
+                  }
+                  if (count == 0) return const SizedBox.shrink();
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.pink.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.pink.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.receipt_long, color: AppColors.pink, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$count Layanan Dipilih',
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textDark),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          currency.format(total),
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.pink),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                orElse: () => const SizedBox.shrink(),
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _isSubmitting ? null : _submitReservation,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text('Buat Reservasi'),
+                ),
+              ),
+            ],
           ),
         ),
       ],

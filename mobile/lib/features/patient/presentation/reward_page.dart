@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../patient/application/session_controller.dart';
+import '../data/point_repository.dart';
 
 class RewardPage extends ConsumerWidget {
   const RewardPage({super.key});
@@ -12,9 +12,14 @@ class RewardPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionControllerProvider).value;
     final fullName = session?.fullName ?? 'Nuriyanto';
+    final pointsAsync = ref.watch(myPointsProvider(session?.patientId));
+    final pointsData = pointsAsync.value;
+    final balance = pointsData?.pointsBalance ?? 250;
+    final rupiahVal = pointsData?.rupiahValue ?? (balance * 100.0);
+    final transactions = pointsData?.transactions ?? [];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
@@ -65,22 +70,28 @@ class RewardPage extends ConsumerWidget {
                                 color: Colors.amber.shade100,
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Row(
+                              child: Row(
                                 children: [
-                                  Icon(Icons.star, color: Colors.amber, size: 16),
-                                  SizedBox(width: 4),
-                                  Text('1.250 Poin', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber, fontSize: 12)),
+                                  const Icon(Icons.star, color: Colors.amber, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$balance Poin',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber, fontSize: 13),
+                                  ),
                                 ],
                               ),
                             ),
                           ],
                         ),
                         const Divider(height: 24),
-                        const Row(
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Kumpulkan poin untuk tukar voucher gratis!', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                            Text('100 Poin = Rp 10.000', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                            const Text('Nilai penukaran poin saat ini:', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                            Text(
+                              'Setara Rp ${rupiahVal.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            ),
                           ],
                         ),
                       ],
@@ -119,14 +130,99 @@ class RewardPage extends ConsumerWidget {
                     points: '300 Poin',
                     desc: 'Termasuk pemeriksaan sikat gigi & pasta gigi khusus.',
                   ),
+
+                  const SizedBox(height: 28),
+
+                  // Point Transaction History Section
+                  const Text('Riwayat Mutasi Poin', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark)),
+                  const SizedBox(height: 12),
+                  if (transactions.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: const Center(
+                        child: Text('Belum ada riwayat perolehan poin.', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                      ),
+                    )
+                  else
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: transactions.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final tx = transactions[index];
+                        final isEarn = tx.points >= 0;
+                        return Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: isEarn ? const Color(0xFFECFDF5) : const Color(0xFFFFF1F2),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  isEarn ? Icons.add_task : Icons.card_giftcard,
+                                  color: isEarn ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      tx.description,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${tx.createdAt.day} ${_monthName(tx.createdAt.month)} ${tx.createdAt.year}',
+                                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                isEarn ? '+${tx.points} Poin' : '${tx.points} Poin',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: isEarn ? const Color(0xFF059669) : const Color(0xFFE11D48),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
           ],
         ),
       ),
     );
+  }
+
+  static String _monthName(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+    if (month >= 1 && month <= 12) return months[month - 1];
+    return '';
   }
 
   Widget _buildRewardCard(

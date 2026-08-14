@@ -62,10 +62,51 @@ const columns = [
   { id: 'photo', header: '' },
   { accessorKey: 'fullName', header: 'Nama Pasien' },
   { accessorKey: 'rmNumber', header: 'No. RM' },
+  { accessorKey: 'points', header: 'Point' },
   { accessorKey: 'relation', header: 'Relasi' },
   { accessorKey: 'createdAt', header: 'Terdaftar' },
   { id: 'actions', header: 'Aksi' }
 ]
+
+const adjustPointsModal = ref(false)
+const targetPatient = ref<any>(null)
+const pointAmount = ref<number>(50)
+const pointDescription = ref<string>('Bonus Point Kunjungan Klinik')
+const pointType = ref<'earn' | 'redeem' | 'adjustment' | 'bonus'>('bonus')
+const adjustingPoints = ref(false)
+
+function openAdjustPoints(patient: any) {
+  targetPatient.value = patient
+  pointAmount.value = 50
+  pointDescription.value = 'Bonus Point Kunjungan Klinik'
+  pointType.value = 'bonus'
+  adjustPointsModal.value = true
+}
+
+async function onSavePoints() {
+  if (!targetPatient.value) return
+  adjustingPoints.value = true
+  try {
+    const res = await apiPost<{ newBalance: number }>(`/admin/patients/${targetPatient.value.id}/points/adjust`, {
+      points: pointType.value === 'redeem' ? -Math.abs(pointAmount.value) : pointAmount.value,
+      description: pointDescription.value,
+      type: pointType.value
+    })
+    useAppNotification().success(
+      `Saldo point ${targetPatient.value.fullName} kini menjadi ${res?.newBalance ?? ((targetPatient.value.points || 0) + pointAmount.value)} Poin.`,
+      'Point Berhasil Diperbarui'
+    )
+    adjustPointsModal.value = false
+    await refresh()
+  } catch (err: any) {
+    useAppNotification().error(
+      err?.message || 'Terjadi kesalahan.',
+      'Gagal Memperbarui Point'
+    )
+  } finally {
+    adjustingPoints.value = false
+  }
+}
 
 const relationLabel: Record<string, string> = {
   self: 'Akun Sendiri',
@@ -260,11 +301,25 @@ const currentPatientTransformations = computed(() => {
   }]
 })
 
+const MONTH_NAMES_SHORT: Record<string, string> = {
+  '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'Mei', '06': 'Jun',
+  '07': 'Jul', '08': 'Agu', '09': 'Sep', '10': 'Okt', '11': 'Nov', '12': 'Des'
+}
+
 const spendingOption = computed<EChartsOption>(() => {
-  const months = ['03', '04', '05', '06', '07', '08']
+  const hasMonthlySpending = !!(detailStats.value?.monthlySpending && detailStats.value.monthlySpending.length > 0)
+
+  const months = hasMonthlySpending
+    ? detailStats.value!.monthlySpending.map(m => {
+        const parts = m.period.split('-')
+        const monthNum = parts.length > 1 ? parts[1] : m.period
+        return MONTH_NAMES_SHORT[monthNum] || monthNum
+      })
+    : ['Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu']
+
   const safeName = typeof patientName.value === 'string' ? patientName.value : ''
-  const amounts = (detailStats.value?.monthlySpending && detailStats.value.monthlySpending.length > 0)
-    ? detailStats.value.monthlySpending.map(m => m.amount)
+  const amounts = hasMonthlySpending
+    ? detailStats.value!.monthlySpending.map(m => m.amount)
     : (safeName.includes('Budi')
         ? [0, 0, 0, 0, 9600000, 0]
         : [150000, 350000, 450000, 1850000, 2500000, 0])
@@ -446,12 +501,12 @@ async function savePatient() {
       fullName: form.fullName,
       relation: form.relation as any,
       gender: form.gender as any,
-      dateOfBirth: form.dateOfBirth,
-      address: form.address,
-      rmNumber: form.rmNumber,
-      phoneWa: form.phoneWa,
-      email: form.email,
-      photoUrl: form.photoUrl,
+      dateOfBirth: form.dateOfBirth ? form.dateOfBirth : null,
+      address: form.address || '',
+      rmNumber: form.rmNumber || '',
+      phoneWa: form.phoneWa || '',
+      email: form.email || '',
+      photoUrl: form.photoUrl || '',
       nik: form.nik,
       bloodType: form.bloodType,
       occupation: form.occupation,
@@ -464,15 +519,14 @@ async function savePatient() {
 
     if (editingId.value) {
       // Edit existing
-      const payload: UpdatePatientInput = { ...updateData }
+      const targetId = editingId.value
       try {
-        await $fetch(apiUrl(`/patients/${editingId.value}`), { method: 'PUT', body: payload })
+        await apiPut(`/patients/${targetId}`, updateData as unknown as Record<string, unknown>)
       } catch (apiErr) {
         console.warn('API PUT patient failed, updating local state:', apiErr)
       }
 
       // Update in memory so changes reflect immediately
-      const targetId = editingId.value
       const foundLocal = localPatients.value.find(p => p.id === targetId)
       if (foundLocal) {
         Object.assign(foundLocal, updateData)
@@ -485,7 +539,14 @@ async function savePatient() {
       if (foundApi) {
         Object.assign(foundApi, updateData)
       }
+
+      useAppNotification().success(
+        `Data pasien ${form.fullName} berhasil diperbarui.`,
+        'Perubahan Disimpan'
+      )
+
       showModal.value = false
+      editingId.value = null
       await refresh()
     } else {
       // Create new
@@ -511,7 +572,7 @@ async function savePatient() {
       }
       let newPatient: Patient | null = null
       try {
-        newPatient = await $fetch<Patient>(apiUrl('/patients'), { method: 'POST', body: payload })
+        newPatient = await apiPost<Patient>('/patients', payload as unknown as Record<string, unknown>)
       } catch (apiErr) {
         console.warn('API POST patient failed, creating local record:', apiErr)
       }
@@ -539,7 +600,12 @@ async function savePatient() {
       }
       localPatients.value.unshift(created)
       selectedPatientId.value = created.id
+      useAppNotification().success(
+        `Pasien ${form.fullName} berhasil terdaftar.`,
+        'Pasien Berhasil Ditambahkan'
+      )
       showModal.value = false
+      editingId.value = null
       await refresh()
     }
   } catch (err: any) {
@@ -598,10 +664,10 @@ function openWhatsApp(phone?: string) {
         class="lg:col-span-7 xl:col-span-8 shadow-xs"
         :ui="{ body: 'p-0 sm:p-0' }"
       >
-        <div v-if="status === 'pending'" class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
-          <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
-          Memuat data pasien...
-        </div>
+        <SkeletonTableSkeleton
+          v-if="status === 'pending'"
+          :columns="7"
+        />
         <UTable
           v-else
           :data="displayPatients"
@@ -639,6 +705,14 @@ function openWhatsApp(phone?: string) {
               </UBadge>
             </div>
           </template>
+          <template #points-cell="{ row }">
+            <div @click.stop="openAdjustPoints(row?.original || row)">
+              <UBadge color="warning" variant="subtle" size="xs" class="font-bold cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors">
+                <UIcon name="i-lucide-coins" class="w-3 h-3 mr-1" />
+                {{ (row?.original || row)?.points ?? 250 }} Poin
+              </UBadge>
+            </div>
+          </template>
           <template #relation-cell="{ row }">
             <div @click="selectPatient(row?.original || row)">
               {{ relationLabel[(row?.original || row)?.relation] ?? (row?.original || row)?.relation ?? 'Akun Sendiri' }}
@@ -651,6 +725,14 @@ function openWhatsApp(phone?: string) {
           </template>
           <template #actions-cell="{ row }">
             <div class="flex items-center gap-1 justify-end">
+              <UButton
+                size="xs"
+                color="warning"
+                variant="subtle"
+                icon="i-lucide-coins"
+                label="Point"
+                @click.stop="openAdjustPoints(row?.original || row)"
+              />
               <UButton
                 size="xs"
                 color="primary"
@@ -750,7 +832,7 @@ function openWhatsApp(phone?: string) {
             </div>
             <div v-else class="h-28 w-full">
               <ClientOnly>
-                <Chart :option="spendingOption" class="h-full w-full" />
+                <ChartsEChart :option="spendingOption" height="100%" class="w-full" />
               </ClientOnly>
             </div>
           </div>
@@ -1275,6 +1357,66 @@ function openWhatsApp(phone?: string) {
             <UButton label="Simpan Transformasi" color="primary" type="submit" />
           </div>
         </form>
+      </template>
+    </UModal>
+
+    <!-- Modal Adjust Point Pasien -->
+    <UModal v-model:open="adjustPointsModal">
+      <template #header>
+        <div class="flex items-center gap-2 font-bold text-gray-900 dark:text-white">
+          <UIcon name="i-lucide-coins" class="w-5 h-5 text-amber-500" />
+          Kelola Point Pasien - {{ targetPatient?.fullName }}
+        </div>
+      </template>
+      <template #body>
+        <div class="space-y-4">
+          <div class="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs flex justify-between items-center">
+            <div>
+              <span class="text-gray-500 dark:text-gray-400">Saldo Poin Saat Ini:</span>
+              <div class="text-base font-bold text-amber-600 dark:text-amber-400">{{ targetPatient?.points ?? 250 }} Poin</div>
+            </div>
+            <UBadge color="warning" variant="solid" size="xs">Nilai: Rp {{ ((targetPatient?.points ?? 250) * 100).toLocaleString('id-ID') }}</UBadge>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Tipe Transaksi Point</label>
+            <USelect
+              v-model="pointType"
+              :items="[
+                { label: 'Bonus / Reward (+ Poin)', value: 'bonus' },
+                { label: 'Perolehan Transaksi (+ Poin)', value: 'earn' },
+                { label: 'Penyesuaian Manual Admin (+ / - Poin)', value: 'adjustment' },
+                { label: 'Penukaran / Redeem (- Poin)', value: 'redeem' }
+              ]"
+              class="w-full"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Jumlah Poin</label>
+            <UInput
+              v-model.number="pointAmount"
+              type="number"
+              placeholder="Contoh: 50 atau -20"
+              class="w-full"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Alasan / Catatan Penyesuaian</label>
+            <UInput
+              v-model="pointDescription"
+              placeholder="Contoh: Bonus Kunjungan Rutin Gigi"
+              class="w-full"
+            />
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton color="neutral" variant="outline" @click="adjustPointsModal = false">Batal</UButton>
+          <UButton color="warning" icon="i-lucide-check-circle" :loading="adjustingPoints" @click="onSavePoints">Update Poin</UButton>
+        </div>
       </template>
     </UModal>
   </div>

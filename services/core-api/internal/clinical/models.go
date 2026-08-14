@@ -5,15 +5,39 @@ import "time"
 // MedicalRecord is append-only — a clinical encounter, once written, is
 // never edited. Corrections are a new record referencing the same patient.
 type MedicalRecord struct {
-	ID             string    `json:"id"`
-	PatientID      string    `json:"patientId"`
-	PatientName    string    `json:"patientName"`
-	ReservationID  *string   `json:"reservationId"`
-	StaffID        string    `json:"staffId"`
-	DoctorName     string    `json:"doctorName"`
-	Diagnosis      *string   `json:"diagnosis"`
-	TreatmentNotes *string   `json:"treatmentNotes"`
-	CreatedAt      time.Time `json:"createdAt"`
+	ID                    string    `json:"id"`
+	PatientID             string    `json:"patientId"`
+	PatientName           string    `json:"patientName"`
+	ReservationID         *string   `json:"reservationId"`
+	StaffID               string    `json:"staffId"`
+	DoctorName            string    `json:"doctorName"`
+	Diagnosis             *string   `json:"diagnosis"`
+	TreatmentNotes        *string   `json:"treatmentNotes"`
+	NIK                   *string   `json:"nik"`
+	Occupation            *string   `json:"occupation"`
+	EmergencyContact      *string   `json:"emergencyContact"`
+	ChiefComplaint        *string   `json:"chiefComplaint"`
+	PresentIllnessHistory *string   `json:"presentIllnessHistory"`
+	HasHypertension       bool      `json:"hasHypertension"`
+	HasHeartDisease       bool      `json:"hasHeartDisease"`
+	HasDiabetes           bool      `json:"hasDiabetes"`
+	HasHepatitis          bool      `json:"hasHepatitis"`
+	HasHiv                bool      `json:"hasHiv"`
+	HasBleedingDisorder   bool      `json:"hasBleedingDisorder"`
+	DrugAllergies         *string   `json:"drugAllergies"`
+	FoodAllergies         *string   `json:"foodAllergies"`
+	IsPregnant            bool      `json:"isPregnant"`
+	RoutineMedications    *string   `json:"routineMedications"`
+	VitalBloodPressure    *string   `json:"vitalBloodPressure"`
+	VitalPulse            *string   `json:"vitalPulse"`
+	VitalTemperature      *string   `json:"vitalTemperature"`
+	ExtraOralExam         *string   `json:"extraOralExam"`
+	ToothNumber           *string   `json:"toothNumber"`
+	SoapS                 *string   `json:"soapS"`
+	SoapO                 *string   `json:"soapO"`
+	SoapP                 *string   `json:"soapP"`
+	Prescription          *string   `json:"prescription"`
+	CreatedAt             time.Time `json:"createdAt"`
 }
 
 type OdontogramEntry struct {
@@ -63,11 +87,70 @@ type ItemUsageInput struct {
 }
 
 type CreateMedicalRecordInput struct {
-	PatientID      string                 `json:"patientId"`
-	ReservationID  *string                `json:"reservationId"`
-	StaffID        string                 `json:"staffId"`
-	Diagnosis      *string                `json:"diagnosis"`
-	TreatmentNotes *string                `json:"treatmentNotes"`
-	Odontogram     []OdontogramEntryInput `json:"odontogram"`
-	ItemsUsed      []ItemUsageInput       `json:"itemsUsed"`
+	PatientID             string                 `json:"patientId"`
+	ReservationID         *string                `json:"reservationId"`
+	StaffID               string                 `json:"staffId"`
+	Diagnosis             *string                `json:"diagnosis"`
+	TreatmentNotes        *string                `json:"treatmentNotes"`
+	NIK                   *string                `json:"nik"`
+	Occupation            *string                `json:"occupation"`
+	EmergencyContact      *string                `json:"emergencyContact"`
+	ChiefComplaint        *string                `json:"chiefComplaint"`
+	PresentIllnessHistory *string                `json:"presentIllnessHistory"`
+	HasHypertension       bool                   `json:"hasHypertension"`
+	HasHeartDisease       bool                   `json:"hasHeartDisease"`
+	HasDiabetes           bool                   `json:"hasDiabetes"`
+	HasHepatitis          bool                   `json:"hasHepatitis"`
+	HasHiv                bool                   `json:"hasHiv"`
+	HasBleedingDisorder   bool                   `json:"hasBleedingDisorder"`
+	DrugAllergies         *string                `json:"drugAllergies"`
+	FoodAllergies         *string                `json:"foodAllergies"`
+	IsPregnant            bool                   `json:"isPregnant"`
+	RoutineMedications    *string                `json:"routineMedications"`
+	VitalBloodPressure    *string                `json:"vitalBloodPressure"`
+	VitalPulse            *string                `json:"vitalPulse"`
+	VitalTemperature      *string                `json:"vitalTemperature"`
+	ExtraOralExam         *string                `json:"extraOralExam"`
+	ToothNumber           *string                `json:"toothNumber"`
+	SoapS                 *string                `json:"soapS"`
+	SoapO                 *string                `json:"soapO"`
+	SoapP                 *string                `json:"soapP"`
+	Prescription          *string                `json:"prescription"`
+	Odontogram            []OdontogramEntryInput `json:"odontogram"`
+	ItemsUsed             []ItemUsageInput       `json:"itemsUsed"`
 }
+
+type UpdateMedicalRecordInput struct {
+	PatientID             string                 `json:"patientId"`
+	ReservationID         *string                `json:"reservationId"`
+	StaffID               string                 `json:"staffId"`
+	Diagnosis             *string                `json:"diagnosis"`
+	TreatmentNotes        *string                `json:"treatmentNotes"`
+	NIK                   *string                `json:"nik"`
+	Occupation            *string                `json:"occupation"`
+	EmergencyContact      *string                `json:"emergencyContact"`
+	ChiefComplaint        *string                `json:"chiefComplaint"`
+	PresentIllnessHistory *string                `json:"presentIllnessHistory"`
+	HasHypertension       bool                   `json:"hasHypertension"`
+	HasHeartDisease       bool                   `json:"hasHeartDisease"`
+	HasDiabetes           bool                   `json:"hasDiabetes"`
+	HasHepatitis          bool                   `json:"hasHepatitis"`
+	HasHiv                bool                   `json:"hasHiv"`
+	HasBleedingDisorder   bool                   `json:"hasBleedingDisorder"`
+	DrugAllergies         *string                `json:"drugAllergies"`
+	FoodAllergies         *string                `json:"foodAllergies"`
+	IsPregnant            bool                   `json:"isPregnant"`
+	RoutineMedications    *string                `json:"routineMedications"`
+	VitalBloodPressure    *string                `json:"vitalBloodPressure"`
+	VitalPulse            *string                `json:"vitalPulse"`
+	VitalTemperature      *string                `json:"vitalTemperature"`
+	ExtraOralExam         *string                `json:"extraOralExam"`
+	ToothNumber           *string                `json:"toothNumber"`
+	SoapS                 *string                `json:"soapS"`
+	SoapO                 *string                `json:"soapO"`
+	SoapP                 *string                `json:"soapP"`
+	Prescription          *string                `json:"prescription"`
+	Odontogram            []OdontogramEntryInput `json:"odontogram"`
+	ItemsUsed             []ItemUsageInput       `json:"itemsUsed"`
+}
+

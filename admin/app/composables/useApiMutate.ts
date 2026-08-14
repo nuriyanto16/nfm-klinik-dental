@@ -8,6 +8,10 @@ export function apiUrl(path: string): string {
   return `${config.public.apiBase}${path}`
 }
 
+export async function apiGet<T>(path: string): Promise<T> {
+  return await $fetch<T>(apiUrl(path), { method: 'GET', headers: authHeaders() })
+}
+
 export async function apiPost<T>(path: string, body: Record<string, unknown>): Promise<T> {
   return await $fetch<T>(apiUrl(path), { method: 'POST', body, headers: authHeaders() })
 }

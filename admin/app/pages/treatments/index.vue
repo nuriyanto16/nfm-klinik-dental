@@ -304,10 +304,10 @@ function catColor(categoryId: string): string {
       <!-- ── Table ── -->
       <div class="lg:col-span-9 space-y-0">
         <UCard :ui="{ body: 'p-0 sm:p-0' }">
-          <div v-if="status === 'pending'" class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
-            <UIcon name="i-lucide-loader-circle" class="w-5 h-5 animate-spin" />
-            Memuat data...
-          </div>
+          <SkeletonTableSkeleton
+            v-if="status === 'pending'"
+            :columns="6"
+          />
           <div v-else-if="filteredTreatments.length === 0" class="py-10 text-center text-gray-400 text-sm">
             <UIcon name="i-lucide-stethoscope" class="w-8 h-8 mx-auto mb-2" />
             <p>Tidak ada data perawatan</p>

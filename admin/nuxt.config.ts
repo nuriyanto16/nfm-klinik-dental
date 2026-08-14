@@ -12,12 +12,17 @@ export default defineNuxtConfig({
 
   icon: {
     clientBundle: {
-      include: [
-        'i-lucide-printer',
-        'i-lucide-eye',
-        'i-lucide-credit-card',
-        'i-lucide-trash-2'
-      ]
+      icons: [
+        'lucide:printer',
+        'lucide:eye',
+        'lucide:credit-card',
+        'lucide:trash-2',
+        'lucide:calendar',
+        'lucide:clock',
+        'lucide:check-circle',
+        'lucide:badge-check'
+      ],
+      scan: true
     }
   },
 

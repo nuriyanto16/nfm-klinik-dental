@@ -387,65 +387,190 @@ class _PaymentSelectionPageState extends State<PaymentSelectionPage> with Ticker
   }
 
   Widget _buildBankOption(Map<String, dynamic> bank) {
-    final isSelected = _selectedMethod == bank['code'];
+    final code = bank['code'] as String;
+    final color = bank['color'] as Color;
+    final isSelected = _selectedMethod == code;
+
     return GestureDetector(
-      onTap: () => setState(() => _selectedMethod = bank['code'] as String),
+      onTap: () => setState(() => _selectedMethod = code),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? (bank['color'] as Color).withValues(alpha: 0.05) : Colors.transparent,
+          color: isSelected ? color.withValues(alpha: 0.06) : Colors.transparent,
+          border: Border(
+            left: BorderSide(
+              color: isSelected ? color : Colors.transparent,
+              width: 3.5,
+            ),
+          ),
         ),
         child: Row(
           children: [
             Radio<String>(
-              value: bank['code'] as String,
+              value: code,
               groupValue: _selectedMethod,
-              activeColor: bank['color'] as Color,
+              activeColor: color,
               visualDensity: VisualDensity.compact,
               onChanged: (val) => setState(() => _selectedMethod = val!),
             ),
-            const SizedBox(width: 4),
-            Container(
-              width: 60,
-              height: 36,
-              decoration: BoxDecoration(
-                color: (bank['color'] as Color).withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: (bank['color'] as Color).withValues(alpha: 0.3)),
-              ),
-              child: Center(
-                child: Text(
-                  bank['code'] as String,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                    color: bank['color'] as Color,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox(width: 6),
+            _buildBankLogo(code, color),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                bank['name'] as String,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textDark),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    bank['name'] as String,
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+                      fontSize: 14,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Verifikasi Otomatis 24 Jam',
+                    style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                  ),
+                ],
               ),
             ),
             if (isSelected)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: (bank['color'] as Color).withValues(alpha: 0.1),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
-                child: Text('VA Tersedia', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: bank['color'] as Color)),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded, size: 12, color: color),
+                    const SizedBox(width: 4),
+                    Text(
+                      'VA Tersedia',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: color),
+                    ),
+                  ],
+                ),
               ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildBankLogo(String code, Color baseColor) {
+    return Container(
+      width: 64,
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: baseColor,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: baseColor.withValues(alpha: 0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Center(
+        child: _renderBankLogoText(code),
+      ),
+    );
+  }
+
+  Widget _renderBankLogoText(String code) {
+    switch (code) {
+      case 'BCA':
+        return const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.waves_rounded, color: Colors.white70, size: 12),
+            SizedBox(width: 2),
+            Text(
+              'BCA',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
+            ),
+          ],
+        );
+      case 'MANDIRI':
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'mandırı',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 0.5),
+            ),
+            Container(width: 24, height: 2, color: const Color(0xFFFFB300)),
+          ],
+        );
+      case 'BNI':
+        return const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'BNI',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1),
+            ),
+            SizedBox(width: 2),
+            Text(
+              '46',
+              style: TextStyle(color: Color(0xFF80DEEA), fontWeight: FontWeight.bold, fontSize: 9),
+            ),
+          ],
+        );
+      case 'BRI':
+        return const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'BRI',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1),
+            ),
+            SizedBox(width: 2),
+            Icon(Icons.circle, color: Color(0xFFFF9800), size: 5),
+          ],
+        );
+      case 'BSI':
+        return const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.star_rounded, color: Color(0xFFFFD54F), size: 10),
+            SizedBox(width: 2),
+            Text(
+              'BSI',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+            ),
+          ],
+        );
+      case 'CIMB':
+        return const Text(
+          'CIMB',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+        );
+      case 'PERMATA':
+        return const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.diamond_rounded, color: Color(0xFF69F0AE), size: 11),
+            SizedBox(width: 2),
+            Text(
+              'Permata',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11),
+            ),
+          ],
+        );
+      default:
+        return Text(
+          code,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+        );
+    }
   }
 
   Widget _eWalletBadge(String name, Color color) {

@@ -102,7 +102,7 @@ func (r *Repository) DeleteArticle(ctx context.Context, id string) error {
 
 func (r *Repository) ListPromos(ctx context.Context) ([]Promo, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, title, banner_image_url, description, starts_at, ends_at, is_active
+		SELECT id, title, banner_image_url, description, starts_at, ends_at, is_active, discount_type, discount_value
 		FROM content.promos ORDER BY starts_at DESC NULLS LAST`)
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (r *Repository) ListPromos(ctx context.Context) ([]Promo, error) {
 	promos := []Promo{}
 	for rows.Next() {
 		var p Promo
-		if err := rows.Scan(&p.ID, &p.Title, &p.BannerImageURL, &p.Description, &p.StartsAt, &p.EndsAt, &p.IsActive); err != nil {
+		if err := rows.Scan(&p.ID, &p.Title, &p.BannerImageURL, &p.Description, &p.StartsAt, &p.EndsAt, &p.IsActive, &p.DiscountType, &p.DiscountValue); err != nil {
 			return nil, err
 		}
 		promos = append(promos, p)
@@ -122,11 +122,11 @@ func (r *Repository) ListPromos(ctx context.Context) ([]Promo, error) {
 func (r *Repository) CreatePromo(ctx context.Context, in PromoInput) (Promo, error) {
 	var p Promo
 	err := r.pool.QueryRow(ctx, `
-		INSERT INTO content.promos (title, banner_image_url, description, starts_at, ends_at, is_active)
-		VALUES ($1, $2, $3, NULLIF($4, '')::timestamptz, NULLIF($5, '')::timestamptz, $6)
-		RETURNING id, title, banner_image_url, description, starts_at, ends_at, is_active`,
-		in.Title, in.BannerImageURL, in.Description, in.StartsAt, in.EndsAt, in.IsActive,
-	).Scan(&p.ID, &p.Title, &p.BannerImageURL, &p.Description, &p.StartsAt, &p.EndsAt, &p.IsActive)
+		INSERT INTO content.promos (title, banner_image_url, description, starts_at, ends_at, is_active, discount_type, discount_value)
+		VALUES ($1, $2, $3, NULLIF($4, '')::timestamptz, NULLIF($5, '')::timestamptz, $6, $7, $8)
+		RETURNING id, title, banner_image_url, description, starts_at, ends_at, is_active, discount_type, discount_value`,
+		in.Title, in.BannerImageURL, in.Description, in.StartsAt, in.EndsAt, in.IsActive, in.DiscountType, in.DiscountValue,
+	).Scan(&p.ID, &p.Title, &p.BannerImageURL, &p.Description, &p.StartsAt, &p.EndsAt, &p.IsActive, &p.DiscountType, &p.DiscountValue)
 	return p, err
 }
 
@@ -135,11 +135,12 @@ func (r *Repository) UpdatePromo(ctx context.Context, id string, in PromoInput) 
 	err := r.pool.QueryRow(ctx, `
 		UPDATE content.promos
 		SET title = $1, banner_image_url = $2, description = $3,
-		    starts_at = NULLIF($4, '')::timestamptz, ends_at = NULLIF($5, '')::timestamptz, is_active = $6
-		WHERE id = $7
-		RETURNING id, title, banner_image_url, description, starts_at, ends_at, is_active`,
-		in.Title, in.BannerImageURL, in.Description, in.StartsAt, in.EndsAt, in.IsActive, id,
-	).Scan(&p.ID, &p.Title, &p.BannerImageURL, &p.Description, &p.StartsAt, &p.EndsAt, &p.IsActive)
+		    starts_at = NULLIF($4, '')::timestamptz, ends_at = NULLIF($5, '')::timestamptz, is_active = $6,
+		    discount_type = $7, discount_value = $8
+		WHERE id = $9
+		RETURNING id, title, banner_image_url, description, starts_at, ends_at, is_active, discount_type, discount_value`,
+		in.Title, in.BannerImageURL, in.Description, in.StartsAt, in.EndsAt, in.IsActive, in.DiscountType, in.DiscountValue, id,
+	).Scan(&p.ID, &p.Title, &p.BannerImageURL, &p.Description, &p.StartsAt, &p.EndsAt, &p.IsActive, &p.DiscountType, &p.DiscountValue)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return p, dberr.ErrNotFound
 	}

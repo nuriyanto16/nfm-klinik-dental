@@ -25,6 +25,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
+  void _fillDemoPatient() {
+    _emailCtrl.text = 'budi.santoso@example.com';
+    _passwordCtrl.text = 'password123';
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Akun demo pasien terisi! Klik tombol "Masuk Sekarang".'),
+        backgroundColor: AppColors.primaryDark,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -35,7 +47,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login berhasil! Selamat datang kembali.')),
+          const SnackBar(
+            content: Text('Login berhasil! Selamat datang kembali di Nina Dental Care.'),
+            backgroundColor: AppColors.primaryDark,
+          ),
         );
         context.go('/home');
       }
@@ -54,8 +69,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final selected = await showModalBottomSheet<Map<String, String>>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (ctx) {
         final emailCtrl = TextEditingController();
@@ -73,53 +89,95 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: Colors.blue.shade50,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.g_mobiledata, color: Colors.blue, size: 28),
+                        child: const Icon(Icons.g_mobiledata, color: Colors.blue, size: 32),
                       ),
-                      const SizedBox(width: 12),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Google Sign-In (Gmail SSO)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          Text('Pilih Akun Gmail atau Masukkan Email', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                        ],
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Google Sign-In (Gmail SSO)',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                            ),
+                            Text(
+                              'Pilih akun Google yang tersedia atau buat profil baru',
+                              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(
-                      backgroundColor: Colors.blueAccent,
-                      child: Text('BS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.bgLight,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
                     ),
-                    title: const Text('Budi Santoso', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: const Text('budi.santoso@example.com (Terdaftar)', style: TextStyle(fontSize: 12, color: Colors.green)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                    onTap: () => Navigator.pop(ctx, {'email': 'budi.santoso@example.com', 'name': 'Budi Santoso'}),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      leading: const CircleAvatar(
+                        backgroundColor: AppColors.primary,
+                        child: Text('BS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                      title: const Text('Budi Santoso', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('budi.santoso@example.com • Terdaftar', style: TextStyle(fontSize: 12, color: AppColors.primaryDark, fontWeight: FontWeight.w600)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
+                      onTap: () => Navigator.pop(ctx, {'email': 'budi.santoso@example.com', 'name': 'Budi Santoso'}),
+                    ),
                   ),
-                  const Divider(),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(
-                      backgroundColor: Colors.pinkAccent,
-                      child: Text('ND', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.bgLight,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
                     ),
-                    title: const Text('Akun Gmail Baru', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: const Text('pasien.baru.gso@gmail.com (Belum Terdaftar)', style: TextStyle(fontSize: 12, color: Colors.orange)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                    onTap: () => Navigator.pop(ctx, {'email': 'pasien.baru.gso@gmail.com', 'name': 'Pasien Baru NDC'}),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      leading: const CircleAvatar(
+                        backgroundColor: AppColors.pink,
+                        child: Text('ND', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                      title: const Text('Akun Gmail Pasien Baru', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('pasien.baru.gso@gmail.com • Belum Terdaftar', style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
+                      onTap: () => Navigator.pop(ctx, {'email': 'pasien.baru.gso@gmail.com', 'name': 'Pasien Baru NDC'}),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text('ATAU GUNAKAN EMAIL LAIN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
                   ),
                   const SizedBox(height: 12),
-                  const Text('Atau Masukkan Email Gmail Lain:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
                   TextField(
                     controller: emailCtrl,
                     decoration: const InputDecoration(
@@ -128,19 +186,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       prefixIcon: Icon(Icons.email_outlined, size: 18),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: nameCtrl,
                     decoration: const InputDecoration(
-                      hintText: 'Nama Lengkap Google',
+                      hintText: 'Nama Lengkap Akun Google',
                       isDense: true,
                       prefixIcon: Icon(Icons.person_outline, size: 18),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.pink,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
                       onPressed: () {
                         if (emailCtrl.text.trim().isNotEmpty) {
                           Navigator.pop(ctx, {
@@ -149,7 +211,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           });
                         }
                       },
-                      child: const Text('Lanjutkan SSO Google'),
+                      child: const Text('Lanjutkan Dengan Gmail Ini'),
                     ),
                   ),
                 ],
@@ -179,7 +241,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Login Gmail SSO Berhasil! Selamat datang, ${res.displayName}.'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.primaryDark,
           ),
         );
         context.go('/home');
@@ -206,130 +268,300 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.textDark,
-        elevation: 0,
-        title: const Text('Masuk Ke Akun', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
+      backgroundColor: AppColors.primaryDark,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Selamat Datang Kembali 👋',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
+        child: Column(
+          children: [
+            // Top Hero Header Banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.health_and_safety_outlined, color: Colors.white, size: 16),
+                            SizedBox(width: 6),
+                            Text(
+                              'Nina Dental Care',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _fillDemoPatient,
+                        icon: const Icon(Icons.bolt, color: Colors.yellowAccent, size: 18),
+                        label: const Text(
+                          'Demo Pasien',
+                          style: TextStyle(color: Colors.yellowAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.black.withValues(alpha: 0.2),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Silakan masukan email/nomor whatsapp dan password Anda.',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 14),
-                ),
-                const SizedBox(height: 32),
-                const Text('E-mail / No WhatsApp', style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    hintText: 'sayarhungs@gmail.com',
-                    prefixIcon: Icon(Icons.email_outlined),
+                  const SizedBox(height: 20),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.1),
+                        ),
+                      ),
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.medical_services_rounded,
+                          color: AppColors.primary,
+                          size: 32,
+                        ),
+                      ),
+                    ],
                   ),
-                  validator: (v) => v == null || v.isEmpty ? 'E-mail tidak boleh kosong' : null,
-                ),
-                const SizedBox(height: 20),
-                const Text('Password', style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _passwordCtrl,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Selamat Datang Kembali!',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
                     ),
                   ),
-                  validator: (v) => v == null || v.isEmpty ? 'Password tidak boleh kosong' : null,
-                ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _isLoading ? null : _submit,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                        : const Text('Login'),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('ATAU MASUK DENGAN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Masuk untuk akses antrian, reservasi & rekam medis',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.85),
                     ),
-                    const Expanded(child: Divider()),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+
+            // Form Body Card Overlay
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 20,
+                      offset: Offset(0, -5),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: _isLoading ? null : _handleGoogleSso,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(color: Colors.grey.shade300),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.g_mobiledata, color: Colors.red, size: 28),
-                        SizedBox(width: 8),
-                        Text(
-                          'Masuk dengan Google (Gmail SSO)',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 14),
+                        const Text(
+                          'E-mail / No. WhatsApp',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _emailCtrl,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            hintText: 'budi.santoso@example.com',
+                            prefixIcon: Icon(Icons.email_outlined, color: AppColors.primary),
+                          ),
+                          validator: (v) => v == null || v.isEmpty ? 'E-mail tidak boleh kosong' : null,
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Kata Sandi / Password',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Silakan hubungi WhatsApp Admin Nina Dental Care untuk reset password.'),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                'Lupa Password?',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.pink),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _passwordCtrl,
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            hintText: '••••••••',
+                            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                color: AppColors.textMuted,
+                              ),
+                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            ),
+                          ),
+                          validator: (v) => v == null || v.isEmpty ? 'Password tidak boleh kosong' : null,
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: FilledButton(
+                            onPressed: _isLoading ? null : _submit,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.pink,
+                              elevation: 4,
+                              shadowColor: AppColors.pink.withValues(alpha: 0.4),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                                  )
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text('Masuk Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                      SizedBox(width: 8),
+                                      Icon(Icons.arrow_forward_rounded, size: 18),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            const Expanded(child: Divider()),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Text(
+                                'ATAU LOGIN CEPAT WITH',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5, color: Colors.grey.shade500),
+                              ),
+                            ),
+                            const Expanded(child: Divider()),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: OutlinedButton(
+                            onPressed: _isLoading ? null : _handleGoogleSso,
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.grey.shade300, width: 1.2),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              backgroundColor: AppColors.bgLight,
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.g_mobiledata_rounded, color: Colors.redAccent, size: 30),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Masuk dengan Google (Gmail SSO)',
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 13.5),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.pink.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.pink.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Belum Punya Akun Pasien?',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark),
+                                  ),
+                                  Text(
+                                    'Daftar gratis hanya dalam 1 menit',
+                                    style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                  ),
+                                ],
+                              ),
+                              ElevatedButton(
+                                onPressed: () => context.push('/register'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.pink,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                child: const Text('Daftar Baru'),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Belum punya akun? '),
-                    GestureDetector(
-                      onTap: () => context.push('/register'),
-                      child: const Text(
-                        'Daftar Sekarang',
-                        style: TextStyle(color: AppColors.pink, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
+
 

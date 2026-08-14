@@ -22,7 +22,9 @@ import '../../features/patient/presentation/register_page.dart';
 import '../../features/patient/presentation/reward_page.dart';
 import '../../features/payment/presentation/payment_history_page.dart';
 import '../../features/payment/presentation/payment_selection_page.dart';
+import '../../features/reservation/data/reservation_model.dart';
 import '../../features/reservation/presentation/booking_flow_page.dart';
+import '../../features/reservation/presentation/reservation_detail_page.dart';
 import '../../features/reservation/presentation/schedule_page.dart';
 import '../../features/treatments/presentation/price_list_page.dart';
 
@@ -91,6 +93,14 @@ final appRouter = GoRouter(
     GoRoute(path: '/booking', builder: (context, state) => const BookingFlowPage()),
     GoRoute(path: '/schedule', builder: (context, state) => const SchedulePage()),
     GoRoute(path: '/reservations/history', builder: (context, state) => const SchedulePage()),
+    GoRoute(
+      path: '/reservations/:id',
+      builder: (context, state) {
+        final reservation = state.extra as Reservation?;
+        final id = state.pathParameters['id']!;
+        return ReservationDetailPage(reservationId: id, reservation: reservation);
+      },
+    ),
 
     // ─── Pembayaran ───────────────────────────────────────────────────────────
     GoRoute(

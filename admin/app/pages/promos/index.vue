@@ -11,7 +11,7 @@ export interface AdminVoucherPromo extends Promo {
   targetCategory?: string
 }
 
-const { data: apiPromos, refresh } = useApiFetch<Promo[]>('/content/promos')
+const { data: apiPromos, status, refresh } = useApiFetch<Promo[]>('/content/promos')
 
 const initialVouchers: AdminVoucherPromo[] = [
   {
@@ -347,7 +347,17 @@ function onBannerFileSelected(event: Event) {
 
     <!-- Promos & Vouchers Cards Grid -->
     <div class="space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-if="status === 'pending'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <UCard v-for="i in 3" :key="i" class="bg-white dark:bg-gray-800 flex flex-col justify-between overflow-hidden shadow-xs">
+          <div class="space-y-3">
+            <USkeleton class="w-full h-40 rounded-lg" />
+            <USkeleton class="h-10 w-full rounded-lg" />
+            <USkeleton class="h-6 w-3/4" />
+            <USkeleton class="h-12 w-full" />
+          </div>
+        </UCard>
+      </div>
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <UCard
           v-for="v in paginatedVouchers"
           :key="v.id"

@@ -221,9 +221,10 @@ async function deleteBranch(b: Branch) {
 
       <!-- Left: Branch List -->
       <UCard class="lg:col-span-1" :ui="{ body: 'p-2 space-y-1' }">
-        <div v-if="status === 'pending'" class="flex items-center gap-2 p-3 text-gray-400 text-xs">
-          <UIcon name="i-lucide-loader-circle" class="w-4 h-4 animate-spin" />
-          Memuat...
+        <div v-if="status === 'pending'" class="space-y-2 p-2">
+          <USkeleton class="h-10 w-full" />
+          <USkeleton class="h-10 w-full" />
+          <USkeleton class="h-10 w-full" />
         </div>
         <template v-else>
           <!-- Active group -->

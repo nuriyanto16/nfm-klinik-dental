@@ -14,22 +14,90 @@ import '../../patient/application/session_controller.dart';
 import '../../patient/presentation/add_patient_sheet.dart';
 
 class _QuickMenuItem {
-  const _QuickMenuItem(this.label, this.icon, this.route, {this.badge});
+  const _QuickMenuItem(
+    this.label,
+    this.icon,
+    this.route, {
+    required this.startColor,
+    required this.endColor,
+    required this.iconColor,
+    this.badge,
+  });
   final String label;
   final IconData icon;
   final String route;
+  final Color startColor;
+  final Color endColor;
+  final Color iconColor;
   final String? badge;
 }
 
 const _quickMenu = [
-  _QuickMenuItem('Promo', Icons.local_offer_outlined, '/promos', badge: '🔥'),
-  _QuickMenuItem('Reservasi', Icons.calendar_today_outlined, '/reservations/new'),
-  _QuickMenuItem('Pricelist', Icons.receipt_long_outlined, '/pricelist'),
-  _QuickMenuItem('Klinik Terdekat', Icons.home_outlined, '/branches'),
-  _QuickMenuItem('Payment History', Icons.credit_card_outlined, '/payments/history'),
-  _QuickMenuItem('Dokter', Icons.medical_services_outlined, '/doctors'),
-  _QuickMenuItem('Info Asuransi', Icons.shield_outlined, '/insurance'),
-  _QuickMenuItem('Tampilkan Semua', Icons.keyboard_arrow_down_rounded, '/pricelist'),
+  _QuickMenuItem(
+    'Promo',
+    Icons.whatshot_rounded,
+    '/promos',
+    startColor: Color(0xFFFFF0F0),
+    endColor: Color(0xFFFFE0E0),
+    iconColor: Color(0xFFE53935),
+    badge: '🔥',
+  ),
+  _QuickMenuItem(
+    'Reservasi',
+    Icons.edit_calendar_rounded,
+    '/reservations/new',
+    startColor: Color(0xFFE8F5E9),
+    endColor: Color(0xFFC8E6C9),
+    iconColor: Color(0xFF2E7D32),
+  ),
+  _QuickMenuItem(
+    'Pricelist',
+    Icons.receipt_long_rounded,
+    '/pricelist',
+    startColor: Color(0xFFE0F2FE),
+    endColor: Color(0xFFBAE6FD),
+    iconColor: Color(0xFF0284C7),
+  ),
+  _QuickMenuItem(
+    'Klinik Terdekat',
+    Icons.local_hospital_rounded,
+    '/branches',
+    startColor: Color(0xFFE0F2F1),
+    endColor: Color(0xFFB2DFDB),
+    iconColor: Color(0xFF00695C),
+  ),
+  _QuickMenuItem(
+    'Payment History',
+    Icons.account_balance_wallet_rounded,
+    '/payments/history',
+    startColor: Color(0xFFF3E8FF),
+    endColor: Color(0xFFE9D5FF),
+    iconColor: Color(0xFF7E22CE),
+  ),
+  _QuickMenuItem(
+    'Dokter',
+    Icons.health_and_safety_rounded,
+    '/doctors',
+    startColor: Color(0xFFFCE4EC),
+    endColor: Color(0xFFF8BBD0),
+    iconColor: Color(0xFFC2185B),
+  ),
+  _QuickMenuItem(
+    'Info Asuransi',
+    Icons.verified_user_rounded,
+    '/insurance',
+    startColor: Color(0xFFE8EAF6),
+    endColor: Color(0xFFC5CAE9),
+    iconColor: Color(0xFF3F51B5),
+  ),
+  _QuickMenuItem(
+    'Tampilkan Semua',
+    Icons.grid_view_rounded,
+    '/pricelist',
+    startColor: Color(0xFFFFF8E1),
+    endColor: Color(0xFFFFECB3),
+    iconColor: Color(0xFFF57F17),
+  ),
 ];
 
 class HomePage extends ConsumerStatefulWidget {
@@ -209,13 +277,25 @@ class _HomePageState extends ConsumerState<HomePage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            width: 52,
-                            height: 52,
+                            width: 54,
+                            height: 54,
                             decoration: BoxDecoration(
-                              color: i % 2 == 0 ? Colors.green.shade50 : Colors.pink.shade50,
-                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [item.startColor, item.endColor],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: item.iconColor.withValues(alpha: 0.18),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                              border: Border.all(color: item.iconColor.withValues(alpha: 0.2)),
                             ),
-                            child: Icon(item.icon, color: i % 2 == 0 ? AppColors.primary : AppColors.pink, size: 26),
+                            child: Icon(item.icon, color: item.iconColor, size: 26),
                           ),
                           const SizedBox(height: 6),
                           Row(
@@ -1018,18 +1098,18 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
       builder: (context) {
         final allItems = [
-          const _QuickMenuItem('Promo Spesial', Icons.local_offer_outlined, '/promos', badge: '🔥'),
-          const _QuickMenuItem('Reservasi Baru', Icons.calendar_today_outlined, '/reservations/new'),
-          const _QuickMenuItem('Pricelist & Perawatan', Icons.receipt_long_outlined, '/pricelist'),
-          const _QuickMenuItem('Klinik Terdekat', Icons.home_outlined, '/branches'),
-          const _QuickMenuItem('Payment History', Icons.credit_card_outlined, '/payments/history'),
-          const _QuickMenuItem('Dokter Spesialis', Icons.medical_services_outlined, '/doctors'),
-          const _QuickMenuItem('Info Asuransi', Icons.shield_outlined, '/insurance'),
-          const _QuickMenuItem('Riwayat Jadwal', Icons.event_available_outlined, '/schedule'),
-          const _QuickMenuItem('Membership', Icons.card_membership_outlined, '/membership'),
-          const _QuickMenuItem('Hadiah Reward', Icons.card_giftcard_outlined, '/reward'),
-          const _QuickMenuItem('Video Edukasi', Icons.play_circle_outline, '/videos'),
-          const _QuickMenuItem('Testimoni Pasien', Icons.star_outline, '/testimonials'),
+          const _QuickMenuItem('Promo Spesial', Icons.whatshot_rounded, '/promos', startColor: Color(0xFFFFF0F0), endColor: Color(0xFFFFE0E0), iconColor: Color(0xFFE53935), badge: '🔥'),
+          const _QuickMenuItem('Reservasi Baru', Icons.edit_calendar_rounded, '/reservations/new', startColor: Color(0xFFE8F5E9), endColor: Color(0xFFC8E6C9), iconColor: Color(0xFF2E7D32)),
+          const _QuickMenuItem('Pricelist & Perawatan', Icons.receipt_long_rounded, '/pricelist', startColor: Color(0xFFE0F2FE), endColor: Color(0xFFBAE6FD), iconColor: Color(0xFF0284C7)),
+          const _QuickMenuItem('Klinik Terdekat', Icons.local_hospital_rounded, '/branches', startColor: Color(0xFFE0F2F1), endColor: Color(0xFFB2DFDB), iconColor: Color(0xFF00695C)),
+          const _QuickMenuItem('Payment History', Icons.account_balance_wallet_rounded, '/payments/history', startColor: Color(0xFFF3E8FF), endColor: Color(0xFFE9D5FF), iconColor: Color(0xFF7E22CE)),
+          const _QuickMenuItem('Dokter Spesialis', Icons.health_and_safety_rounded, '/doctors', startColor: Color(0xFFFCE4EC), endColor: Color(0xFFF8BBD0), iconColor: Color(0xFFC2185B)),
+          const _QuickMenuItem('Info Asuransi', Icons.verified_user_rounded, '/insurance', startColor: Color(0xFFE8EAF6), endColor: Color(0xFFC5CAE9), iconColor: Color(0xFF3F51B5)),
+          const _QuickMenuItem('Riwayat Jadwal', Icons.event_note_rounded, '/schedule', startColor: Color(0xFFE3F2FD), endColor: Color(0xFFBBDEFB), iconColor: Color(0xFF1E88E5)),
+          const _QuickMenuItem('Membership', Icons.workspace_premium_rounded, '/membership', startColor: Color(0xFFFFF3E0), endColor: Color(0xFFFFE0B2), iconColor: Color(0xFFF57C00)),
+          const _QuickMenuItem('Hadiah Reward', Icons.redeem_rounded, '/reward', startColor: Color(0xFFF3E8FF), endColor: Color(0xFFD8B4FE), iconColor: Color(0xFF9333EA)),
+          const _QuickMenuItem('Video Edukasi', Icons.play_circle_fill_rounded, '/videos', startColor: Color(0xFFFFEBEE), endColor: Color(0xFFFFCDD2), iconColor: Color(0xFFD32F2F)),
+          const _QuickMenuItem('Testimoni Pasien', Icons.auto_awesome_rounded, '/testimonials', startColor: Color(0xFFFFF8E1), endColor: Color(0xFFFFECB3), iconColor: Color(0xFFFFB300)),
         ];
 
         return Container(
@@ -1076,10 +1156,22 @@ class _HomePageState extends ConsumerState<HomePage> {
                             width: 54,
                             height: 54,
                             decoration: BoxDecoration(
-                              color: i % 2 == 0 ? Colors.green.shade50 : Colors.pink.shade50,
-                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                colors: [item.startColor, item.endColor],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: item.iconColor.withValues(alpha: 0.18),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                              border: Border.all(color: item.iconColor.withValues(alpha: 0.2)),
                             ),
-                            child: Icon(item.icon, color: i % 2 == 0 ? AppColors.primary : AppColors.pink, size: 28),
+                            child: Icon(item.icon, color: item.iconColor, size: 26),
                           ),
                           const SizedBox(height: 8),
                           Text(

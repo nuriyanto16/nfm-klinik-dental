@@ -28,6 +28,8 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Get("/medical-records", h.listMedicalRecords)
 	router.Get("/medical-records/:id", h.getMedicalRecord)
 	router.Post("/medical-records", h.createMedicalRecord)
+	router.Put("/medical-records/:id", h.updateMedicalRecord)
+	router.Delete("/medical-records/:id", h.deleteMedicalRecord)
 	router.Get("/patients/:id/odontogram-timeline", h.odontogramTimeline)
 }
 
@@ -79,3 +81,33 @@ func (h *Handler) createMedicalRecord(c *fiber.Ctx) error {
 	}
 	return c.Status(fiber.StatusCreated).JSON(record)
 }
+
+func (h *Handler) updateMedicalRecord(c *fiber.Ctx) error {
+	var in UpdateMedicalRecordInput
+	if err := c.BodyParser(&in); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if in.PatientID == "" || in.StaffID == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "patientId and staffId are required")
+	}
+	record, err := h.repo.UpdateMedicalRecord(c.Context(), c.Params("id"), in)
+	if errors.Is(err, dberr.ErrNotFound) {
+		return fiber.NewError(fiber.StatusNotFound, "medical record not found")
+	}
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.JSON(record)
+}
+
+func (h *Handler) deleteMedicalRecord(c *fiber.Ctx) error {
+	err := h.repo.DeleteMedicalRecord(c.Context(), c.Params("id"))
+	if errors.Is(err, dberr.ErrNotFound) {
+		return fiber.NewError(fiber.StatusNotFound, "medical record not found")
+	}
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+

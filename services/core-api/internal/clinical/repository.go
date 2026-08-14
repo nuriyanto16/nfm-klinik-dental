@@ -25,8 +25,13 @@ var ErrInsufficientStock = errors.New("insufficient stock")
 func (r *Repository) ListMedicalRecords(ctx context.Context, patientID string, page pagination.Params) ([]MedicalRecord, int64, error) {
 	query := `
 		SELECT mr.id, mr.patient_id, p.full_name AS patient_name, mr.reservation_id, mr.staff_id,
-		       su.full_name AS doctor_name, mr.diagnosis, mr.treatment_notes, mr.created_at,
-		       count(*) OVER() AS total_count
+		       su.full_name AS doctor_name, mr.diagnosis, mr.treatment_notes,
+		       mr.nik, mr.occupation, mr.emergency_contact, mr.chief_complaint, mr.present_illness_history,
+		       mr.has_hypertension, mr.has_heart_disease, mr.has_diabetes, mr.has_hepatitis, mr.has_hiv, mr.has_bleeding_disorder,
+		       mr.drug_allergies, mr.food_allergies, mr.is_pregnant, mr.routine_medications,
+		       mr.vital_blood_pressure, mr.vital_pulse, mr.vital_temperature, mr.extra_oral_exam,
+		       mr.tooth_number, mr.soap_s, mr.soap_o, mr.soap_p, mr.prescription,
+		       mr.created_at, count(*) OVER() AS total_count
 		FROM clinical.medical_records mr
 		JOIN identity.patients p ON p.id = mr.patient_id
 		JOIN identity.staff s ON s.id = mr.staff_id
@@ -55,7 +60,15 @@ func (r *Repository) ListMedicalRecords(ctx context.Context, patientID string, p
 	records := []MedicalRecord{}
 	for rows.Next() {
 		var m MedicalRecord
-		if err := rows.Scan(&m.ID, &m.PatientID, &m.PatientName, &m.ReservationID, &m.StaffID, &m.DoctorName, &m.Diagnosis, &m.TreatmentNotes, &m.CreatedAt, &total); err != nil {
+		if err := rows.Scan(
+			&m.ID, &m.PatientID, &m.PatientName, &m.ReservationID, &m.StaffID, &m.DoctorName, &m.Diagnosis, &m.TreatmentNotes,
+			&m.NIK, &m.Occupation, &m.EmergencyContact, &m.ChiefComplaint, &m.PresentIllnessHistory,
+			&m.HasHypertension, &m.HasHeartDisease, &m.HasDiabetes, &m.HasHepatitis, &m.HasHiv, &m.HasBleedingDisorder,
+			&m.DrugAllergies, &m.FoodAllergies, &m.IsPregnant, &m.RoutineMedications,
+			&m.VitalBloodPressure, &m.VitalPulse, &m.VitalTemperature, &m.ExtraOralExam,
+			&m.ToothNumber, &m.SoapS, &m.SoapO, &m.SoapP, &m.Prescription,
+			&m.CreatedAt, &total,
+		); err != nil {
 			return nil, 0, err
 		}
 		records = append(records, m)
@@ -67,13 +80,27 @@ func (r *Repository) GetMedicalRecord(ctx context.Context, id string) (MedicalRe
 	var d MedicalRecordDetail
 	err := r.pool.QueryRow(ctx, `
 		SELECT mr.id, mr.patient_id, p.full_name AS patient_name, mr.reservation_id, mr.staff_id,
-		       su.full_name AS doctor_name, mr.diagnosis, mr.treatment_notes, mr.created_at
+		       su.full_name AS doctor_name, mr.diagnosis, mr.treatment_notes,
+		       mr.nik, mr.occupation, mr.emergency_contact, mr.chief_complaint, mr.present_illness_history,
+		       mr.has_hypertension, mr.has_heart_disease, mr.has_diabetes, mr.has_hepatitis, mr.has_hiv, mr.has_bleeding_disorder,
+		       mr.drug_allergies, mr.food_allergies, mr.is_pregnant, mr.routine_medications,
+		       mr.vital_blood_pressure, mr.vital_pulse, mr.vital_temperature, mr.extra_oral_exam,
+		       mr.tooth_number, mr.soap_s, mr.soap_o, mr.soap_p, mr.prescription,
+		       mr.created_at
 		FROM clinical.medical_records mr
 		JOIN identity.patients p ON p.id = mr.patient_id
 		JOIN identity.staff s ON s.id = mr.staff_id
 		JOIN identity.users su ON su.id = s.user_id
 		WHERE mr.id = $1`, id,
-	).Scan(&d.ID, &d.PatientID, &d.PatientName, &d.ReservationID, &d.StaffID, &d.DoctorName, &d.Diagnosis, &d.TreatmentNotes, &d.CreatedAt)
+	).Scan(
+		&d.ID, &d.PatientID, &d.PatientName, &d.ReservationID, &d.StaffID, &d.DoctorName, &d.Diagnosis, &d.TreatmentNotes,
+		&d.NIK, &d.Occupation, &d.EmergencyContact, &d.ChiefComplaint, &d.PresentIllnessHistory,
+		&d.HasHypertension, &d.HasHeartDisease, &d.HasDiabetes, &d.HasHepatitis, &d.HasHiv, &d.HasBleedingDisorder,
+		&d.DrugAllergies, &d.FoodAllergies, &d.IsPregnant, &d.RoutineMedications,
+		&d.VitalBloodPressure, &d.VitalPulse, &d.VitalTemperature, &d.ExtraOralExam,
+		&d.ToothNumber, &d.SoapS, &d.SoapO, &d.SoapP, &d.Prescription,
+		&d.CreatedAt,
+	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return d, dberr.ErrNotFound
 	}
@@ -177,6 +204,7 @@ func (r *Repository) PatientOdontogramTimeline(ctx context.Context, patientID st
 }
 
 // CreateMedicalRecord writes the clinical encounter, its odontogram entries,
+// CreateMedicalRecord writes the clinical encounter, its odontogram entries,
 // and any inventory items consumed — decrementing stock in the same
 // transaction so usage and stock never drift apart.
 func (r *Repository) CreateMedicalRecord(ctx context.Context, in CreateMedicalRecordInput) (MedicalRecordDetail, error) {
@@ -186,12 +214,36 @@ func (r *Repository) CreateMedicalRecord(ctx context.Context, in CreateMedicalRe
 	}
 	defer tx.Rollback(ctx)
 
+	var resID *string
+	if in.ReservationID != nil && *in.ReservationID != "" {
+		resID = in.ReservationID
+	}
+
 	var recordID string
 	if err := tx.QueryRow(ctx, `
-		INSERT INTO clinical.medical_records (patient_id, reservation_id, staff_id, diagnosis, treatment_notes)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO clinical.medical_records (
+			patient_id, reservation_id, staff_id, diagnosis, treatment_notes,
+			nik, occupation, emergency_contact, chief_complaint, present_illness_history,
+			has_hypertension, has_heart_disease, has_diabetes, has_hepatitis, has_hiv, has_bleeding_disorder,
+			drug_allergies, food_allergies, is_pregnant, routine_medications,
+			vital_blood_pressure, vital_pulse, vital_temperature, extra_oral_exam,
+			tooth_number, soap_s, soap_o, soap_p, prescription
+		)
+		VALUES (
+			$1, $2, $3, $4, $5,
+			$6, $7, $8, $9, $10,
+			$11, $12, $13, $14, $15, $16,
+			$17, $18, $19, $20,
+			$21, $22, $23, $24,
+			$25, $26, $27, $28, $29
+		)
 		RETURNING id`,
-		in.PatientID, in.ReservationID, in.StaffID, in.Diagnosis, in.TreatmentNotes,
+		in.PatientID, resID, in.StaffID, in.Diagnosis, in.TreatmentNotes,
+		in.NIK, in.Occupation, in.EmergencyContact, in.ChiefComplaint, in.PresentIllnessHistory,
+		in.HasHypertension, in.HasHeartDisease, in.HasDiabetes, in.HasHepatitis, in.HasHiv, in.HasBleedingDisorder,
+		in.DrugAllergies, in.FoodAllergies, in.IsPregnant, in.RoutineMedications,
+		in.VitalBloodPressure, in.VitalPulse, in.VitalTemperature, in.ExtraOralExam,
+		in.ToothNumber, in.SoapS, in.SoapO, in.SoapP, in.Prescription,
 	).Scan(&recordID); err != nil {
 		return MedicalRecordDetail{}, err
 	}
@@ -229,3 +281,83 @@ func (r *Repository) CreateMedicalRecord(ctx context.Context, in CreateMedicalRe
 	}
 	return r.GetMedicalRecord(ctx, recordID)
 }
+
+// UpdateMedicalRecord updates an existing medical record, its diagnosis, notes,
+// and odontogram entries.
+func (r *Repository) UpdateMedicalRecord(ctx context.Context, id string, in UpdateMedicalRecordInput) (MedicalRecordDetail, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return MedicalRecordDetail{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	var resID *string
+	if in.ReservationID != nil && *in.ReservationID != "" {
+		resID = in.ReservationID
+	}
+
+	tag, err := tx.Exec(ctx, `
+		UPDATE clinical.medical_records
+		SET patient_id = $1, reservation_id = $2, staff_id = $3, diagnosis = $4, treatment_notes = $5,
+		    nik = $6, occupation = $7, emergency_contact = $8, chief_complaint = $9, present_illness_history = $10,
+		    has_hypertension = $11, has_heart_disease = $12, has_diabetes = $13, has_hepatitis = $14, has_hiv = $15, has_bleeding_disorder = $16,
+		    drug_allergies = $17, food_allergies = $18, is_pregnant = $19, routine_medications = $20,
+		    vital_blood_pressure = $21, vital_pulse = $22, vital_temperature = $23, extra_oral_exam = $24,
+		    tooth_number = $25, soap_s = $26, soap_o = $27, soap_p = $28, prescription = $29
+		WHERE id = $30`,
+		in.PatientID, resID, in.StaffID, in.Diagnosis, in.TreatmentNotes,
+		in.NIK, in.Occupation, in.EmergencyContact, in.ChiefComplaint, in.PresentIllnessHistory,
+		in.HasHypertension, in.HasHeartDisease, in.HasDiabetes, in.HasHepatitis, in.HasHiv, in.HasBleedingDisorder,
+		in.DrugAllergies, in.FoodAllergies, in.IsPregnant, in.RoutineMedications,
+		in.VitalBloodPressure, in.VitalPulse, in.VitalTemperature, in.ExtraOralExam,
+		in.ToothNumber, in.SoapS, in.SoapO, in.SoapP, in.Prescription,
+		id,
+	)
+	if err != nil {
+		return MedicalRecordDetail{}, err
+	}
+	if tag.RowsAffected() == 0 {
+		return MedicalRecordDetail{}, dberr.ErrNotFound
+	}
+
+	// Update odontogram entries if provided (allow empty to clear or keep if we do edit)
+	// We delete and re-insert anyway to reflect current state
+	if _, err := tx.Exec(ctx, `DELETE FROM clinical.odontogram_entries WHERE medical_record_id = $1`, id); err != nil {
+		return MedicalRecordDetail{}, err
+	}
+	for _, o := range in.Odontogram {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO clinical.odontogram_entries (medical_record_id, tooth_number, condition, notes, photo_url)
+			VALUES ($1, $2, $3, $4, $5)`,
+			id, o.ToothNumber, o.Condition, o.Notes, o.PhotoURL); err != nil {
+			return MedicalRecordDetail{}, err
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return MedicalRecordDetail{}, err
+	}
+	return r.GetMedicalRecord(ctx, id)
+}
+
+// DeleteMedicalRecord removes a medical record and its associated odontogram and usage items.
+func (r *Repository) DeleteMedicalRecord(ctx context.Context, id string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, _ = tx.Exec(ctx, `DELETE FROM clinical.odontogram_entries WHERE medical_record_id = $1`, id)
+	_, _ = tx.Exec(ctx, `DELETE FROM clinical.medical_record_items WHERE medical_record_id = $1`, id)
+	tag, err := tx.Exec(ctx, `DELETE FROM clinical.medical_records WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return dberr.ErrNotFound
+	}
+
+	return tx.Commit(ctx)
+}
+
