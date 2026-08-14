@@ -15,6 +15,7 @@ import (
 	"github.com/nina-dental-care/core-api/internal/platform/activitylog"
 	"github.com/nina-dental-care/core-api/internal/platform/systemlogs"
 	"github.com/nina-dental-care/core-api/internal/scheduling"
+	"github.com/nina-dental-care/core-api/internal/settings"
 )
 
 type Dependencies struct {
@@ -72,6 +73,9 @@ func New(deps Dependencies) *fiber.App {
 
 	systemLogsHandler := systemlogs.NewHandler()
 	systemLogsHandler.RegisterRoutes(api)
+
+	settingsHandler := settings.NewHandler(settings.NewRepository(deps.DB))
+	settingsHandler.RegisterRoutes(api)
 
 	// `auth/login` + `auth/me` are wired (see identity.Handler); the rest of
 	// RBAC (protecting every other route by role) lands in Fase 1 — see

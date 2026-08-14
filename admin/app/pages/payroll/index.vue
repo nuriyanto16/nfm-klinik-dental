@@ -21,95 +21,9 @@ export interface StaffPayroll {
 
 const selectedPeriod = ref('2026-08')
 
-const initialPayrolls: StaffPayroll[] = [
-  {
-    id: 'pr-101',
-    nip: 'NDC-DR-001',
-    fullName: 'drg. Friski Raisis, Sp.Ort',
-    role: 'dokter_spesialis',
-    roleLabel: 'Dokter Spesialis Ortodonti',
-    branchName: 'Soreang',
-    baseSalary: 6000000,
-    treatmentRevenue: 28500000,
-    commissionRatePercent: 20,
-    calculatedCommission: 5700000,
-    allowanceBonus: 850000,
-    deductions: 250000,
-    netPayable: 12300000,
-    status: 'PAID',
-    period: 'Agustus 2026'
-  },
-  {
-    id: 'pr-102',
-    nip: 'NDC-DR-002',
-    fullName: 'drg. Siti Aminah',
-    role: 'dokter_umum',
-    roleLabel: 'Dokter Gigi Umum',
-    branchName: 'Baleendah',
-    baseSalary: 5000000,
-    treatmentRevenue: 19800000,
-    commissionRatePercent: 18,
-    calculatedCommission: 3564000,
-    allowanceBonus: 600000,
-    deductions: 150000,
-    netPayable: 9014000,
-    status: 'APPROVED',
-    period: 'Agustus 2026'
-  },
-  {
-    id: 'pr-103',
-    nip: 'NDC-DR-003',
-    fullName: 'drg. Budi Santoso, Sp.KGA',
-    role: 'dokter_spesialis',
-    roleLabel: 'Dokter Spesialis Gigi Anak',
-    branchName: 'Soreang',
-    baseSalary: 6000000,
-    treatmentRevenue: 24200000,
-    commissionRatePercent: 20,
-    calculatedCommission: 4840000,
-    allowanceBonus: 750000,
-    deductions: 200000,
-    netPayable: 11390000,
-    status: 'APPROVED',
-    period: 'Agustus 2026'
-  },
-  {
-    id: 'pr-104',
-    nip: 'NDC-NR-001',
-    fullName: 'Rina Marlina',
-    role: 'perawat',
-    roleLabel: 'Perawat Gigi Senior',
-    branchName: 'Baleendah',
-    baseSalary: 4200000,
-    treatmentRevenue: 0,
-    commissionRatePercent: 5,
-    calculatedCommission: 850000,
-    allowanceBonus: 400000,
-    deductions: 100000,
-    netPayable: 5350000,
-    status: 'PAID',
-    period: 'Agustus 2026'
-  },
-  {
-    id: 'pr-105',
-    nip: 'NDC-FO-001',
-    fullName: 'Maya Putri',
-    role: 'front_office',
-    roleLabel: 'Kasir & Front Office',
-    branchName: 'Soreang',
-    baseSalary: 3800000,
-    treatmentRevenue: 0,
-    commissionRatePercent: 0,
-    calculatedCommission: 0,
-    allowanceBonus: 500000,
-    deductions: 50000,
-    netPayable: 4250000,
-    status: 'PAID',
-    period: 'Agustus 2026'
-  }
-]
+const { data: apiPayrolls, refresh: refreshPayrolls } = useApiFetch<StaffPayroll[]>('/payrolls')
 
-const payrolls = ref<StaffPayroll[]>([...initialPayrolls])
+const payrolls = computed(() => apiPayrolls.value ?? [])
 const selectedPayroll = ref<StaffPayroll | null>(null)
 const showPrintSlipModal = ref(false)
 

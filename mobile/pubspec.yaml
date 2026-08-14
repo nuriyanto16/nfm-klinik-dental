@@ -52,6 +52,9 @@ dependencies:
   open_filex: ^4.5.0             # Trigger APK install after download
   path_provider: ^2.1.6          # Get temp directory path for APK download
   permission_handler: ^11.3.1    # Request INSTALL_PACKAGES permission
+  google_sign_in: ^7.2.0
+  http: ^1.6.0
+  shared_preferences: ^2.5.5
 
 
 dev_dependencies:

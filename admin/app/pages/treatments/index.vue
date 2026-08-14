@@ -6,48 +6,18 @@ definePageMeta({ title: 'Perawatan & Harga' })
 const { data: apiTreatments, status, refresh } = useApiFetch<Treatment[]>('/treatments')
 const { data: apiCategories } = useApiFetch<TreatmentCategory[]>('/treatment-categories')
 
-// ── Dummy / fallback data ───────────────────────────────────────────────────
-const initialTreatments: Treatment[] = [
-  { id: '41-001', categoryId: 'cat-umum', name: 'Scaling Gigi (Pembersihan Karang Gigi)', categoryName: 'Umum', description: 'Pembersihan karang gigi secara komprehensif menggunakan ultrasonic scaler.', price: 350000, durationMinutes: 30, imageUrl: null, isActive: true },
-  { id: '41-002', categoryId: 'cat-umum', name: 'Tambal Gigi (Komposit)', categoryName: 'Umum', description: 'Penambalan gigi berlubang menggunakan bahan komposit sewarna gigi.', price: 250000, durationMinutes: 30, imageUrl: null, isActive: true },
-  { id: '41-003', categoryId: 'cat-umum', name: 'Cabut Gigi Dewasa', categoryName: 'Umum', description: 'Pencabutan gigi permanen dengan anestesi lokal.', price: 300000, durationMinutes: 30, imageUrl: null, isActive: true },
-  { id: '41-004', categoryId: 'cat-umum', name: 'Bleaching (Pemutihan Gigi)', categoryName: 'Umum', description: 'Pemutihan gigi instan menggunakan gel bleaching profesional.', price: 1500000, durationMinutes: 60, imageUrl: null, isActive: true },
-  { id: '41-005', categoryId: 'cat-ortho', name: 'Behel Metal Konvensional', categoryName: 'Behel & Ortodonti', description: 'Pemasangan bracket metal standar untuk koreksi susunan gigi.', price: 6500000, durationMinutes: 60, imageUrl: null, isActive: true },
-  { id: '41-006', categoryId: 'cat-ortho', name: 'Behel Keramik (Sapphire)', categoryName: 'Behel & Ortodonti', description: 'Behel transparan estetis dengan bracket keramik sapphire.', price: 12500000, durationMinutes: 60, imageUrl: null, isActive: true },
-  { id: '41-007', categoryId: 'cat-ortho', name: 'Behel Self-Ligating', categoryName: 'Behel & Ortodonti', description: 'Behel tanpa karet dengan friction rendah, lebih cepat dan nyaman.', price: 9500000, durationMinutes: 60, imageUrl: null, isActive: true },
-  { id: '41-008', categoryId: 'cat-ortho', name: 'Kontrol Behel Bulanan', categoryName: 'Behel & Ortodonti', description: 'Kunjungan kontrol dan penggantian kawat berkala.', price: 150000, durationMinutes: 20, imageUrl: null, isActive: true },
-  { id: '41-009', categoryId: 'cat-kidz', name: 'Pemeriksaan Gigi Anak (Nina Kidz)', categoryName: 'Nina Kidz (Gigi Anak)', description: 'Pemeriksaan rutin gigi anak dengan pendekatan fun & friendly.', price: 100000, durationMinutes: 20, imageUrl: null, isActive: true },
-  { id: '41-010', categoryId: 'cat-kidz', name: 'Fluoride Treatment Anak', categoryName: 'Nina Kidz (Gigi Anak)', description: 'Aplikasi fluoride untuk perlindungan gigi anak dari karies.', price: 200000, durationMinutes: 20, imageUrl: null, isActive: true },
-  { id: '41-011', categoryId: 'cat-kidz', name: 'Vitamin Gigi Anak', categoryName: 'Nina Kidz (Gigi Anak)', description: 'Suplemen mineral dan vitamin untuk pertumbuhan gigi anak optimal.', price: 75000, durationMinutes: 15, imageUrl: null, isActive: true },
-  { id: '41-012', categoryId: 'cat-implant', name: 'Implan Gigi (Single Tooth)', categoryName: 'Implan & Prostodontia', description: 'Penanaman akar gigi titanium untuk gigi yang hilang.', price: 15000000, durationMinutes: 90, imageUrl: null, isActive: true },
-  { id: '41-013', categoryId: 'cat-implant', name: 'Veneer Porcelain', categoryName: 'Implan & Prostodontia', description: 'Lapisan tipis porselen untuk memperbaiki estetika gigi.', price: 3500000, durationMinutes: 60, imageUrl: null, isActive: true },
-  { id: '41-014', categoryId: 'cat-surg', name: 'Cabut Gigi Bungsu (Odontektomi)', categoryName: 'Bedah Mulut', description: 'Pembedahan pengangkatan gigi impaksi / gigi bungsu bermasalah.', price: 1200000, durationMinutes: 60, imageUrl: null, isActive: false }
-]
-
-const initialCategories: TreatmentCategory[] = [
-  { id: 'cat-umum', name: 'Umum', sortOrder: 1 },
-  { id: 'cat-ortho', name: 'Behel & Ortodonti', sortOrder: 2 },
-  { id: 'cat-kidz', name: 'Nina Kidz (Gigi Anak)', sortOrder: 3 },
-  { id: 'cat-implant', name: 'Implan & Prostodontia', sortOrder: 4 },
-  { id: 'cat-surg', name: 'Bedah Mulut', sortOrder: 5 }
-]
-
 const localTreatments = ref<Treatment[]>([])
 const localCategories = ref<TreatmentCategory[]>([])
 
 watch(apiTreatments, (val) => {
-  if (val && (Array.isArray(val) ? val.length > 0 : (val as any)?.data?.length > 0)) {
+  if (val) {
     localTreatments.value = Array.isArray(val) ? [...val] : [...(val as any).data]
-  } else if (localTreatments.value.length === 0) {
-    localTreatments.value = [...initialTreatments]
   }
 }, { immediate: true })
 
 watch(apiCategories, (val) => {
-  if (val && Array.isArray(val) && val.length > 0) {
+  if (val && Array.isArray(val)) {
     localCategories.value = [...val]
-  } else if (localCategories.value.length === 0) {
-    localCategories.value = [...initialCategories]
   }
 }, { immediate: true })
 

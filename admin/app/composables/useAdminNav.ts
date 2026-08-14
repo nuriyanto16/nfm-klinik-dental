@@ -39,6 +39,7 @@ export function useAdminNav() {
     { label: 'Notifikasi & Broadcast', icon: 'i-lucide-send', to: '/notifications', phase: 2 },
 
     { type: 'label', label: 'Sistem' },
+    { label: 'Pengaturan Aplikasi', icon: 'i-lucide-settings', to: '/settings', phase: 1 },
     { label: 'Pengaturan Point', icon: 'i-lucide-coins', to: '/point-settings', phase: 1 },
     { label: 'User & Role', icon: 'i-lucide-shield-check', to: '/users', phase: 1 },
     { label: 'Pengguna Mobile App', icon: 'i-lucide-smartphone', to: '/mobile-users', phase: 1 },

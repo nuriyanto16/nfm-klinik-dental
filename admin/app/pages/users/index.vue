@@ -18,6 +18,10 @@ export interface ExtendedStaffUser extends StaffUser {
 const page = ref(1)
 const pageSize = 20
 const { data: usersPage, status, refresh } = useApiFetch<PaginatedResponse<StaffUser>>(() => `/users?page=${page.value}&pageSize=${pageSize}`)
+const users = computed(() => Array.isArray(usersPage.value?.data) ? usersPage.value.data : [])
+
+const { data: patientsPage, refresh: refreshPatients } = useApiFetch<PaginatedResponse<Patient>>(() => `/patients?page=${page.value}&pageSize=${pageSize}`)
+const patients = computed(() => Array.isArray(patientsPage.value?.data) ? patientsPage.value.data : [])
 
 const apiUserList = computed<StaffUser[]>(() => {
   const d = usersPage.value
@@ -356,75 +360,25 @@ export interface MobileUser {
   totalReservations: number
 }
 
-const initialMobileUsers: MobileUser[] = [
-  {
-    id: 'usr-m01',
-    fullName: 'Nuriyanto',
-    email: 'nuriyanto@gmail.com',
-    phoneWa: '+6281234567890',
-    nik: '3204011405920003',
-    gender: 'male',
-    dateOfBirth: '1992-05-14',
-    city: 'Bandung',
-    address: 'Jl. Terusan Kopo No. 8, Soreang',
-    registeredAt: '2026-08-01T10:00:00Z',
-    lastLoginAt: '2026-08-04T20:15:00Z',
-    status: 'ACTIVE',
-    totalReservations: 3
-  },
-  {
-    id: 'usr-m02',
-    fullName: 'Budi Santoso',
-    email: 'budi.santoso@gmail.com',
-    phoneWa: '+6281298765432',
-    nik: '3171011405920003',
-    gender: 'male',
-    dateOfBirth: '1992-05-14',
-    city: 'Bandung',
-    address: 'Jl. Veteran No. 10, Soreang',
-    registeredAt: '2026-08-02T08:30:00Z',
-    lastLoginAt: '2026-08-04T18:20:00Z',
-    status: 'ACTIVE',
-    totalReservations: 2
-  },
-  {
-    id: 'usr-m03',
-    fullName: 'Dewi Lestari',
-    email: 'dewi.lestari@gmail.com',
-    phoneWa: '+6281311223344',
-    nik: '3204015509930005',
-    gender: 'female',
-    dateOfBirth: '1993-09-15',
-    city: 'Kab. Bandung',
-    address: 'Jl. Raya Baleendah No. 45',
-    registeredAt: '2026-08-03T11:20:00Z',
-    lastLoginAt: '2026-08-04T09:10:00Z',
-    status: 'ACTIVE',
-    totalReservations: 1
-  },
-  {
-    id: 'usr-m04',
-    fullName: 'Ahmad Fauzi',
-    email: 'ahmad.fauzi@yahoo.com',
-    phoneWa: '+6285712345678',
-    nik: '3204011202910008',
-    gender: 'male',
-    dateOfBirth: '1991-02-12',
-    city: 'Bandung',
-    address: 'Kopo Cirangrang No. 12',
-    registeredAt: '2026-08-03T14:45:00Z',
-    lastLoginAt: '2026-08-03T14:45:00Z',
-    status: 'BLOCKED',
-    totalReservations: 0
-  }
-]
-
-const mobileUsers = ref<MobileUser[]>([...initialMobileUsers])
 const mobileSearch = ref('')
 const mobileFilterStatus = ref<'all' | 'ACTIVE' | 'BLOCKED'>('all')
 
 const filteredMobileUsers = computed(() => {
-  return mobileUsers.value.filter(u => {
+  return patients.value.map(p => ({
+    id: p.id,
+    fullName: p.fullName,
+    email: p.email ?? '-',
+    phoneWa: p.phoneWa ?? '-',
+    nik: p.nik ?? '-',
+    gender: p.gender,
+    dateOfBirth: p.dateOfBirth,
+    city: p.address ? p.address.split(',')[0] : '-',
+    address: p.address ?? '-',
+    registeredAt: p.createdAt,
+    lastLoginAt: p.createdAt,
+    status: 'ACTIVE',
+    totalReservations: 0
+  })).filter(u => {
     if (mobileFilterStatus.value !== 'all' && u.status !== mobileFilterStatus.value) return false
     if (mobileSearch.value.trim()) {
       const q = mobileSearch.value.toLowerCase().trim()

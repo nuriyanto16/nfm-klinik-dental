@@ -9,37 +9,15 @@ const { data: apiPromos, refresh: refreshPromos } = useApiFetch<Promo[]>('/conte
 const { data: apiTestimonials, refresh: refreshTestimonials } = useApiFetch<Testimonial[]>('/content/testimonials')
 const { data: apiVideos, refresh: refreshVideos } = useApiFetch<Video[]>('/content/videos')
 
-const initialArticles: Article[] = [
-  { id: 'art-1', categoryId: 'cat-1', categoryName: 'Ortodonti', title: 'Kapan Harus Behel Gigi? Kenali 5 Tanda Utama Ini!', slug: 'kapan-harus-behel', coverImageUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800&auto=format&fit=crop&q=80', body: 'Gigi berjejal, gigitan tidak rata, atau rahang tidak simetris adalah tanda utama Anda perlu berkonsultasi dengan dokter spesialis ortodonti di Nina Dental Care.', publishedAt: '2026-07-28T10:00:00Z', createdAt: '2026-07-28T10:00:00Z' },
-  { id: 'art-2', categoryId: 'cat-2', categoryName: 'Tips Kesehatan', title: '5 Kebiasaan Sehari-hari yang Tanpa Disadari Merusak Enamel Gigi', slug: '5-kebiasaan-perusak-enamel', coverImageUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800&auto=format&fit=crop&q=80', body: 'Minum soda berlebihan, menggigit kuku, serta menyikat gigi terlalu keras dapat menipiskan enamel gigi sehingga gigi menjadi sensitif dan mudah berlubang.', publishedAt: '2026-07-25T10:00:00Z', createdAt: '2026-07-25T10:00:00Z' },
-  { id: 'art-3', categoryId: 'cat-3', categoryName: 'Nina Kidz', title: 'Program Nina Kidz: Menjaga Gigi Anak Sehat & Bebas Karies Sejak Dini', slug: 'program-nina-kidz', coverImageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&auto=format&fit=crop&q=80', body: 'Nina Kidz adalah program pemeriksaan gigi anak dengan suasana ramah dan menyenangkan, melatih si kecil agar tidak takut berkunjung ke dokter gigi.', publishedAt: '2026-07-23T10:00:00Z', createdAt: '2026-07-23T10:00:00Z' },
-  { id: 'art-4', categoryId: 'cat-1', categoryName: 'Perawatan Gigi', title: 'Prosedur Bleaching Gigi Instant: Rahasia Senyum Cerah Cemerlang', slug: 'prosedur-bleaching-gigi', coverImageUrl: 'https://images.unsplash.com/photo-1571772996211-2f02c9727629?w=800&auto=format&fit=crop&q=80', body: 'Bleaching gigi instant 60 menit dengan teknologi sinar LED aman mencerahkan warna gigi hingga beberapa tingkat lebih putih alami.', publishedAt: '2026-07-20T10:00:00Z', createdAt: '2026-07-20T10:00:00Z' }
-]
+const articles = ref<Article[]>([])
+const promos = ref<Promo[]>([])
+const testimonials = ref<Testimonial[]>([])
+const videos = ref<Video[]>([])
 
-const initialPromos: Promo[] = [
-  { id: 'pro-1', title: 'Promo Scaling 6-in-1 Super Clean', bannerImageUrl: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800&auto=format&fit=crop&q=80', description: 'Paket scaling lengkap pembersihan karang gigi + polishing + fluoridasi hanya Rp199.000.', startsAt: '2026-07-01T00:00:00Z', endsAt: '2026-08-31T23:59:59Z', isActive: true, discountType: 'fixed', discountValue: 50000 },
-  { id: 'pro-2', title: 'Diskon Pemasangan Behel Metal 10%', bannerImageUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800&auto=format&fit=crop&q=80', description: 'Diskon 10% untuk pemasangan behel metal konvensional via aplikasi mobile.', startsAt: '2026-07-05T00:00:00Z', endsAt: '2026-08-15T23:59:59Z', isActive: true, discountType: 'percentage', discountValue: 10 }
-]
-
-const initialTestimonials: Testimonial[] = [
-  { id: 'tes-1', patientName: 'Budi Santoso', doctorName: 'drg. Friski Raisis, Sp.Ort', photoUrl: null, rating: 5, quote: 'Pelayanan ramah, klinik sangat bersih dan dokter komunikatif! Tambal giginya rapi dan gak sakit sama sekali.' },
-  { id: 'tes-2', patientName: 'Dewi Lestari', doctorName: 'drg. Siti Aminah', photoUrl: null, rating: 5, quote: 'Dokter anak di Nina Kidz sangat sabar. Anak saya jadi berani dan ceria saat diperiksa gigi!' }
-]
-
-const initialVideos: Video[] = [
-  { id: 'vid-1', title: 'Grand Opening Nina Dental Care Soreang & Baleendah', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://images.unsplash.com/photo-1629909615184-74f495363b67?w=800&auto=format&fit=crop&q=80', publishedAt: '2026-07-15T12:00:00Z' },
-  { id: 'vid-2', title: 'Edukasi: Cara Sikat Gigi yang Benar Mencegah Karang', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumbnailUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800&auto=format&fit=crop&q=80', publishedAt: '2026-07-22T08:30:00Z' }
-]
-
-const articles = ref<Article[]>([...initialArticles])
-const promos = ref<Promo[]>([...initialPromos])
-const testimonials = ref<Testimonial[]>([...initialTestimonials])
-const videos = ref<Video[]>([...initialVideos])
-
-watch(apiArticles, val => { if (val?.length) articles.value = [...val] }, { immediate: true })
-watch(apiPromos, val => { if (val?.length) promos.value = [...val] }, { immediate: true })
-watch(apiTestimonials, val => { if (val?.length) testimonials.value = [...val] }, { immediate: true })
-watch(apiVideos, val => { if (val?.length) videos.value = [...val] }, { immediate: true })
+watch(apiArticles, val => { if (val) articles.value = [...val] }, { immediate: true })
+watch(apiPromos, val => { if (val) promos.value = [...val] }, { immediate: true })
+watch(apiTestimonials, val => { if (val) testimonials.value = [...val] }, { immediate: true })
+watch(apiVideos, val => { if (val) videos.value = [...val] }, { immediate: true })
 
 function onFileSelected(event: Event, callback: (url: string) => void) {
   const target = event.target as HTMLInputElement

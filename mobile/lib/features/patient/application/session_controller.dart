@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../core/storage/session_storage.dart';
 import '../data/patient_repository.dart';
@@ -68,30 +71,52 @@ class SessionController extends AsyncNotifier<PatientSession?> {
     state = AsyncData(session);
   }
 
-  Future<GoogleSsoResult> handleGoogleSso({required String email, required String displayName}) async {
-    final normalized = email.trim().toLowerCase();
-    final all = await ref.read(patientRepositoryProvider).listAll();
-    final match = all.where((p) {
-      if (p.relation != 'self') return false;
-      return p.email != null && p.email!.toLowerCase() == normalized;
-    }).firstOrNull;
-
-    if (match != null) {
-      final session = PatientSession(patientId: match.id, fullName: match.fullName, phoneWa: match.phoneWa);
-      await ref.read(sessionStorageProvider).save(session);
-      state = AsyncData(session);
-      return GoogleSsoResult(
-        isNewUser: false,
-        session: session,
-        email: email,
-        displayName: match.fullName,
+  Future<GoogleSsoResult> handleGoogleSso() async {
+    final googleSignIn = GoogleSignIn(
+      scopes: ['email', 'profile'],
+    );
+    
+    final account = await googleSignIn.signIn();
+    if (account == null) {
+      throw Exception('Login Google dibatalkan');
+    }
+    
+    final auth = await account.authentication;
+    final idToken = auth.idToken;
+    if (idToken == null) {
+      throw Exception('ID token Google tidak ditemukan');
+    }
+    
+    try {
+      final response = await http.post(
+        Uri.parse('https://nfmtech.my.id/product/klinik/api/v1/auth/google'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'idToken': idToken}),
       );
-    } else {
-      return GoogleSsoResult(
-        isNewUser: true,
-        email: email,
-        displayName: displayName,
-      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final user = data['user'];
+        final session = PatientSession(
+          patientId: user['id'],
+          fullName: user['fullName'],
+          phoneWa: user['phoneWa'] ?? '',
+        );
+        
+        await ref.read(sessionStorageProvider).save(session);
+        state = AsyncData(session);
+        
+        return GoogleSsoResult(
+          isNewUser: false,
+          session: session,
+          email: user['email'],
+          displayName: user['fullName'],
+        );
+      } else {
+        throw Exception('Gagal otentikasi dengan server');
+      }
+    } catch (e) {
+      throw Exception('Gagal memproses login SSO: $e');
     }
   }
 

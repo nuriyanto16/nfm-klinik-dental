@@ -376,41 +376,8 @@ const filterDoctor = ref('all')
 const page = ref(1)
 const pageSize = 10
 
-const initialDummyRecords: MedicalRecord[] = [
-  {
-    id: 'mr-101',
-    patientId: '31000000-0000-0000-0000-000000000099',
-    patientName: 'Nuriyanto',
-    rmNumber: 'RM-2026-0099',
-    staffId: '21000000-0000-0000-0000-000000000001',
-    doctorName: 'drg. Nina Marlina, Sp.KG',
-    diagnosis: 'Nekrosis pulpa gigi 46 + periodontitis apikalis akut',
-    treatmentNotes: 'Open access / Trepanasi, Ekstirpasi jaringan pulpa, Irigasi NaOCl 2.5%, Sterilisasi (ChKM), Tumpatan sementara',
-    createdAt: '2026-08-04T08:00:00Z',
-    updatedAt: '2026-08-04T08:00:00Z',
-    odontogram: [
-      { toothNumber: 46, condition: 'caries', notes: 'Karies profunda oklusal' }
-    ]
-  },
-  {
-    id: 'mr-102',
-    patientId: '31000000-0000-0000-0000-000000000001',
-    patientName: 'Budi Santoso',
-    rmNumber: 'RM-2026-0001',
-    staffId: '21000000-0000-0000-0000-000000000001',
-    doctorName: 'drg. Friski Raisis, Sp.Ort',
-    diagnosis: 'Karies dentin pada gigi 36 & Kontrol Ortodonti Behel Metal',
-    treatmentNotes: 'Pembersihan karang gigi scaling, ganti kawat Niti 0.16 & karet behel metal konvensional bulan ke-6.',
-    createdAt: '2026-07-27T10:00:00Z',
-    updatedAt: '2026-07-27T10:00:00Z',
-    odontogram: [
-      { toothNumber: 36, condition: 'caries', notes: 'Karies profunda, perlu penambalan komposit' }
-    ]
-  }
-]
-
 const displayRecords = computed(() => {
-  const base = (records.value && records.value.length > 0) ? records.value : initialDummyRecords
+  const base = records.value ?? []
   return base.filter(r => {
     const matchSearch = !search.value || 
       (r.patientName || '').toLowerCase().includes(search.value.toLowerCase()) ||

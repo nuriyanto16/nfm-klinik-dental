@@ -3,6 +3,8 @@ import type { Branch, CreateReservationInput, DoctorDetail, PaginatedResponse, P
 
 definePageMeta({ title: 'Reservasi & Antrian' })
 
+const appSettings = useAppSettings()
+
 const viewMode = ref<'list' | 'calendar'>('list')
 const page = ref(1)
 const pageSize = 10
@@ -23,16 +25,7 @@ function buildQuery() {
 
 const { data: reservationsPage, status, error, refresh } = useApiFetch<PaginatedResponse<Reservation>>(() => buildQuery())
 
-const initialReservations: Reservation[] = [
-  { id: 'res-1', patientId: 'pat-1', branchId: '21000000-0000-0000-0000-000000000002', staffId: 'dr-1', scheduledAt: '2026-08-03T13:00:00Z', status: 'pending', complaintNote: 'Pemasangan Behel Metal', createdAt: '2026-08-02T08:00:00Z', patientName: 'Dewi Lestari', branchName: 'Nina Dental Care - Baleendah', doctorName: 'drg. Siti Rahmawati', treatments: [{ id: 't-1', name: 'Behel Keramik (Sapphire)', price: 4500000, categoryName: 'Ortodonti' }] },
-  { id: 'res-2', patientId: 'pat-2', branchId: '21000000-0000-0000-0000-000000000001', staffId: 'dr-2', scheduledAt: '2026-08-01T10:00:00Z', status: 'confirmed', complaintNote: 'Cabut Gigi', createdAt: '2026-07-31T08:00:00Z', patientName: 'Ahmad Fauzi', branchName: 'Nina Dental Care - Soreang', doctorName: 'drg. Fajar Ramadhan', treatments: [{ id: 't-2', name: 'Cabut Gigi Dewasa', price: 350000, categoryName: 'Bedah Mulut' }] },
-  { id: 'res-3', patientId: 'pat-3', branchId: '21000000-0000-0000-0000-000000000002', staffId: 'dr-3', scheduledAt: '2026-07-31T17:00:00Z', status: 'confirmed', complaintNote: 'Periksa Gigi Anak', createdAt: '2026-07-30T08:00:00Z', patientName: 'Siti Aminah', branchName: 'Nina Dental Care - Baleendah', doctorName: 'drg. Yoga Pratama', treatments: [{ id: 't-3', name: 'Pemeriksaan Gigi Anak (Nina Kidz)', price: 150000, categoryName: 'Nina Kidz' }] },
-  { id: 'res-4', patientId: 'pat-4', branchId: '21000000-0000-0000-0000-000000000001', staffId: 'dr-4', scheduledAt: '2026-07-31T15:00:00Z', status: 'in_progress', complaintNote: 'Bleaching Instant', createdAt: '2026-07-30T08:00:00Z', patientName: 'Budi Santoso', branchName: 'Nina Dental Care - Soreang', doctorName: 'drg. Nina Marlina, Sp.KG', treatments: [{ id: 't-4', name: 'Bleaching (Pemutihan Gigi)', price: 1850000, categoryName: 'Estetika' }] },
-  { id: 'res-5', patientId: 'pat-5', branchId: '21000000-0000-0000-0000-000000000001', staffId: 'dr-1', scheduledAt: '2026-07-31T11:00:00Z', status: 'checked_in', complaintNote: 'Behel Metal', createdAt: '2026-07-30T08:00:00Z', patientName: 'Rina Marlina', branchName: 'Nina Dental Care - Soreang', doctorName: 'drg. Siti Rahmawati', treatments: [{ id: 't-5', name: 'Behel Metal Konvensional', price: 4000000, categoryName: 'Ortodonti' }] },
-  { id: 'res-6', patientId: 'pat-6', branchId: '21000000-0000-0000-0000-000000000002', staffId: 'dr-2', scheduledAt: '2026-07-31T09:00:00Z', status: 'completed', complaintNote: 'Scaling Gigi', createdAt: '2026-07-30T08:00:00Z', patientName: 'Dewi Lestari', branchName: 'Nina Dental Care - Baleendah', doctorName: 'drg. Fajar Ramadhan', treatments: [{ id: 't-6', name: 'Scaling Gigi (Pembersihan Karang)', price: 199000, categoryName: 'Pencegahan' }] }
-]
-
-const localReservations = ref<Reservation[]>([...initialReservations])
+const localReservations = ref<Reservation[]>([])
 
 const searchQuery = ref('')
 
@@ -45,19 +38,12 @@ watch(reservationsPage, (val) => {
     list = (val as any).data
   }
   if (list.length > 0) {
-    const combined = [...list]
-    for (const initRes of initialReservations) {
-      const exists = combined.some(r => r.id === initRes.id || (r.patientName === initRes.patientName && r.scheduledAt.slice(0, 10) === initRes.scheduledAt.slice(0, 10)))
-      if (!exists) {
-        combined.push(initRes)
-      }
-    }
-    localReservations.value = combined
+    localReservations.value = [...list]
   }
 }, { immediate: true })
 
 const filteredReservations = computed(() => {
-  const list = localReservations.value.length > 0 ? localReservations.value : initialReservations
+  const list = localReservations.value
   return list.filter(r => {
     if (filters.branchId && filters.branchId !== 'all') {
       const selectedBranch = (branches.value ?? []).find(b => b.id === filters.branchId)
@@ -148,18 +134,8 @@ const { data: doctorsAdmin } = useApiFetch<DoctorDetail[]>('/doctors/admin')
 const { data: patients } = useApiFetch<Patient[]>('/patients')
 const { data: treatments } = useApiFetch<Treatment[]>('/treatments')
 
-const initialDoctorsList: DoctorDetail[] = [
-  { id: 'dr-1', fullName: 'drg. Siti Rahmawati', specialization: 'Dokter Gigi Umum', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-001', strNumber: 'STR-001', isActive: true, totalPatientsCount: 120, rating: 4.9 },
-  { id: 'dr-2', fullName: 'drg. Fajar Ramadhan', specialization: 'Bedah Mulut', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-002', strNumber: 'STR-002', isActive: true, totalPatientsCount: 95, rating: 4.8 },
-  { id: 'dr-3', fullName: 'drg. Yoga Pratama', specialization: 'Pemeriksaan Gigi Anak', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-003', strNumber: 'STR-003', isActive: true, totalPatientsCount: 88, rating: 4.9 },
-  { id: 'dr-4', fullName: 'drg. Nina Marlina, Sp.KG', specialization: 'Bleaching & Estetika', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-004', strNumber: 'STR-004', isActive: true, totalPatientsCount: 150, rating: 5.0 },
-  { id: 'dr-5', fullName: 'drg. Friski Raisis, Sp.Ort', specialization: 'Ortodonti', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-005', strNumber: 'STR-005', isActive: true, totalPatientsCount: 140, rating: 4.9 },
-  { id: 'dr-6', fullName: 'drg. Siti Aminah', specialization: 'Dokter Gigi Umum', branchIds: [], branchNames: ['Nina Dental Care - Soreang', 'Nina Dental Care - Baleendah'], sipNumber: 'SIP-006', strNumber: 'STR-006', isActive: true, totalPatientsCount: 110, rating: 4.8 }
-]
-
 const displayDoctorsList = computed<DoctorDetail[]>(() => {
-  if (doctorsAdmin.value && doctorsAdmin.value.length > 0) return doctorsAdmin.value
-  return initialDoctorsList
+  return doctorsAdmin.value ?? []
 })
 
 function getTreatmentsList(treatments: any): any[] {
@@ -702,7 +678,7 @@ function printReservationTicket(item: Reservation) {
 
         <div class="footer">
           <p><strong>Harap hadir 15 menit sebelum jam reservasi.</strong></p>
-          <p>Terima kasih telah mempercayakan perawatan gigi Anda di Nina Dental Care.</p>
+          <p>Terima kasih telah mempercayakan perawatan gigi Anda di {{ appSettings.settings.brand_name || 'Klinik Gigi' }}.</p>
         </div>
       </div>
       <script>

@@ -143,27 +143,22 @@ function getPatientAvatar(name?: string) {
   return patientAvatars[name] ?? ''
 }
 
-const initialPatients: Patient[] = [
-  { id: '31000000-0000-0000-0000-000000000099', fullName: 'Nuriyanto', phoneWa: '081234567890', email: 'nuriyanto@example.com', gender: 'male', dateOfBirth: '1992-06-15', address: 'Jl. Terusan Kopo No. 8, Soreang, Bandung', rmNumber: 'RM-2026-0099', relation: 'self', nik: '3204121506920001', bloodType: 'O', occupation: 'Software Engineer', emergencyContactName: 'Dewi (Istri)', emergencyContactPhone: '081299887766', allergiesMedicalHistory: 'Alergi Obat Penisilin & Anestesi Tertentu', insuranceType: 'BPJS Kesehatan', insuranceNumber: '000123456789', createdAt: '2026-07-01T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000001', fullName: 'Budi Santoso', phoneWa: '081234567890', email: 'budi.santoso@example.com', gender: 'male', dateOfBirth: '1990-05-15', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0001', relation: 'self', nik: '3204121505900002', bloodType: 'A', occupation: 'Wiraswasta', emergencyContactName: 'Rina (Istri)', emergencyContactPhone: '081233445566', allergiesMedicalHistory: 'Tidak ada riwayat alergi obat', insuranceType: 'Umum / Mandiri', insuranceNumber: '-', createdAt: '2026-07-01T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000002', fullName: 'Siti Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '1995-08-20', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0002', relation: 'self', nik: '3204126008950003', bloodType: 'B', occupation: 'Karyawan Swasta', emergencyContactName: 'Ahmad (Suami)', emergencyContactPhone: '081288776655', allergiesMedicalHistory: 'Riwayat Anemia Ringan', insuranceType: 'Asuransi Mandiri Inhealth', insuranceNumber: 'INH-998877', createdAt: '2026-07-02T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000003', fullName: 'Kayla Aminah', phoneWa: '081298765432', email: 'siti.aminah@example.com', gender: 'female', dateOfBirth: '2018-03-10', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0003', relation: 'child', nik: '3204125003180004', bloodType: 'B', occupation: 'Pelajar', emergencyContactName: 'Siti Aminah (Ibu)', emergencyContactPhone: '081298765432', allergiesMedicalHistory: 'Alergi Seafood', insuranceType: 'Prudential Corporate', insuranceNumber: 'PRU-776655', createdAt: '2026-07-03T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000004', fullName: 'Ahmad Fauzi', phoneWa: '081311223344', email: 'ahmad.fauzi@example.com', gender: 'male', dateOfBirth: '1988-12-01', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0004', relation: 'self', nik: '3204120112880005', bloodType: 'AB', occupation: 'PNS', emergencyContactName: 'Endang (Kakak)', emergencyContactPhone: '081322110099', allergiesMedicalHistory: 'Hipertensi Terkontrol', insuranceType: 'BPJS Kesehatan', insuranceNumber: '000987654321', createdAt: '2026-07-04T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000005', fullName: 'Dewi Lestari', phoneWa: '081355667788', email: 'dewi.lestari@example.com', gender: 'female', dateOfBirth: '1993-11-11', address: 'Baleendah, Bandung', rmNumber: 'RM-2026-0005', relation: 'self', nik: '3204125111930006', bloodType: 'O', occupation: 'Tenaga Pengajar', emergencyContactName: 'Bambang (Ayah)', emergencyContactPhone: '081355009988', allergiesMedicalHistory: 'Sensitif Anestesi Dingin', insuranceType: 'Umum / Mandiri', insuranceNumber: '-', createdAt: '2026-07-05T00:00:00Z' },
-  { id: '31000000-0000-0000-0000-000000000006', fullName: 'Rina Marlina', phoneWa: '081244556677', email: 'rina.marlina@example.com', gender: 'female', dateOfBirth: '1992-04-14', address: 'Soreang, Bandung', rmNumber: 'RM-2026-0006', relation: 'self', nik: '3204125404920007', bloodType: 'A', occupation: 'Arsitek', emergencyContactName: 'Heri (Suami)', emergencyContactPhone: '081244112233', allergiesMedicalHistory: 'Tidak ada alergi', insuranceType: 'Asuransi Generali', insuranceNumber: 'GEN-554433', createdAt: '2026-07-06T00:00:00Z' }
-]
-
 const localPatients = ref<Patient[]>([])
 
 const displayPatients = computed<Patient[]>(() => {
-  const apiList = patients.value
-  const all = apiList.length > 0 ? [...apiList, ...initialPatients.filter(ip => !apiList.some((ap: Patient) => ap.id === ip.id))] : initialPatients
-  const extra = localPatients.value.filter(lp => !all.some(p => p.id === lp.id))
-  return [...extra, ...all]
+  const apiList = Array.isArray(patientsPage.value?.data) ? patientsPage.value.data : []
+  const extra = localPatients.value.filter(lp => !apiList.some(p => p.id === lp.id))
+  return [...extra, ...apiList]
 })
 
-// Selected patient state - initialized deterministically to match SSR and client
-const selectedPatientId = ref<string>(initialPatients[0].id)
+// Selected patient state - initialized to first patient if available
+const selectedPatientId = ref<string>('')
+
+watch(displayPatients, (val) => {
+  if (val.length > 0 && !selectedPatientId.value) {
+    selectedPatientId.value = val[0].id
+  }
+}, { immediate: true })
 
 const detailPatient = computed<Patient | null>(() => {
   return displayPatients.value.find(p => p.id === selectedPatientId.value) ?? displayPatients.value[0] ?? null
@@ -531,11 +526,7 @@ async function savePatient() {
       if (foundLocal) {
         Object.assign(foundLocal, updateData)
       }
-      const foundInit = initialPatients.find(p => p.id === targetId)
-      if (foundInit) {
-        Object.assign(foundInit, updateData)
-      }
-      const foundApi = (patients.value as Patient[])?.find(p => p.id === targetId)
+      const foundApi = Array.isArray(patientsPage.value?.data) ? patientsPage.value.data.find((p: any) => p.id === targetId) : undefined
       if (foundApi) {
         Object.assign(foundApi, updateData)
       }

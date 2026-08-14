@@ -13,58 +13,7 @@ export interface AdminVoucherPromo extends Promo {
 
 const { data: apiPromos, status, refresh } = useApiFetch<Promo[]>('/content/promos')
 
-const initialVouchers: AdminVoucherPromo[] = [
-  {
-    id: 'pro-1',
-    title: 'Diskon Scaling 6-in-1 Super Clean',
-    voucherCode: 'SCALING50K',
-    bannerImageUrl: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800&auto=format&fit=crop&q=80',
-    description: 'Paket scaling lengkap pembersihan karang gigi + polishing + fluoridasi hanya Rp149.000.',
-    startsAt: '2026-07-01T00:00:00Z',
-    endsAt: '2026-08-31T23:59:59Z',
-    isActive: true,
-    discountType: 'fixed',
-    discountValue: 50000,
-    minTransaction: 150000,
-    maxUsageCount: 100,
-    usedCount: 38,
-    targetCategory: 'Pencegahan'
-  },
-  {
-    id: 'pro-2',
-    title: 'Promo Spesial Behel Metal 10%',
-    voucherCode: 'BEHEL10',
-    bannerImageUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?w=800&auto=format&fit=crop&q=80',
-    description: 'Diskon 10% untuk pemasangan behel metal konvensional via aplikasi mobile.',
-    startsAt: '2026-07-05T00:00:00Z',
-    endsAt: '2026-08-15T23:59:59Z',
-    isActive: true,
-    discountType: 'percentage',
-    discountValue: 10,
-    minTransaction: 3000000,
-    maxUsageCount: 50,
-    usedCount: 12,
-    targetCategory: 'Ortodonti'
-  },
-  {
-    id: 'pro-3',
-    title: 'Voucher New Patient Senyum Sehat',
-    voucherCode: 'SMILESEHAT',
-    bannerImageUrl: 'https://images.unsplash.com/photo-1571772996211-2f02c9727629?w=800&auto=format&fit=crop&q=80',
-    description: 'Potongan Rp 30.000 khusus pasien baru pertama kali berkunjung ke Nina Dental Care.',
-    startsAt: '2026-08-01T00:00:00Z',
-    endsAt: '2026-09-30T23:59:59Z',
-    isActive: true,
-    discountType: 'fixed',
-    discountValue: 30000,
-    minTransaction: 100000,
-    maxUsageCount: 200,
-    usedCount: 84,
-    targetCategory: 'Semua Perawatan'
-  }
-]
-
-const vouchers = ref<AdminVoucherPromo[]>([...initialVouchers])
+const vouchers = ref<AdminVoucherPromo[]>([])
 
 watch(apiPromos, val => {
   if (val && val.length > 0) {

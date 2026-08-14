@@ -18,25 +18,8 @@ const { data: promos } = useApiFetch<Promo[]>('/content/promos')
 
 const { data: trend } = useApiFetch<{ date: string, revenue: number }[]>('/admin/dashboard/revenue-trend?days=14')
 
-const initialPayments: Payment[] = [
-  { id: 'pay-771001', reservationId: 'res-1', patientId: 'pat-1', amount: 199000, depositAmount: 100000, status: 'paid', provider: 'midtrans', providerReference: 'BCA-881203', paymentMethod: 'bank_transfer_bca', promoId: null, promoTitle: null, discountAmount: 0, paidAt: '2026-08-02T08:22:00Z', expiredAt: null, createdAt: '2026-08-02T08:20:00Z', patientName: 'Budi Santoso', branchName: 'Baleendah' },
-  { id: 'pay-771002', reservationId: 'res-2', patientId: 'pat-2', amount: 350000, depositAmount: 100000, status: 'paid', provider: 'qris', providerReference: 'QRIS-991823', paymentMethod: 'qris', promoId: null, promoTitle: null, discountAmount: 0, paidAt: '2026-08-02T08:50:00Z', expiredAt: null, createdAt: '2026-08-02T08:45:00Z', patientName: 'Dewi Lestari', branchName: 'Soreang' },
-  { id: 'pay-771003', reservationId: 'res-3', patientId: 'pat-3', amount: 4500000, depositAmount: 500000, status: 'paid', provider: 'cash', providerReference: 'CASH-FO-01', paymentMethod: 'cash', promoId: null, promoTitle: null, discountAmount: 0, paidAt: '2026-08-01T14:10:00Z', expiredAt: null, createdAt: '2026-08-01T14:00:00Z', patientName: 'Siti Rahmawati', branchName: 'Baleendah' },
-  { id: 'pay-771004', reservationId: 'res-4', patientId: 'pat-4', amount: 1850000, depositAmount: 200000, status: 'paid', provider: 'mandiri', providerReference: 'MDR-440129', paymentMethod: 'bank_transfer_mandiri', promoId: null, promoTitle: null, discountAmount: 0, paidAt: '2026-08-01T11:30:00Z', expiredAt: null, createdAt: '2026-08-01T11:20:00Z', patientName: 'Ahmad Fauzi', branchName: 'Soreang' }
-]
-
 const displayPayments = computed(() => {
-  const apiList = payments.value
-  if (apiList && apiList.length > 0) {
-    const combined = [...apiList]
-    for (const initPay of initialPayments) {
-      if (!combined.some(p => p.id === initPay.id)) {
-        combined.push(initPay)
-      }
-    }
-    return combined
-  }
-  return initialPayments
+  return payments.value ?? []
 })
 
 const totalPages = computed(() => Math.ceil(displayPayments.value.length / pageSize) || 1)
@@ -142,16 +125,18 @@ watch(showPos, (open) => {
   if (!open) refresh()
 })
 
-const DUMMY_RESERVATIONS: Reservation[] = [
-  { id: 'res-101', patientId: 'pat-1', patientName: 'Budi Santoso', doctorId: 'doc-1', doctorName: 'drg. Friski Raisis, Sp.Ort', branchId: 'br-1', branchName: 'Baleendah', scheduledAt: '2026-08-04T10:00:00Z', status: 'confirmed', treatments: [{ id: 'trt-1', name: 'Scaling 6-in-1 Super Clean', price: 199000 }] },
-  { id: 'res-102', patientId: 'pat-2', patientName: 'Dewi Lestari', doctorId: 'doc-2', doctorName: 'drg. Siti Aminah', branchId: 'br-2', branchName: 'Soreang', scheduledAt: '2026-08-04T11:30:00Z', status: 'in_progress', treatments: [{ id: 'trt-2', name: 'Penambalan Gigi Komposit', price: 350000 }] },
-  { id: 'res-103', patientId: 'pat-3', patientName: 'Siti Rahmawati', doctorId: 'doc-1', doctorName: 'drg. Friski Raisis, Sp.Ort', branchId: 'br-1', branchName: 'Baleendah', scheduledAt: '2026-08-04T14:00:00Z', status: 'arrived', treatments: [{ id: 'trt-3', name: 'Pemasangan Behel Metal Premium', price: 4500000 }] },
-  { id: 'res-104', patientId: 'pat-4', patientName: 'Ahmad Fauzi', doctorId: 'doc-3', doctorName: 'drg. Budi Santoso, Sp.KGA', branchId: 'br-2', branchName: 'Soreang', scheduledAt: '2026-08-04T15:30:00Z', status: 'pending', treatments: [{ id: 'trt-4', name: 'Pembersihan Kanker Gigi / Odontektomi', price: 1850000 }] }
-]
+const availableReservationsForPayment = computed(() => {
+  let list: Reservation[] = []
+  if (Array.isArray(reservationsPage.value)) {
+    list = reservationsPage.value
+  } else if (reservationsPage.value && Array.isArray((reservationsPage.value as any).data)) {
+    list = (reservationsPage.value as any).data
+  }
+  return list.filter(r => r.status === 'completed' || r.status === 'in_progress' || r.status === 'arrived')
+})
 
 const availableReservations = computed(() => {
-  const list = reservations.value
-  return (list && list.length > 0) ? list : DUMMY_RESERVATIONS
+  return availableReservationsForPayment.value
 })
 
 const resSearch = ref('')
@@ -359,7 +344,6 @@ async function onSubmit() {
       createdAt: new Date().toISOString()
     }
 
-    initialPayments.unshift(newPaymentRecord)
     showModal.value = false
     await refresh()
   } catch (err: any) {

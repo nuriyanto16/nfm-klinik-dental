@@ -1,4 +1,10 @@
 <script setup>
+const appSettings = useAppSettings()
+await useAsyncData('appSettings', () => appSettings.fetchSettings())
+
+const siteTitle = computed(() => `${appSettings.settings.brand_name || 'Klinik Gigi'} — Office Panel`)
+const siteDescription = computed(() => `Panel administrasi ${appSettings.settings.brand_name || 'Klinik Gigi'}: reservasi, rekam medis, dokter, billing, dan konten.`)
+
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' }
@@ -12,8 +18,8 @@ useHead({
 })
 
 useSeoMeta({
-  title: 'Nina Dental Care — Office Panel',
-  description: 'Panel administrasi Nina Dental Care: reservasi, rekam medis, dokter, billing, dan konten.'
+  title: siteTitle,
+  description: siteDescription
 })
 </script>
 

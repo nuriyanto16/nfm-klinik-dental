@@ -4,6 +4,7 @@ import type { InvoiceDetail } from '~/types/api'
 definePageMeta({ layout: 'invoice', title: 'Cetak Invoice' })
 
 const route = useRoute()
+const appSettings = useAppSettings()
 const paymentId = computed(() => String(route.params.id))
 const { data: apiInvoice } = useApiFetch<InvoiceDetail>(`/payments/${paymentId.value}/invoice`)
 
@@ -270,9 +271,15 @@ function triggerPrint() {
           </div>
         </div>
 
-        <p class="text-[10px] text-gray-400 text-center mt-8 pt-4 border-t border-gray-100">
-          Terima kasih telah memercayakan perawatan gigi Anda di Nina Dental Care. Simpan bukti pembayaran ini untuk verifikasi garansi & kontrol ulang.
-        </p>
+        <!-- Footer -->
+        <div class="mt-12 text-center text-sm text-gray-500 border-t border-gray-200 dark:border-gray-800 pt-8 print:border-gray-300">
+          <p class="mb-1">
+            Terima kasih telah memercayakan perawatan gigi Anda di {{ appSettings.settings.brand_name || 'Klinik Gigi' }}. Simpan bukti pembayaran ini untuk verifikasi garansi & kontrol ulang.
+          </p>
+          <p class="text-xs">
+            Dicetak pada: {{ new Date().toLocaleString('id-ID') }}
+          </p>
+        </div>
       </div>
     </div>
   </div>

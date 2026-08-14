@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/config/app_config_provider.dart';
 import '../application/session_controller.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -46,9 +47,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       await ref.read(sessionControllerProvider.notifier).login(_emailCtrl.text.trim());
 
       if (mounted) {
+        final config = ref.read(appConfigProvider);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login berhasil! Selamat datang kembali di Nina Dental Care.'),
+          SnackBar(
+            content: Text('Login berhasil! Selamat datang kembali di ${config.brandName}.'),
             backgroundColor: AppColors.primaryDark,
           ),
         );
@@ -66,174 +68,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Future<void> _handleGoogleSso() async {
-    final selected = await showModalBottomSheet<Map<String, String>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) {
-        final emailCtrl = TextEditingController();
-        final nameCtrl = TextEditingController();
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: StatefulBuilder(
-            builder: (context, setModalState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.g_mobiledata, color: Colors.blue, size: 32),
-                      ),
-                      const SizedBox(width: 14),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Google Sign-In (Gmail SSO)',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
-                            ),
-                            Text(
-                              'Pilih akun Google yang tersedia atau buat profil baru',
-                              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.bgLight,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      leading: const CircleAvatar(
-                        backgroundColor: AppColors.primary,
-                        child: Text('BS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                      title: const Text('Budi Santoso', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: const Text('budi.santoso@example.com • Terdaftar', style: TextStyle(fontSize: 12, color: AppColors.primaryDark, fontWeight: FontWeight.w600)),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
-                      onTap: () => Navigator.pop(ctx, {'email': 'budi.santoso@example.com', 'name': 'Budi Santoso'}),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.bgLight,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      leading: const CircleAvatar(
-                        backgroundColor: AppColors.pink,
-                        child: Text('ND', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                      title: const Text('Akun Gmail Pasien Baru', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: const Text('pasien.baru.gso@gmail.com • Belum Terdaftar', style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600)),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
-                      onTap: () => Navigator.pop(ctx, {'email': 'pasien.baru.gso@gmail.com', 'name': 'Pasien Baru NDC'}),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Expanded(child: Divider()),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text('ATAU GUNAKAN EMAIL LAIN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
-                      ),
-                      const Expanded(child: Divider()),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: emailCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'nama.anda@gmail.com',
-                      isDense: true,
-                      prefixIcon: Icon(Icons.email_outlined, size: 18),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'Nama Lengkap Akun Google',
-                      isDense: true,
-                      prefixIcon: Icon(Icons.person_outline, size: 18),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.pink,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onPressed: () {
-                        if (emailCtrl.text.trim().isNotEmpty) {
-                          Navigator.pop(ctx, {
-                            'email': emailCtrl.text.trim(),
-                            'name': nameCtrl.text.trim().isEmpty ? 'Pengguna Google' : nameCtrl.text.trim()
-                          });
-                        }
-                      },
-                      child: const Text('Lanjutkan Dengan Gmail Ini'),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
-    );
-
-    if (selected == null || selected['email'] == null || selected['email']!.isEmpty) return;
-
-    final email = selected['email']!;
-    final name = selected['name'] ?? 'Pengguna Google';
-
     setState(() => _isLoading = true);
 
     try {
-      final res = await ref.read(sessionControllerProvider.notifier).handleGoogleSso(
-        email: email,
-        displayName: name,
-      );
+      final res = await ref.read(sessionControllerProvider.notifier).handleGoogleSso();
 
       if (!mounted) return;
 
@@ -252,12 +90,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             backgroundColor: Colors.orange,
           ),
         );
-        context.push('/complete-profile?email=${Uri.encodeComponent(email)}&name=${Uri.encodeComponent(name)}');
+        context.push('/complete-profile?email=${Uri.encodeComponent(res.email)}&name=${Uri.encodeComponent(res.displayName)}');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal SSO Google: $e')),
+          SnackBar(content: Text('$e')),
         );
       }
     } finally {
@@ -267,6 +105,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final appConfig = ref.watch(appConfigProvider);
+    
     return Scaffold(
       backgroundColor: AppColors.primaryDark,
       body: SafeArea(
@@ -288,13 +128,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            Icon(Icons.health_and_safety_outlined, color: Colors.white, size: 16),
-                            SizedBox(width: 6),
+                            const Icon(Icons.health_and_safety_outlined, color: Colors.white, size: 16),
+                            const SizedBox(width: 6),
                             Text(
-                              'Nina Dental Care',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                              appConfig.brandName,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                             ),
                           ],
                         ),
@@ -418,8 +258,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             GestureDetector(
                               onTap: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Silakan hubungi WhatsApp Admin Nina Dental Care untuk reset password.'),
+                                  SnackBar(
+                                    content: Text('Silakan hubungi WhatsApp Admin ${appConfig.brandName} untuk reset password.'),
                                   ),
                                 );
                               },

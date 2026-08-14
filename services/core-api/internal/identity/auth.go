@@ -100,3 +100,57 @@ func (r *Repository) ChangeOwnPassword(ctx context.Context, userID string, in Ch
 	_, err = r.pool.Exec(ctx, `UPDATE identity.users SET password_hash = $1, updated_at = now() WHERE id = $2`, string(newHash), userID)
 	return err
 }
+
+// GetOrCreateGoogleUser finds a patient user by email. If not found, it provisions a new user and patient record.
+func (r *Repository) GetOrCreateGoogleUser(ctx context.Context, email, name, photoUrl string) (AuthUser, error) {
+	var u AuthUser
+	err := r.pool.QueryRow(ctx, `
+		SELECT id, full_name, email, role::text
+		FROM identity.users
+		WHERE email = $1 AND role = 'patient' AND is_active = true`, email,
+	).Scan(&u.ID, &u.FullName, &u.Email, &u.Role)
+	
+	if err == nil {
+		return u, nil
+	}
+	
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return u, err
+	}
+
+	// User not found, create new user and patient
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return u, err
+	}
+	defer tx.Rollback(ctx)
+
+	var newUserID string
+	err = tx.QueryRow(ctx, `
+		INSERT INTO identity.users (email, full_name, role, password_hash)
+		VALUES ($1, $2, 'patient', 'google-sso')
+		RETURNING id`, email, name,
+	).Scan(&newUserID)
+	if err != nil {
+		return u, err
+	}
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO identity.patients (primary_account_user_id, user_id, full_name, relation, photo_url)
+		VALUES ($1, $1, $2, 'Diri Sendiri', $3)`, newUserID, name, photoUrl,
+	)
+	if err != nil {
+		return u, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return u, err
+	}
+
+	u.ID = newUserID
+	u.Email = email
+	u.FullName = name
+	u.Role = "patient"
+	
+	return u, nil
+}

@@ -6,21 +6,15 @@ definePageMeta({ title: 'Cabang' })
 // ── API ─────────────────────────────────────────────────────────────────────
 const { data: apiBranches, status, refresh } = useApiFetch<Branch[]>('/branches')
 
-const DUMMY_BRANCHES: Branch[] = [
-  { id: 'br-001', name: 'Nina Dental Care Soreang', slug: 'soreang', address: 'Jl. Raya Soreang No. 23, Soreang', city: 'Bandung', phone: '022-85978821', opensAt: '08:00', closesAt: '20:00', isActive: true },
-  { id: 'br-002', name: 'Nina Dental Care Baleendah', slug: 'baleendah', address: 'Jl. Baleendah Raya No. 14, Baleendah', city: 'Bandung', phone: '022-87834523', opensAt: '08:00', closesAt: '20:00', isActive: true },
-  { id: 'br-003', name: 'Nina Dental Care Katapang', slug: 'katapang', address: 'Jl. Katapang Soreang No. 5, Katapang', city: 'Bandung', phone: null, opensAt: '09:00', closesAt: '18:00', isActive: false }
-]
-
-const localBranches = ref<Branch[]>([...DUMMY_BRANCHES])
+const localBranches = ref<Branch[]>([])
 
 watch(apiBranches, (val) => {
-  if (val && Array.isArray(val) && val.length > 0) {
+  if (val && Array.isArray(val)) {
     localBranches.value = [...val]
-  } else if (Array.isArray((val as any)?.data) && (val as any).data.length > 0) {
+  } else if (val && Array.isArray((val as any).data)) {
     localBranches.value = [...(val as any).data]
   }
-}, { immediate: false })
+}, { immediate: true })
 
 // ── Selected Branch ──────────────────────────────────────────────────────────
 const selectedBranchId = ref<string | null>(null)

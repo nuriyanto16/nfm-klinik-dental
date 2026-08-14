@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/api/idtoken"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 
@@ -38,6 +40,7 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 		Max:        10,
 		Expiration: time.Minute,
 	}), h.login)
+	router.Post("/auth/google", h.googleAuth)
 	router.Get("/auth/me", h.me)
 	router.Put("/auth/me", h.updateOwnProfile)
 	router.Post("/auth/change-password", h.changeOwnPassword)
@@ -75,6 +78,42 @@ func (h *Handler) login(c *fiber.Ctx) error {
 	if errors.Is(err, ErrInvalidCredentials) {
 		return fiber.NewError(fiber.StatusUnauthorized, "email atau password salah")
 	}
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+
+	token, err := authtoken.Generate(h.jwtSecret, h.jwtAccessTTL, user.ID, user.FullName, user.Role)
+	if err != nil {
+		return apperr.Internal(c, err)
+	}
+
+	return c.JSON(fiber.Map{"token": token, "user": user})
+}
+
+func (h *Handler) googleAuth(c *fiber.Ctx) error {
+	var body struct {
+		IDToken string `json:"idToken"`
+	}
+	if err := c.BodyParser(&body); err != nil || body.IDToken == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "idToken wajib diisi")
+	}
+
+	// Validate the Google ID token
+	payload, err := idtoken.Validate(c.Context(), body.IDToken, "")
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "token Google tidak valid")
+	}
+
+	email, _ := payload.Claims["email"].(string)
+	name, _ := payload.Claims["name"].(string)
+	picture, _ := payload.Claims["picture"].(string)
+
+	if email == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "token tidak memiliki data email")
+	}
+
+	// Get or Create user
+	user, err := h.repo.GetOrCreateGoogleUser(c.Context(), email, name, picture)
 	if err != nil {
 		return apperr.Internal(c, err)
 	}

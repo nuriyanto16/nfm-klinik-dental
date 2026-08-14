@@ -7,6 +7,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/update/app_update_notifier.dart';
 import 'core/update/update_dialog.dart';
+import 'core/config/app_config_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,13 +15,15 @@ void main() async {
   runApp(const ProviderScope(child: NinaDentalCareApp()));
 }
 
-class NinaDentalCareApp extends StatelessWidget {
+class NinaDentalCareApp extends ConsumerWidget {
   const NinaDentalCareApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appConfig = ref.watch(appConfigProvider);
+
     return MaterialApp.router(
-      title: 'Nina Dental Care',
+      title: appConfig.brandName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
