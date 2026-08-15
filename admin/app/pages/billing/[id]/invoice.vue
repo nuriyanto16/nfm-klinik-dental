@@ -116,7 +116,7 @@ const FALLBACK_INVOICES: Record<string, InvoiceDetail> = {
 }
 
 const displayInvoice = computed<InvoiceDetail>(() => {
-  if (apiInvoice.value) return apiInvoice.value
+  if (apiInvoice.value && (apiInvoice.value as any).payment) return apiInvoice.value as InvoiceDetail
 
   const fallback = FALLBACK_INVOICES[paymentId.value]
   if (fallback) return fallback

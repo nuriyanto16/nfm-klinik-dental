@@ -11,6 +11,7 @@ export default defineNuxtConfig({
   },
 
   icon: {
+    provider: 'iconify',
     clientBundle: {
       icons: [
         // --- lucide icons (all usages across pages, components, composables) ---
