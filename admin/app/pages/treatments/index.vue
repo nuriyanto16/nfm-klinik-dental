@@ -621,14 +621,12 @@ function catColor(categoryId: string): string {
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold mb-1.5">Harga (Rp) <span class="text-red-500">*</span></label>
-              <input
-                v-model.number="form.price"
-                type="number"
-                step="50000"
-                min="0"
-                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              <CurrencyInput
+                v-model="form.price"
+                size="md"
+                class="w-full"
                 :disabled="saving"
-              >
+              />
               <span class="text-[10px] text-emerald-600 font-semibold mt-0.5 block h-4">
                 {{ form.price > 0 ? formatIDR(form.price) : '' }}
               </span>

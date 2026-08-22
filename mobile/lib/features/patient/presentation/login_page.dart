@@ -94,9 +94,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e')),
-        );
+        if (!e.toString().contains('dibatalkan')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$e')),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

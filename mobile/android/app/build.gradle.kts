@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.ninadentalcare.nina_dental_care"
+    namespace = "com.klinik.klinik_gigi"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -18,7 +18,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.ninadentalcare.nina_dental_care"
+        applicationId = "com.klinik.klinik_gigi"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -485,9 +485,8 @@ const activeTab = ref('summary')
               label="Jumlah"
               required
             >
-              <UInput
-                v-model.number="expenseForm.amount"
-                type="number"
+              <CurrencyInput
+                v-model="expenseForm.amount"
                 class="w-full"
               />
             </UFormField>

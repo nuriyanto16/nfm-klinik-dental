@@ -97,95 +97,43 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Future<void> _handleGoogleSso() async {
-    final selected = await showModalBottomSheet<Map<String, String>>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        final emailCtrl = TextEditingController(text: 'pasien.baru.gso@gmail.com');
-        final nameCtrl = TextEditingController(text: 'Pasien Baru NDC');
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.g_mobiledata, color: Colors.blue, size: 28),
-                  ),
-                  const SizedBox(width: 12),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Daftar via Google SSO', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text('Gunakan Akun Gmail untuk Pendaftaran Cepat', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              const Text('Email Gmail Google Anda:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: emailCtrl,
-                decoration: const InputDecoration(
-                  hintText: 'nama.anda@gmail.com',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text('Nama Lengkap Google:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(
-                  hintText: 'Nama Lengkap',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    if (emailCtrl.text.trim().isNotEmpty) {
-                      Navigator.pop(ctx, {
-                        'email': emailCtrl.text.trim(),
-                        'name': nameCtrl.text.trim().isEmpty ? 'Pengguna Google' : nameCtrl.text.trim()
-                      });
-                    }
-                  },
-                  style: FilledButton.styleFrom(backgroundColor: Colors.blue.shade700),
-                  child: const Text('Lanjutkan & Lengkapi Profil'),
-                ),
-              ),
-            ],
+    setState(() => _isLoading = true);
+
+    try {
+      final res = await ref.read(sessionControllerProvider.notifier).handleGoogleSso();
+
+      if (!mounted) return;
+
+      if (res.isNewUser) {
+        // User baru, lanjut lengkapi profil
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Akun Google tertaut. Silakan lengkapi profil Anda.'),
+            backgroundColor: AppColors.primaryDark,
           ),
         );
-      },
-    );
-
-    if (selected == null || selected['email'] == null || selected['email']!.isEmpty) return;
-
-    final email = selected['email']!;
-    final name = selected['name'] ?? 'Pengguna Google';
-
-    if (mounted) {
-      context.push('/complete-profile?email=${Uri.encodeComponent(email)}&name=${Uri.encodeComponent(name)}');
+        context.push('/complete-profile?email=${Uri.encodeComponent(res.email)}&name=${Uri.encodeComponent(res.displayName)}');
+      } else {
+        // User ternyata sudah terdaftar, arahkan ke Home
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email ini sudah terdaftar. Anda langsung berhasil login.'),
+            backgroundColor: AppColors.primaryDark,
+          ),
+        );
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        // Sembunyikan pesan error jika user hanya cancel popup (Bisa juga disesuaikan pesannya)
+        if (!e.toString().contains('dibatalkan')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$e')),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

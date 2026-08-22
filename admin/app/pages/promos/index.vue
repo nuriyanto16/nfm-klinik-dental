@@ -481,10 +481,8 @@ function onBannerFileSelected(event: Event) {
               <label class="block text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">
                 Min. Belanja Transaksi (Rp)
               </label>
-              <UInput
-                v-model.number="form.minTransaction"
-                type="number"
-                step="25000"
+              <CurrencyInput
+                v-model="form.minTransaction"
                 icon="i-lucide-wallet"
                 size="md"
                 class="w-full"

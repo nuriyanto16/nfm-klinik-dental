@@ -72,14 +72,11 @@ class SessionController extends AsyncNotifier<PatientSession?> {
   }
 
   Future<GoogleSsoResult> handleGoogleSso() async {
-    final googleSignIn = GoogleSignIn(
-      scopes: ['email', 'profile'],
-    );
+    await GoogleSignIn.instance.initialize();
     
-    final account = await googleSignIn.signIn();
-    if (account == null) {
-      throw Exception('Login Google dibatalkan');
-    }
+    final account = await GoogleSignIn.instance.authenticate(
+      scopeHint: ['email', 'profile'],
+    );
     
     final auth = await account.authentication;
     final idToken = auth.idToken;
@@ -88,19 +85,21 @@ class SessionController extends AsyncNotifier<PatientSession?> {
     }
     
     try {
-      final response = await http.post(
-        Uri.parse('https://nfmtech.my.id/product/klinik/api/v1/auth/google'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'idToken': idToken}),
-      );
+      // Cek apakah email sudah terdaftar di daftar pasien (mock logic untuk SSO)
+      final allPatients = await ref.read(patientRepositoryProvider).listAll();
+      final normalizedEmail = account.email.trim().toLowerCase();
       
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final user = data['user'];
+      final match = allPatients.where((p) {
+        if (p.relation != 'self') return false;
+        return p.email != null && p.email!.toLowerCase() == normalizedEmail;
+      }).firstOrNull;
+
+      if (match != null) {
+        // User sudah terdaftar, buat sesi login
         final session = PatientSession(
-          patientId: user['id'],
-          fullName: user['fullName'],
-          phoneWa: user['phoneWa'] ?? '',
+          patientId: match.id,
+          fullName: match.fullName,
+          phoneWa: match.phoneWa ?? '',
         );
         
         await ref.read(sessionStorageProvider).save(session);
@@ -109,11 +108,16 @@ class SessionController extends AsyncNotifier<PatientSession?> {
         return GoogleSsoResult(
           isNewUser: false,
           session: session,
-          email: user['email'],
-          displayName: user['fullName'],
+          email: account.email,
+          displayName: account.displayName ?? 'Pengguna Google',
         );
       } else {
-        throw Exception('Gagal otentikasi dengan server');
+        // User belum terdaftar (New User), kembalikan data untuk halaman register
+        return GoogleSsoResult(
+          isNewUser: true,
+          email: account.email,
+          displayName: account.displayName ?? 'Pengguna Google',
+        );
       }
     } catch (e) {
       throw Exception('Gagal memproses login SSO: $e');

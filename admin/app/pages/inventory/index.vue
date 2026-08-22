@@ -244,9 +244,8 @@ async function onDelete(item: InventoryItem) {
               />
             </UFormField>
             <UFormField label="Harga Satuan">
-              <UInput
-                v-model.number="form.unitPrice"
-                type="number"
+              <CurrencyInput
+                v-model="form.unitPrice"
                 class="w-full"
               />
             </UFormField>

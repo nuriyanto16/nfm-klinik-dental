@@ -1,4 +1,4 @@
-package com.ninadentalcare.nina_dental_care
+package com.klinik.klinik_gigi
 
 import io.flutter.embedding.android.FlutterActivity
 

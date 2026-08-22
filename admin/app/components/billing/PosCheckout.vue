@@ -692,9 +692,8 @@ async function processPayment() {
                 />
               </UFormField>
               <UFormField label="Potongan Diskon (Rp)">
-                <UInput
-                  v-model.number="discount"
-                  type="number"
+                <CurrencyInput
+                  v-model="discount"
                   size="xs"
                   class="w-full"
                 />
@@ -785,9 +784,8 @@ async function processPayment() {
               <UButton label="Uang Pas" size="xs" color="emerald" variant="subtle" @click="setExactCash" />
             </div>
             <UFormField label="Jumlah Uang Diterima (Rp)">
-              <UInput
-                v-model.number="cashReceived"
-                type="number"
+              <CurrencyInput
+                v-model="cashReceived"
                 class="w-full"
               />
             </UFormField>

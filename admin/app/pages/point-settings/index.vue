@@ -116,11 +116,8 @@ async function onSave() {
           <div class="grid grid-cols-2 gap-2 pt-2">
             <div>
               <span class="text-xs text-gray-400">Kelipatan (Rp)</span>
-              <UInput
-                v-model.number="form.pointsPerSpendIdr"
-                type="number"
-                min="1000"
-                step="1000"
+              <CurrencyInput
+                v-model="form.pointsPerSpendIdr"
               />
             </div>
             <div>
@@ -145,10 +142,8 @@ async function onSave() {
           </p>
           <div class="flex items-center gap-2 pt-2">
             <span class="text-sm font-semibold text-gray-600 dark:text-gray-300">Rp</span>
-            <UInput
-              v-model.number="form.rupiahPerPoint"
-              type="number"
-              min="1"
+            <CurrencyInput
+              v-model="form.rupiahPerPoint"
               class="w-full"
             />
           </div>
