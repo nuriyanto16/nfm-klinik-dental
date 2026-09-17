@@ -64,6 +64,7 @@ const columns = [
   { accessorKey: 'rmNumber', header: 'No. RM' },
   { accessorKey: 'points', header: 'Point' },
   { accessorKey: 'relation', header: 'Relasi' },
+  { accessorKey: 'membershipLevel', header: 'Membership' },
   { accessorKey: 'createdAt', header: 'Terdaftar' },
   { id: 'actions', header: 'Aksi' }
 ]
@@ -435,7 +436,8 @@ const form = reactive({
   emergencyContactPhone: '',
   allergiesMedicalHistory: '',
   insuranceType: 'Umum / Mandiri',
-  insuranceNumber: ''
+  insuranceNumber: '',
+  membershipLevel: 'Reguler'
 })
 
 function openCreate() {
@@ -457,6 +459,7 @@ function openCreate() {
   form.allergiesMedicalHistory = ''
   form.insuranceType = 'Umum / Mandiri'
   form.insuranceNumber = ''
+  form.membershipLevel = 'Reguler'
   formError.value = ''
   showModal.value = true
 }
@@ -480,6 +483,7 @@ function openEdit(patient: Patient) {
   form.allergiesMedicalHistory = patient.allergiesMedicalHistory ?? ''
   form.insuranceType = patient.insuranceType ?? 'Umum / Mandiri'
   form.insuranceNumber = patient.insuranceNumber ?? ''
+  form.membershipLevel = patient.membershipLevel ?? 'Reguler'
   formError.value = ''
   showModal.value = true
 }
@@ -509,7 +513,8 @@ async function savePatient() {
       emergencyContactPhone: form.emergencyContactPhone,
       allergiesMedicalHistory: form.allergiesMedicalHistory,
       insuranceType: form.insuranceType,
-      insuranceNumber: form.insuranceNumber
+      insuranceNumber: form.insuranceNumber,
+      membershipLevel: form.membershipLevel
     }
 
     if (editingId.value) {
@@ -559,7 +564,8 @@ async function savePatient() {
         emergencyContactPhone: form.emergencyContactPhone,
         allergiesMedicalHistory: form.allergiesMedicalHistory,
         insuranceType: form.insuranceType,
-        insuranceNumber: form.insuranceNumber
+        insuranceNumber: form.insuranceNumber,
+        membershipLevel: form.membershipLevel
       }
       let newPatient: Patient | null = null
       try {
@@ -587,6 +593,7 @@ async function savePatient() {
         allergiesMedicalHistory: form.allergiesMedicalHistory,
         insuranceType: form.insuranceType,
         insuranceNumber: form.insuranceNumber,
+        membershipLevel: form.membershipLevel,
         createdAt: new Date().toISOString()
       }
       localPatients.value.unshift(created)
@@ -709,6 +716,17 @@ function openWhatsApp(phone?: string) {
               {{ relationLabel[(row?.original || row)?.relation] ?? (row?.original || row)?.relation ?? 'Akun Sendiri' }}
             </div>
           </template>
+          <template #membershipLevel-cell="{ row }">
+            <div @click="selectPatient(row?.original || row)">
+              <UBadge
+                :color="(row?.original || row)?.membershipLevel === 'Platinum' ? 'primary' : (row?.original || row)?.membershipLevel === 'Gold' ? 'warning' : (row?.original || row)?.membershipLevel === 'Silver' ? 'neutral' : 'success'"
+                variant="subtle"
+                size="xs"
+              >
+                {{ (row?.original || row)?.membershipLevel ?? 'Reguler' }}
+              </UBadge>
+            </div>
+          </template>
           <template #createdAt-cell="{ row }">
             <div @click="selectPatient(row?.original || row)">
               {{ safeDateShort((row?.original || row)?.createdAt) }}
@@ -775,6 +793,14 @@ function openWhatsApp(phone?: string) {
                   </UBadge>
                   <UBadge :color="detailPatient.rmNumber ? 'success' : 'error'" variant="subtle" size="xs">
                     {{ detailPatient.rmNumber ?? 'Belum Terhubung' }}
+                  </UBadge>
+                  <UBadge
+                    :color="detailPatient.membershipLevel === 'Platinum' ? 'primary' : detailPatient.membershipLevel === 'Gold' ? 'warning' : detailPatient.membershipLevel === 'Silver' ? 'neutral' : 'success'"
+                    variant="soft" size="xs"
+                    class="ml-auto"
+                  >
+                    <UIcon name="i-lucide-star" class="w-3 h-3 mr-1" />
+                    {{ detailPatient.membershipLevel ?? 'Reguler' }}
                   </UBadge>
                 </div>
               </div>
@@ -1173,6 +1199,25 @@ function openWhatsApp(phone?: string) {
                 <option value="Lainnya">Lainnya</option>
               </select>
             </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Membership Level -->
+            <div>
+              <label class="block text-xs font-semibold mb-1.5 text-amber-700 dark:text-amber-400">Level Membership</label>
+              <select
+                v-model="form.membershipLevel"
+                class="w-full rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-amber-950/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer font-bold"
+                :disabled="saving"
+              >
+                <option value="Reguler">Reguler</option>
+                <option value="Silver">Silver</option>
+                <option value="Gold">Gold</option>
+                <option value="Platinum">Platinum</option>
+              </select>
+            </div>
+            <!-- Empty div for spacing -->
+            <div></div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">

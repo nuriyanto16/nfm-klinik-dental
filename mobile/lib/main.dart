@@ -8,6 +8,7 @@ import 'core/theme/app_theme.dart';
 import 'core/update/app_update_notifier.dart';
 import 'core/update/update_dialog.dart';
 import 'core/config/app_config_provider.dart';
+import 'core/theme/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,13 +22,14 @@ class NinaDentalCareApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appConfig = ref.watch(appConfigProvider);
+    final themeState = ref.watch(themeNotifierProvider);
 
     return MaterialApp.router(
       title: appConfig.brandName,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.light,
+      theme: AppTheme.light(themeState),
+      darkTheme: AppTheme.dark(themeState),
+      themeMode: themeState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       routerConfig: appRouter,
       locale: const Locale('id', 'ID'),
       supportedLocales: const [Locale('id', 'ID'), Locale('en', 'US')],

@@ -5,6 +5,7 @@ const activeSection = ref('getting-started')
 
 const sections = [
   { id: 'getting-started', icon: 'i-lucide-rocket', label: 'Mulai Cepat' },
+  { id: 'role-workflow', icon: 'i-lucide-git-branch', label: 'Bagan Alur per Role' },
   { id: 'roles', icon: 'i-lucide-shield-check', label: 'Role & Hak Akses' },
   { id: 'reservasi', icon: 'i-lucide-calendar-check', label: 'Alur Reservasi' },
   { id: 'rekam-medis', icon: 'i-lucide-file-heart', label: 'Rekam Medis' },
@@ -87,6 +88,101 @@ const apiEndpoints = [
   { method: 'GET', path: '/billing/payments', desc: 'Daftar transaksi pembayaran' },
   { method: 'GET', path: '/content/articles', desc: 'Daftar artikel CMS (untuk mobile)' },
   { method: 'GET', path: '/content/promos', desc: 'Daftar promo aktif' }
+]
+
+const selectedRoleWorkflow = ref<'pasien' | 'superadmin' | 'admin_cabang' | 'dokter' | 'perawat' | 'finance'>('pasien')
+
+const roleWorkflowList: any[] = [
+  {
+    id: 'pasien',
+    roleName: 'Pasien (Mobile App)',
+    platform: 'Aplikasi Mobile Pasien (Android Flutter)',
+    badgeColor: 'primary',
+    icon: 'i-lucide-smartphone',
+    summary: 'Pasien mengakses layanan mandiri dari smartphone: registrasi akun, booking dokter/cabang, pembayaran deposit, pantau antrian, rekam medis digital, dan poin loyalitas.',
+    steps: [
+      { num: '01', title: 'Registrasi & Login Akun', desc: 'Daftar menggunakan nomor WhatsApp dan password. Terhubung otomatis ke Rekam Medis jika pasien lama.' },
+      { num: '02', title: 'Pilih Cabang & Dokter Spesialis', desc: 'Melihat profil dokter spesialis di Soreang atau Baleendah, jam praktik, dan katalog perawatan.' },
+      { num: '03', title: 'Booking Slot Janji Temu', desc: 'Menentukan tanggal & jam slot sesi kunjungan, menuliskan keluhan gigi, dan konfirmasi reservasi.' },
+      { num: '04', title: 'Pembayaran Deposit (Opsional)', desc: 'Membayar uang muka melalui QRIS atau Virtual Account Xendit dengan konfirmasi instan.' },
+      { num: '05', title: 'Pantau Antrian & Check-In Mandiri', desc: 'Memantau tiket digital dari aplikasi dan melakukan check-in setibanya di counter klinik.' },
+      { num: '06', title: 'EHR Digital & Poin Reward', desc: 'Melihat riwayat diagnosa, visual odontogram, resep obat, jadwal kontrol, dan poin loyalitas.' }
+    ]
+  },
+  {
+    id: 'superadmin',
+    roleName: 'Superadmin (Owner / IT Manager)',
+    platform: 'Panel Admin Web (Desktop / Tablet)',
+    badgeColor: 'error',
+    icon: 'i-lucide-shield',
+    summary: 'Pemilik klinik dan IT manager memiliki kendali penuh atas konfigurasi multi-cabang, master tarif, hak akses staf, dan laporan keuangan konsolidasi.',
+    steps: [
+      { num: '01', title: 'Executive Dashboard KPI', desc: 'Memantau performa harian/bulanan seluruh cabang: pendapatan, jumlah kunjungan, dan utilisasi dokter.' },
+      { num: '02', title: 'Manajemen Multi-Cabang', desc: 'Mengatur kapasitas dental unit, jadwal operasional, dan data cabang Soreang & Baleendah.' },
+      { num: '03', title: 'Hak Akses Staf & User Mobile', desc: 'Mendaftarkan akun staf, mengatur role RBAC, serta mengelola akun mobile pasien.' },
+      { num: '04', title: 'Master Layanan & Tarif Klinik', desc: 'Menetapkan katalog tindakan gigi, durasi sesi, dan standar tarif klinik.' },
+      { num: '05', title: 'Laporan Laba Rugi Konsolidasi', desc: 'Menganalisis margin keuntungan kotor vs pengeluaran operasional dan tren finansial.' }
+    ]
+  },
+  {
+    id: 'admin_cabang',
+    roleName: 'Admin Cabang (Front Office)',
+    platform: 'Panel Admin Web (PC Resepsionis Counter)',
+    badgeColor: 'warning',
+    icon: 'i-lucide-building-2',
+    summary: 'Staf resepsionis mengelola verifikasi reservasi masuk, check-in pasien datang, display antrian TV ruang tunggu, dan pendaftaran pasien walk-in.',
+    steps: [
+      { num: '01', title: 'Verifikasi Reservasi Masuk', desc: 'Memvalidasi booking online pasien dari status PENDING menjadi CONFIRMED.' },
+      { num: '02', title: 'Pendaftaran Pasien Walk-In', desc: 'Mendaftarkan pasien langsung yang datang ke klinik tanpa booking aplikasi sebelumnya.' },
+      { num: '03', title: 'Check-in & Tiket Antrian', desc: 'Mencatat kedatangan pasien di klinik dan menerbitkan nomor antrian pemeriksaan.' },
+      { num: '04', title: 'Kontrol Layar Antrian TV', desc: 'Mengoperasikan display antrian ruang tunggu dengan chime bell & suara panggil Text-to-Speech.' },
+      { num: '05', title: 'Reminder Kontrol via WhatsApp', desc: 'Mengirimkan pesan pengingat jadwal kontrol berkala ke nomor WA pasien.' }
+    ]
+  },
+  {
+    id: 'dokter',
+    roleName: 'Dokter Gigi (Spesialis & Umum)',
+    platform: 'Panel Admin Web (Laptop Ruang Praktik)',
+    badgeColor: 'primary',
+    icon: 'i-lucide-stethoscope',
+    summary: 'Dokter menangani pemeriksaan klinis, pengisian odontogram 32 gigi digital (FDI matrix), catatan diagnosis SOAP, dan peresepan obat.',
+    steps: [
+      { num: '01', title: 'Panggil Pasien ke Dental Unit', desc: 'Menekan tombol panggil yang otomatis memicu audio chime & suara di layar TV ruang tunggu.' },
+      { num: '02', title: 'Anamnesis & Riwayat Pasien', desc: 'Memeriksa keluhan utama, riwayat alergi obat, dan penyakit sistemik pasien.' },
+      { num: '03', title: 'Odontogram 32 Gigi Digital', desc: 'Menandai status gigi (karies, tambalan, cabut, mahkota, bleaching) pada visual chart.' },
+      { num: '04', title: 'Catatan SOAP & Prosedur', desc: 'Mengisi Subjective, Objective, Assessment (Diagnosis Medis), dan Plan tindakan.' },
+      { num: '05', title: 'Resep Obat & Follow-up', desc: 'Menerbitkan resep obat digital (Rx) dan menentukan jadwal rekomendasi kontrol ulang.' }
+    ]
+  },
+  {
+    id: 'perawat',
+    roleName: 'Perawat Gigi (Dental Assistant)',
+    platform: 'Panel Admin Web (Tablet / PC Ruang Periksa)',
+    badgeColor: 'success',
+    icon: 'i-lucide-heart-pulse',
+    summary: 'Perawat menyiapkan dental chair, mengukur tanda vital pasien, asistensi tindakan dokter, dan memantau stok inventaris obat/alat.',
+    steps: [
+      { num: '01', title: 'Persiapan Dental Chair', desc: 'Menyiapkan tray set instrumen steril, handpiece, dan bahan dental sebelum pasien masuk.' },
+      { num: '02', title: 'Pemeriksaan Tanda Vital', desc: 'Mengukur dan menginput tekanan darah, denyut nadi, dan suhu tubuh ke form rekam medis.' },
+      { num: '03', title: 'Asistensi Tindakan Medis', desc: 'Membantu dokter selama prosedur gigi (suction saliva, penyiapan semen/komposit, curing).' },
+      { num: '04', title: 'Inventaris Alat & Obat', desc: 'Mengelola stok bahan medis habis pakai dengan notifikasi batas restok (reorder threshold).' }
+    ]
+  },
+  {
+    id: 'finance',
+    roleName: 'Finance (Keuangan & Kasir)',
+    platform: 'Panel Admin Web (PC Kasir Billing)',
+    badgeColor: 'info',
+    icon: 'i-lucide-wallet',
+    summary: 'Staf keuangan mengelola kasir billing POS, kalkulasi honor & komisi dokter per periode fleksibel, pengeluaran klinik, dan cetak slip gaji.',
+    steps: [
+      { num: '01', title: 'Kasir Billing POS', desc: 'Menerbitkan tagihan tindakan, memproses pembayaran (tunai/EDC/QRIS), dan cetak invoice resmi.' },
+      { num: '02', title: 'Kalkulasi Honor & Gaji Pegawai', desc: 'Menghitung otomatis gaji pokok, komisi omset tindakan dokter, tunjangan, dan potongan BPJS/PPh.' },
+      { num: '03', title: 'Cetak Slip Gaji Resmi', desc: 'Mencetak slip gaji berstempel resmi per pegawai untuk referensi periode bulan & tahun fleksibel.' },
+      { num: '04', title: 'Pencatatan Pengeluaran Operasional', desc: 'Mencatat pengeluaran harian klinik, pembelian consumable dental, dan utilitas.' },
+      { num: '05', title: 'Rekonsiliasi Kas & Laporan', desc: 'Melakukan rekonsiliasi harian kasir dan mencetak laporan laba-rugi periodik.' }
+    ]
+  }
 ]
 </script>
 
@@ -187,6 +283,126 @@ const apiEndpoints = [
                     </div>
                   </li>
                 </ol>
+              </div>
+
+            </div>
+          </UCard>
+        </div>
+
+        <!-- ══ BAGAN ALUR PER ROLE (MOBILE & ADMIN) ══════════════════════════ -->
+        <div v-if="activeSection === 'role-workflow'" class="space-y-5">
+          <UCard>
+            <template #header>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-lucide-git-branch" class="w-5 h-5 text-primary" />
+                  <h2 class="text-lg font-bold">Bagan Alur Keseluruhan Sistem per Role</h2>
+                </div>
+                <UBadge color="primary" variant="subtle" size="xs">Mobile & Admin Sync</UBadge>
+              </div>
+            </template>
+            <div class="space-y-6 text-sm">
+              <UAlert color="primary" variant="subtle" icon="i-lucide-info" title="Siklus Layanan Terintegrasi">
+                Sistem Nina Dental Care menghubungkan <strong>Aplikasi Pasien Mobile (Flutter)</strong> dengan <strong>Office Panel Admin (Nuxt 3)</strong> melalui Core API. Alur di bawah menggambarkan keterkaitan operasional per peran secara berkesinambungan.
+              </UAlert>
+
+              <!-- Swimlane Architecture Card -->
+              <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/40 space-y-3">
+                <h3 class="font-bold text-xs uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                  🗺️ Peta Alur Antar-Platform (End-to-End Swimlane)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-2.5 text-xs">
+                  <div class="p-3 bg-white dark:bg-gray-800 rounded-lg border border-primary-200 dark:border-primary-800 shadow-xs">
+                    <span class="text-[10px] font-bold text-primary block">1. SISI PASIEN (MOBILE)</span>
+                    <p class="font-bold mt-1 text-gray-900 dark:text-white">Reservasi & Booking</p>
+                    <p class="text-[11px] text-gray-500 mt-1">Pilih dokter, cabang, slot jam, keluhan & bayar deposit QRIS/VA.</p>
+                  </div>
+                  <div class="p-3 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-800 shadow-xs">
+                    <span class="text-[10px] font-bold text-amber-600 block">2. FRONT DESK (ADMIN)</span>
+                    <p class="font-bold mt-1 text-gray-900 dark:text-white">Validasi & Check-in</p>
+                    <p class="text-[11px] text-gray-500 mt-1">Konfirmasi reservasi, cetak tiket, masukkan antrian TV lobi.</p>
+                  </div>
+                  <div class="p-3 bg-white dark:bg-gray-800 rounded-lg border border-sky-200 dark:border-sky-800 shadow-xs">
+                    <span class="text-[10px] font-bold text-sky-600 block">3. DOKTER & PERAWAT</span>
+                    <p class="font-bold mt-1 text-gray-900 dark:text-white">Tindakan & Odontogram</p>
+                    <p class="text-[11px] text-gray-500 mt-1">Panggilan suara TV, tanda vital, odontogram 32 gigi & SOAP.</p>
+                  </div>
+                  <div class="p-3 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-800 shadow-xs">
+                    <span class="text-[10px] font-bold text-emerald-600 block">4. FINANCE & KASIR</span>
+                    <p class="font-bold mt-1 text-gray-900 dark:text-white">Billing & Pelunasan</p>
+                    <p class="text-[11px] text-gray-500 mt-1">Kasir POS, cetak invoice, kalkulasi komisi dokter & honor.</p>
+                  </div>
+                  <div class="p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-purple-800 shadow-xs">
+                    <span class="text-[10px] font-bold text-purple-600 block">5. RETENSI PASIEN</span>
+                    <p class="font-bold mt-1 text-gray-900 dark:text-white">Follow-up & Reward</p>
+                    <p class="text-[11px] text-gray-500 mt-1">Reminder kontrol WhatsApp & poin loyalitas mobile aktif.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Role Selector Tabs -->
+              <div>
+                <h3 class="font-bold text-sm mb-2 text-gray-900 dark:text-white">Pilih Role untuk Menampilkan Detail Alur Kerja:</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                  <button
+                    v-for="r in roleWorkflowList"
+                    :key="r.id"
+                    class="p-2.5 rounded-xl border text-left transition-all text-xs flex flex-col justify-between gap-1.5"
+                    :class="selectedRoleWorkflow === r.id
+                      ? 'bg-primary-50 dark:bg-primary-950/40 border-primary text-primary-700 dark:text-primary-300 font-bold shadow-xs'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-primary-300'"
+                    @click="selectedRoleWorkflow = r.id"
+                  >
+                    <div class="flex items-center justify-between">
+                      <UIcon :name="r.icon" class="w-4 h-4" />
+                      <span class="w-2 h-2 rounded-full" :class="selectedRoleWorkflow === r.id ? 'bg-primary' : 'bg-transparent'"></span>
+                    </div>
+                    <span class="truncate">{{ r.roleName.split('(')[0] }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Detailed Active Role Breakdown -->
+              <div v-for="r in roleWorkflowList" :key="r.id">
+                <div v-if="selectedRoleWorkflow === r.id" class="p-5 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800/60 shadow-sm space-y-4">
+                  <div class="flex items-start justify-between flex-wrap gap-2 pb-3 border-b border-gray-100 dark:border-gray-800">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-950/50 border border-primary-200 dark:border-primary-800 flex items-center justify-center text-primary">
+                        <UIcon :name="r.icon" class="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 class="font-extrabold text-base text-gray-900 dark:text-white">{{ r.roleName }}</h4>
+                        <p class="text-xs text-primary font-medium">{{ r.platform }}</p>
+                      </div>
+                    </div>
+                    <UBadge :color="r.badgeColor" variant="subtle" size="xs">Aktor Aktif</UBadge>
+                  </div>
+
+                  <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                    {{ r.summary }}
+                  </p>
+
+                  <div class="space-y-2.5 pt-1">
+                    <h5 class="font-bold text-xs uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                      Rincian Tahapan Alur Kerja:
+                    </h5>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div
+                        v-for="(st, sIdx) in r.steps"
+                        :key="sIdx"
+                        class="p-3 rounded-xl bg-gray-50/70 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 flex items-start gap-3"
+                      >
+                        <span class="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-950 text-primary font-black text-xs flex items-center justify-center shrink-0">
+                          {{ st.num }}
+                        </span>
+                        <div>
+                          <p class="font-bold text-xs text-gray-900 dark:text-white">{{ st.title }}</p>
+                          <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{{ st.desc }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
             </div>

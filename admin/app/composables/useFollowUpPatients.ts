@@ -87,6 +87,22 @@ export function useFollowUpPatients() {
     }
   }
 
+  function updateFollowUpStatus(id: string, status: 'PENDING' | 'REMINDED' | 'SCHEDULED') {
+    const item = followUpList.value.find(f => f.id === id)
+    if (item) {
+      item.status = status
+    }
+  }
+
+  function addFollowUp(newFollowUp: Omit<FollowUpPatient, 'id'>) {
+    const item: FollowUpPatient = {
+      ...newFollowUp,
+      id: `fu-${Date.now()}`
+    }
+    followUpList.value.unshift(item)
+    return item
+  }
+
   function getWhatsAppLink(patient: FollowUpPatient) {
     const cleanPhone = patient.phoneWa.replace(/\D/g, '')
     const formattedPhone = cleanPhone.startsWith('0') ? `62${cleanPhone.slice(1)}` : cleanPhone
@@ -99,6 +115,8 @@ export function useFollowUpPatients() {
   return {
     followUpList,
     markAsReminded,
+    updateFollowUpStatus,
+    addFollowUp,
     getWhatsAppLink
   }
 }

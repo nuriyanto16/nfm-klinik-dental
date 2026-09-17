@@ -108,6 +108,10 @@ const notificationCount = computed(() => lowStockItems.value.length + (reservati
               </span>
             </UButton>
           </UDropdownMenu>
+
+          <div v-if="!collapsed" class="text-center pt-1 w-full border-t border-gray-100 dark:border-gray-800 mt-2">
+            <span class="text-[9px] text-gray-400 font-mono">Admin Build v2.1.0</span>
+          </div>
         </div>
       </template>
     </UDashboardSidebar>

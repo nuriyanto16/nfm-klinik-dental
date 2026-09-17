@@ -12,7 +12,52 @@ const { data: doctorsAdmin } = useApiFetch<DoctorDetail[]>('/doctors/admin')
 const { data: reservations } = useApiFetch<Reservation[]>('/reservations')
 const { data: inventoryItems } = useApiFetch<InventoryItem[]>('/inventory')
 
-const { followUpList, markAsReminded, getWhatsAppLink } = useFollowUpPatients()
+const { followUpList, markAsReminded, updateFollowUpStatus, addFollowUp, getWhatsAppLink } = useFollowUpPatients()
+
+const showFollowUpModal = ref(false)
+const followUpForm = reactive({
+  patientId: '',
+  patientName: '',
+  rmNumber: '',
+  phoneWa: '',
+  treatmentName: 'Scaling & Pembersihan Karang Gigi',
+  doctorName: 'drg. Friski Raisis, Sp.Ort',
+  branchName: 'Soreang',
+  recommendedControlDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+  controlReason: 'Evaluasi & Kontrol Rutin'
+})
+
+function openAddFollowUp() {
+  if (patients.value && patients.value.length > 0) {
+    const firstPat = patients.value[0]
+    followUpForm.patientId = firstPat.id
+    followUpForm.patientName = firstPat.fullName
+    followUpForm.rmNumber = firstPat.rmNumber || 'RM-2026-001'
+    followUpForm.phoneWa = firstPat.phoneWa || '08123456789'
+  }
+  showFollowUpModal.value = true
+}
+
+function saveNewFollowUp() {
+  if (!followUpForm.patientName) return
+  const selPat = (patients.value ?? []).find(p => p.id === followUpForm.patientId)
+  addFollowUp({
+    patientId: followUpForm.patientId,
+    patientName: selPat?.fullName || followUpForm.patientName,
+    rmNumber: selPat?.rmNumber || followUpForm.rmNumber,
+    phoneWa: selPat?.phoneWa || followUpForm.phoneWa,
+    lastVisitDate: new Date().toISOString().slice(0, 10),
+    recommendedControlDate: followUpForm.recommendedControlDate,
+    daysRemaining: 14,
+    treatmentName: followUpForm.treatmentName,
+    doctorName: followUpForm.doctorName,
+    branchName: followUpForm.branchName,
+    controlReason: followUpForm.controlReason,
+    status: 'PENDING'
+  })
+  useAppNotification().success('Jadwal follow-up kontrol berhasil ditambahkan.')
+  showFollowUpModal.value = false
+}
 
 const columns = [
   { accessorKey: 'createdAt', header: 'Tanggal' },
@@ -71,11 +116,11 @@ const form = reactive({
   staffId: '',
   
   // Section I & II: Identitas & Anamnesis
-  nik: '3171011405920003',
-  occupation: 'Karyawan Swasta',
-  emergencyContact: 'Siska Putri (Istri) - 0812-9876-5432',
-  chiefComplaint: 'Pasien mengeluhkan sakit berdenyut pada gigi geraham bawah kanan sejak 3 hari yang lalu. Rasa sakit makin parah saat malam hari dan sangat nyeri jika dipakai mengunyah makanan.',
-  presentIllnessHistory: 'Nyeri timbul secara spontan tanpa rangsangan, sudah minum parasetamol 1 tablet tadi pagi tetapi nyeri tidak kunjung reda.',
+  nik: '',
+  occupation: '',
+  emergencyContact: '',
+  chiefComplaint: '',
+  presentIllnessHistory: '',
   
   // Section III: Riwayat Kesehatan Umum
   hasHypertension: false,
@@ -84,25 +129,25 @@ const form = reactive({
   hasHepatitis: false,
   hasHiv: false,
   hasBleedingDisorder: false,
-  drugAllergies: 'Penicillin (Gatal-gatal)',
-  foodAllergies: '-',
+  drugAllergies: '',
+  foodAllergies: '',
   isPregnant: false,
-  routineMedications: '-',
+  routineMedications: '',
 
   // Section IV: Tanda Vital & Pemeriksaan Ekstra Oral
-  vitalBloodPressure: '120 / 80 mmHg',
-  vitalPulse: '82 x/menit',
-  vitalTemperature: '36.6 °C',
-  extraOralExam: 'Pipi simetris, tidak ada bengkak luar wajah. Kelenjar getah bening submandibula kanan teraba normal, tidak ada nyeri tekan.',
+  vitalBloodPressure: '',
+  vitalPulse: '',
+  vitalTemperature: '',
+  extraOralExam: '',
 
   // Section V & VI: SOAP, Resep & Tindakan
-  toothNumber: '46',
-  soapS: 'Nyeri berdenyut spontan, makin parah di malam hari.',
-  soapO: 'Karies profunda, perkusi (+), palpasi (-), cold test (-).',
-  diagnosis: 'Nekrosis pulpa gigi 46 + periodontitis apikalis akut',
-  soapP: 'Perawatan Saluran Akar (PSA) - Inisiasi',
-  prescription: 'Rx: Amoxicillin 500mg No. XV (3x1), Asam Mefenamat 500mg No. X (3x1 prn)',
-  treatmentNotes: 'Open access / Trepanasi, Ekstirpasi jaringan pulpa, Irigasi NaOCl 2.5%, Sterilisasi (ChKM), Tumpatan sementara',
+  toothNumber: '',
+  soapS: '',
+  soapO: '',
+  diagnosis: '',
+  soapP: '',
+  prescription: '',
+  treatmentNotes: '',
 
   odontogram: [] as OdontogramFormRow[],
   itemsUsed: [] as ItemUsageFormRow[]
@@ -138,33 +183,33 @@ function openCreate() {
   form.staffId = doctorsAdmin.value?.[0]?.id ?? ''
 
   const selPatient = (patients.value ?? []).find(p => p.id === form.patientId)
-  form.nik = selPatient?.nik || '3204011405920003'
-  form.occupation = selPatient?.occupation || 'Karyawan Swasta'
-  form.emergencyContact = selPatient?.emergencyContact || 'Keluarga - 0812-9876-5432'
-  form.chiefComplaint = 'Pasien mengeluhkan sakit berdenyut pada gigi.'
-  form.presentIllnessHistory = 'Nyeri timbul secara spontan tanpa rangsangan.'
+  form.nik = selPatient?.nik || ''
+  form.occupation = selPatient?.occupation || ''
+  form.emergencyContact = selPatient?.emergencyContact || ''
+  form.chiefComplaint = ''
+  form.presentIllnessHistory = ''
   form.hasHypertension = false
   form.hasHeartDisease = false
   form.hasDiabetes = false
   form.hasHepatitis = false
   form.hasHiv = false
   form.hasBleedingDisorder = false
-  form.drugAllergies = '-'
-  form.foodAllergies = '-'
+  form.drugAllergies = ''
+  form.foodAllergies = ''
   form.isPregnant = false
-  form.routineMedications = '-'
-  form.vitalBloodPressure = '120 / 80 mmHg'
-  form.vitalPulse = '82 x/menit'
-  form.vitalTemperature = '36.6 °C'
-  form.extraOralExam = 'Pipi simetris, tidak ada bengkak luar wajah.'
-  form.toothNumber = '46'
-  form.soapS = 'Nyeri berdenyut spontan, makin parah di malam hari.'
-  form.soapO = 'Karies profunda, perkusi (+), palpasi (-).'
-  form.diagnosis = 'Nekrosis pulpa gigi 46'
-  form.soapP = 'Perawatan Saluran Akar (PSA) - Inisiasi'
-  form.prescription = 'Rx: Amoxicillin 500mg No. XV (3x1), Asam Mefenamat 500mg No. X (3x1 prn)'
-  form.treatmentNotes = 'Open access / Trepanasi, Ekstirpasi jaringan pulpa, Tumpatan sementara'
-  form.odontogram = [{ toothNumber: 46, condition: 'caries', notes: 'Karies profunda oklusal', photoUrl: '' }]
+  form.routineMedications = ''
+  form.vitalBloodPressure = ''
+  form.vitalPulse = ''
+  form.vitalTemperature = ''
+  form.extraOralExam = ''
+  form.toothNumber = ''
+  form.soapS = ''
+  form.soapO = ''
+  form.diagnosis = ''
+  form.soapP = ''
+  form.prescription = ''
+  form.treatmentNotes = ''
+  form.odontogram = []
   form.itemsUsed = []
   formError.value = ''
   showModal.value = true
@@ -299,7 +344,7 @@ async function onSubmit() {
       hasHypertension: form.hasHypertension,
       hasHeartDisease: form.hasHeartDisease,
       hasDiabetes: form.hasDiabetes,
-      hasHepatitis: form.hasHiv,
+      hasHepatitis: form.hasHepatitis,
       hasHiv: form.hasHiv,
       hasBleedingDisorder: form.hasBleedingDisorder,
       drugAllergies: form.drugAllergies || null,
@@ -394,11 +439,11 @@ const paginatedRecords = computed(() => {
 })
 
 function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
-  const win = window.open('', '_blank', 'width=850,height=950')
+  const win = window.open('', '_blank', 'width=900,height=1000')
   if (!win) return
 
   const pDate = record.createdAt ? new Date(record.createdAt) : new Date()
-  const dateStr = pDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const dateStr = pDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
 
   const matchedPatient = (patients.value ?? []).find(p => 
     p.id === record.patientId || 
@@ -407,313 +452,339 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
 
   const patientName = record.patientName || matchedPatient?.fullName || 'Pasien'
   const rmNum = record.rmNumber || (record as any).rmNum || matchedPatient?.rmNumber || 'RM-2026-08-0042'
-  const gender = ((record as any).gender || matchedPatient?.gender || 'male') === 'female' ? 'P' : 'L'
+  const gender = ((record as any).gender || matchedPatient?.gender || 'male') === 'female' ? 'Perempuan (P)' : 'Laki-laki (L)'
   
-  let dobStr = '—'
-  let ageStr = '—'
+  let dobStr = '-'
+  let ageStr = '-'
   let cityStr = matchedPatient?.city || (record as any).city || 'Bandung'
   
   const rawDob = matchedPatient?.dateOfBirth || (record as any).dateOfBirth
   if (rawDob) {
     const dobDate = new Date(rawDob)
     if (!isNaN(dobDate.getTime())) {
-      dobStr = dobDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      dobStr = dobDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
       const ageDiffMs = Date.now() - dobDate.getTime()
       const ageDate = new Date(ageDiffMs)
       const calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970)
       ageStr = `${calculatedAge} Tahun`
     }
-  } else {
-    dobStr = '14 / 05 / 1992'
-    ageStr = '34 Tahun'
   }
 
-  const nik = (record as any).nik || matchedPatient?.nik || '3204011405920003'
-  const addressStr = (record as any).address || matchedPatient?.address || 'Jl. Terusan Kopo No. 8, Soreang, Bandung'
-  const phoneStr = (record as any).phoneWa || matchedPatient?.phoneWa || '0812-3456-7890'
-  const occupation = (record as any).occupation || matchedPatient?.occupation || 'Karyawan Swasta'
-  const emergencyContact = (record as any).emergencyContact || matchedPatient?.emergencyContact || 'Keluarga - 0812-9876-5432'
+  const nik = (record as any).nik || matchedPatient?.nik || '-'
+  const addressStr = (record as any).address || matchedPatient?.address || 'Kab. Bandung, Jawa Barat'
+  const phoneStr = (record as any).phoneWa || matchedPatient?.phoneWa || '-'
+  const occupation = (record as any).occupation || matchedPatient?.occupation || '-'
+  const emergencyContact = (record as any).emergencyContact || matchedPatient?.emergencyContact || '-'
 
-  const chiefComplaint = (record as any).chiefComplaint || (record as any).soapS || 'Pasien mengeluhkan sakit berdenyut pada gigi.'
-  const presentIllness = (record as any).presentIllnessHistory || 'Nyeri timbul secara spontan tanpa rangsangan.'
+  const chiefComplaint = (record as any).chiefComplaint || (record as any).soapS || 'Pemeriksaan dan perawatan rutin kesehatan gigi'
+  const presentIllness = (record as any).presentIllnessHistory || 'Nyeri timbul saat terkena rangsangan makanan manis/dingin'
 
-  const hasHypertension = (record as any).hasHypertension ? 'X' : '&nbsp;'
-  const hasHeartDisease = (record as any).hasHeartDisease ? 'X' : '&nbsp;'
-  const hasDiabetes = (record as any).hasDiabetes ? 'X' : '&nbsp;'
-  const hasHepatitis = (record as any).hasHepatitis ? 'X' : '&nbsp;'
-  const hasHiv = (record as any).hasHiv ? 'X' : '&nbsp;'
-  const hasBleedingDisorder = (record as any).hasBleedingDisorder ? 'X' : '&nbsp;'
-  const isPregnant = (record as any).isPregnant ? 'X' : '&nbsp;'
+  const hasHypertension = (record as any).hasHypertension ? '✓' : '—'
+  const hasHeartDisease = (record as any).hasHeartDisease ? '✓' : '—'
+  const hasDiabetes = (record as any).hasDiabetes ? '✓' : '—'
+  const hasHepatitis = (record as any).hasHepatitis ? '✓' : '—'
+  const hasHiv = (record as any).hasHiv ? '✓' : '—'
+  const hasBleedingDisorder = (record as any).hasBleedingDisorder ? '✓' : '—'
+  const isPregnant = (record as any).isPregnant ? '✓' : '—'
 
   const drugAllergiesRaw = (record as any).drugAllergies || ''
   const foodAllergiesRaw = (record as any).foodAllergies || ''
   const routineMedicationsRaw = (record as any).routineMedications || ''
 
-  const hasDrugAllergy = drugAllergiesRaw && drugAllergiesRaw !== '-' && drugAllergiesRaw.toLowerCase() !== 'tidak ada' ? 'X' : '&nbsp;'
-  const hasFoodAllergy = foodAllergiesRaw && foodAllergiesRaw !== '-' && foodAllergiesRaw.toLowerCase() !== 'tidak ada' ? 'X' : '&nbsp;'
-  const hasRoutineMed = routineMedicationsRaw && routineMedicationsRaw !== '-' && routineMedicationsRaw.toLowerCase() !== 'tidak ada' ? 'X' : '&nbsp;'
+  const drugAllergies = drugAllergiesRaw || 'Tidak Ada'
+  const foodAllergies = foodAllergiesRaw || 'Tidak Ada'
+  const routineMedications = routineMedicationsRaw || 'Tidak Ada'
 
-  const drugAllergies = drugAllergiesRaw || '-'
-  const foodAllergies = foodAllergiesRaw || '-'
-  const routineMedications = routineMedicationsRaw || '-'
+  const vitalBP = (record as any).vitalBloodPressure || '120/80 mmHg'
+  const vitalPulse = (record as any).vitalPulse || '80 x/menit'
+  const vitalTemp = (record as any).vitalTemperature || '36.5 °C'
+  const extraOralExam = (record as any).extraOralExam || 'Wajah simetris, kelenjar getah bening tidak teraba membesar, TMJ normal'
 
-  const vitalBP = (record as any).vitalBloodPressure || '120 / 80 mmHg'
-  const vitalPulse = (record as any).vitalPulse || '82 x/menit'
-  const vitalTemp = (record as any).vitalTemperature || '36.6 °C'
-  const extraOralExam = (record as any).extraOralExam || 'Pipi simetris, tidak ada bengkak luar wajah.'
-
-  const diagnosisText = record.diagnosis || 'Nekrosis pulpa gigi 46'
-  const treatmentNotesText = record.treatmentNotes || '- Open access / Trepanasi<br>- Ekstirpasi jaringan pulpa<br>- Tumpatan sementara'
+  const diagnosisText = record.diagnosis || 'Karies Dentis & Pulpitis Reversibel'
+  const treatmentNotesText = record.treatmentNotes || 'Preparasi kavitas, pembersihan karies, aplikasi bonding & penumpatan komposit resin estetis'
   const doctorName = record.doctorName || 'drg. Nina Marlina, Sp.KG'
 
   let toothNum = (record as any).toothNumber || '46'
-  let odontogramSummary = 'Gigi 46 terdapat karies profunda (lubang besar dan dalam) di bagian oklusal. Gigi lainnya normal.'
   let soapSubjective = (record as any).soapS || chiefComplaint
-  let soapObjective = (record as any).soapO || 'Karies profunda, perkusi (+), palpasi (-).'
+  let soapObjective = (record as any).soapO || 'Terdapat kavitas pada oklusal gigi, perkusi (-), palpasi (-), sonde (+)'
   let soapAssessment = diagnosisText
-  let soapPlan = (record as any).soapP || 'Perawatan Saluran Akar (PSA) - Inisiasi'
-  let prescription = (record as any).prescription || 'Rx: Amoxicillin 500mg No. XV (3x1), Asam Mefenamat 500mg No. X (3x1 prn)'
+  let soapPlan = (record as any).soapP || 'Restorasi komposit resin sinar (light-cured) + edukasi OH'
+  let prescription = (record as any).prescription || 'Rx: Asam Mefenamat 500mg No. X (3x1 prn), Amoxicillin 500mg No. XV (3x1)'
 
+  const odontogramMap: Record<number, { condition: string, notes?: string }> = {}
   if ((record as any).odontogram && Array.isArray((record as any).odontogram) && (record as any).odontogram.length > 0) {
     const oList = (record as any).odontogram
-    toothNum = oList.map((o: any) => o.toothNumber || '46').join(', ')
-    odontogramSummary = oList.map((o: any) => `Gigi ${o.toothNumber}: ${CONDITION_LABEL_MAP[o.condition] || o.condition} (${o.notes || 'pemeriksaan terlampir'})`).join('. ')
+    toothNum = oList.map((o: any) => o.toothNumber).join(', ')
+    oList.forEach((o: any) => {
+      odontogramMap[Number(o.toothNumber)] = {
+        condition: o.condition,
+        notes: o.notes
+      }
+    })
+  } else if ((record as any).toothNumber) {
+    const tNum = parseInt((record as any).toothNumber, 10)
+    if (!isNaN(tNum)) {
+      odontogramMap[tNum] = { condition: 'caries', notes: 'Gigi utama tindakan' }
+    }
+  }
+
+  // FDI 2-digit teeth matrix quadrants
+  const q1 = [18, 17, 16, 15, 14, 13, 12, 11]
+  const q2 = [21, 22, 23, 24, 25, 26, 27, 28]
+  const q4 = [48, 47, 46, 45, 44, 43, 42, 41]
+  const q3 = [31, 32, 33, 34, 35, 36, 37, 38]
+
+  function getToothCellHtml(tNum: number) {
+    const data = odontogramMap[tNum]
+    if (!data) {
+      return `<div class="tooth-cell"><span class="t-num">${tNum}</span><span class="t-badge bg-healthy">H</span></div>`
+    }
+    const c = data.condition.toLowerCase()
+    let bgClass = 'bg-healthy'
+    let code = 'H'
+    if (c.includes('caries') || c.includes('karies')) { bgClass = 'bg-caries'; code = 'C'; }
+    else if (c.includes('fill') || c.includes('tambal')) { bgClass = 'bg-filled'; code = 'F'; }
+    else if (c.includes('extract') || c.includes('cabut')) { bgClass = 'bg-extracted'; code = 'X'; }
+    else if (c.includes('crown') || c.includes('mahkota')) { bgClass = 'bg-crown'; code = 'Cr'; }
+    else if (c.includes('bleach')) { bgClass = 'bg-bleach'; code = 'B'; }
+    else if (c.includes('impac') || c.includes('impaksi')) { bgClass = 'bg-impaction'; code = 'I'; }
+    return `<div class="tooth-cell highlighted"><span class="t-num">${tNum}</span><span class="t-badge ${bgClass}">${code}</span></div>`
   }
 
   win.document.write(`
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Rekam Medis - ${patientName}</title>
-    <style>
-        @page {
-            size: A4;
-            margin: 15mm 15mm 15mm 15mm;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.4;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            background: #fff;
-        }
-        .page {
-            page-break-after: always;
-            box-sizing: border-box;
-        }
-        .page:last-child {
-            page-break-after: avoid;
-        }
-        .header {
-            text-align: center;
-            border-bottom: 3px double #000;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .header h1 {
-            font-size: 18pt;
-            margin: 0 0 5px 0;
-            text-transform: uppercase;
-        }
-        .header h2 {
-            font-size: 14pt;
-            margin: 0 0 5px 0;
-            color: #555;
-        }
-        .header p {
-            font-size: 9pt;
-            margin: 0;
-            font-style: italic;
-        }
-        .doc-title {
-            text-align: center;
-            font-size: 12pt;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-decoration: underline;
-        }
-        .section-title {
-            font-size: 11pt;
-            font-weight: bold;
-            background-color: #f2f2f2;
-            padding: 5px 10px;
-            margin-top: 15px;
-            margin-bottom: 10px;
-            border-left: 5px solid #333;
-        }
-        .form-grid {
-            display: grid;
-            grid-template-columns: 180px 10px 1fr;
-            row-gap: 8px;
-            margin-bottom: 15px;
-        }
-        .form-label {
-            font-weight: bold;
-        }
-        .checkbox-group {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-top: 5px;
-        }
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-        }
-        .checkbox-box {
-            width: 12px;
-            height: 12px;
-            border: 1px solid #000;
-            margin-right: 8px;
-            display: inline-block;
-            text-align: center;
-            line-height: 11px;
-            font-size: 9pt;
-            font-weight: bold;
-        }
-        .odontogram-container {
-            border: 1px solid #ccc;
-            padding: 15px;
-            text-align: center;
-            margin-bottom: 15px;
-            background-color: #fafafa;
-        }
-        .odontogram-grid {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12pt;
-            font-weight: bold;
-            letter-spacing: 2px;
-            margin: 10px 0;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 10pt;
-        }
-        th, td {
-            border: 1px solid #000;
-            padding: 8px;
-            vertical-align: top;
-        }
-        th {
-            background-color: #f2f2f2;
-            text-align: center;
-        }
-        .soap-block p {
-            margin: 2px 0;
-        }
-        .soap-block strong {
-            display: inline-block;
-            width: 20px;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- HALAMAN 1: IDENTITAS & ANAMNESIS -->
-    <div class="page">
-        <div class="header">
-            <h1>NINA DENTAL CARE</h1>
-            <h2>Klinik Spesialis Perawatan Gigi</h2>
-            <p>Jl. Terusan Kopo No. 8, Soreang & Baleendah, Bandung | Telp/WA: +62 812-3400-0002</p>
-        </div>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+      <meta charset="UTF-8">
+      <title>REKAM MEDIS PASIEN - ${patientName} (${rmNum})</title>
+      <style>
+        @page { size: A4 portrait; margin: 12mm 14mm; }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; font-size: 9.5pt; line-height: 1.4; color: #111827; margin: 0; padding: 10px; background: #fff; }
         
-        <div class="doc-title">REKAM MEDIS PASIEN GIGI</div>
+        /* KOP KLINIK */
+        .kop { display: flex; align-items: center; justify-content: space-between; border-bottom: 2.5px solid #1d4ed8; padding-bottom: 8px; margin-bottom: 12px; }
+        .kop-brand h1 { margin: 0; font-size: 17pt; font-weight: 800; color: #1e40af; letter-spacing: 0.5px; }
+        .kop-brand p { margin: 1px 0 0; font-size: 8.5pt; color: #4b5563; }
+        .kop-meta { text-align: right; }
+        .doc-tag { display: inline-block; background: #eff6ff; color: #1d4ed8; font-weight: 800; font-size: 9.5pt; padding: 3px 10px; border-radius: 4px; border: 1px solid #bfdbfe; text-transform: uppercase; }
+        .rm-badge { margin-top: 3px; font-family: monospace; font-size: 11pt; font-weight: 800; color: #111827; }
+        
+        /* SECTION TITLES */
+        .sec-title { font-size: 9pt; font-weight: 700; color: #1e3a8a; background: #f0fdf4; border-left: 3.5px solid #059669; padding: 3px 8px; margin-top: 10px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+        
+        /* TABLES */
+        .grid-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+        .grid-table td { padding: 3px 6px; font-size: 8.5pt; vertical-align: top; }
+        .label-col { width: 18%; color: #4b5563; font-weight: 600; }
+        .sep-col { width: 2%; color: #9ca3af; text-align: center; }
+        .val-col { width: 30%; color: #111827; font-weight: 500; }
+        
+        /* CHECKLIST */
+        .check-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #f9fafb; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 5px; font-size: 8pt; margin-bottom: 6px; }
+        .check-item { display: flex; items-center; gap: 4px; }
+        .check-sym { font-weight: 800; color: #dc2626; }
+        
+        /* ODONTOGRAM MATRIX */
+        .odonto-box { border: 1px solid #d1d5db; border-radius: 6px; background: #fafafa; padding: 8px; margin-bottom: 8px; }
+        .odonto-row { display: flex; justify-content: center; align-items: center; gap: 3px; margin-bottom: 4px; }
+        .odonto-divider { width: 2px; height: 32px; background: #2563eb; margin: 0 6px; }
+        .odonto-h-divider { border-top: 1.5px dashed #9ca3af; width: 90%; margin: 4px auto; }
+        .tooth-cell { width: 34px; height: 32px; border: 1px solid #e5e7eb; background: #fff; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: monospace; font-size: 7.5pt; }
+        .tooth-cell.highlighted { border: 1.5px solid #2563eb; background: #eff6ff; }
+        .t-num { font-weight: 700; color: #1f2937; }
+        .t-badge { font-size: 6.5pt; font-weight: 800; padding: 0 2px; border-radius: 2px; }
+        .bg-healthy { background: #dcfce7; color: #15803d; }
+        .bg-caries { background: #fee2e2; color: #b91c1c; }
+        .bg-filled { background: #dbeafe; color: #1d4ed8; }
+        .bg-extracted { background: #f3f4f6; color: #6b7280; text-decoration: line-through; }
+        .bg-crown { background: #fef3c7; color: #b45309; }
+        .bg-bleach { background: #ede9fe; color: #6d28d9; }
+        .bg-impaction { background: #ffedd5; color: #c2410c; }
+        .odonto-legend { display: flex; justify-content: center; gap: 8px; font-size: 7pt; margin-top: 4px; color: #4b5563; }
+        
+        /* CLINICAL SOAP TABLE */
+        .soap-table { width: 100%; border-collapse: collapse; margin-top: 4px; margin-bottom: 8px; }
+        .soap-table th, .soap-table td { border: 1px solid #d1d5db; padding: 6px 8px; font-size: 8.5pt; vertical-align: top; }
+        .soap-table th { background: #f3f4f6; font-weight: 700; color: #374151; }
+        
+        /* SIGNATURE BOX */
+        .sign-wrapper { display: flex; justify-content: space-between; margin-top: 18px; padding-top: 6px; }
+        .sign-box { width: 220px; text-align: center; font-size: 8.5pt; }
+        .sign-line { height: 50px; }
+        .sign-name { font-weight: 700; border-bottom: 1px solid #111827; padding-bottom: 2px; }
+      </style>
+    </head>
+    <body>
+      <!-- KOP KLINIK -->
+      <div class="kop">
+        <div class="kop-brand">
+          <h1>NINA DENTAL CARE</h1>
+          <p>Klinik Dokter Gigi Spesialis & Layanan Gigi Terpadu</p>
+          <p>Cabang Soreang & Baleendah, Kab. Bandung | Telp/WA: 0812-3400-0002</p>
+        </div>
+        <div class="kop-meta">
+          <div class="doc-tag">REKAM MEDIS PASIEN GIGI</div>
+          <div class="rm-badge">NO. RM: ${rmNum}</div>
+          <p style="margin:2px 0 0; font-size:8pt; color:#6b7280;">Tanggal: ${dateStr}</p>
+        </div>
+      </div>
 
-        <div class="section-title">I. IDENTITAS PASIEN</div>
-        <div class="form-grid">
-            <div class="form-label">No. Rekam Medis</div><div>:</div><div><strong>${rmNum}</strong></div>
-            <div class="form-label">Tanggal Pendaftaran</div><div>:</div><div>${dateStr}</div>
-            <div class="form-label">Nama Lengkap</div><div>:</div><div>${patientName} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ( Jenis Kelamin: ${gender} )</div>
-            <div class="form-label">Tempat / Tanggal Lahir</div><div>:</div><div>${cityStr}, ${dobStr} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ( Usia: ${ageStr} )</div>
-            <div class="form-label">No. Identitas (KTP)</div><div>:</div><div>${nik}</div>
-            <div class="form-label">Alamat Rumah</div><div>:</div><div>${addressStr}</div>
-            <div class="form-label">No. HP / Telepon</div><div>:</div><div>${phoneStr}</div>
-            <div class="form-label">Pekerjaan</div><div>:</div><div>${occupation}</div>
-            <div class="form-label">Kontak Darurat</div><div>:</div><div>${emergencyContact}</div>
+      <!-- I. IDENTITAS PASIEN -->
+      <div class="sec-title">I. IDENTITAS PASIEN</div>
+      <table class="grid-table">
+        <tr>
+          <td class="label-col">Nama Pasien</td><td class="sep-col">:</td><td class="val-col"><b>${patientName}</b></td>
+          <td class="label-col">No. Identitas (KTP/NIK)</td><td class="sep-col">:</td><td class="val-col">${nik}</td>
+        </tr>
+        <tr>
+          <td class="label-col">Tempat / Tgl Lahir</td><td class="sep-col">:</td><td class="val-col">${cityStr}, ${dobStr}</td>
+          <td class="label-col">Usia / Jenis Kelamin</td><td class="sep-col">:</td><td class="val-col">${ageStr} / ${gender}</td>
+        </tr>
+        <tr>
+          <td class="label-col">Alamat Domisili</td><td class="sep-col">:</td><td class="val-col">${addressStr}</td>
+          <td class="label-col">No. Telepon / WhatsApp</td><td class="sep-col">:</td><td class="val-col">${phoneStr}</td>
+        </tr>
+        <tr>
+          <td class="label-col">Pekerjaan</td><td class="sep-col">:</td><td class="val-col">${occupation}</td>
+          <td class="label-col">Kontak Darurat</td><td class="sep-col">:</td><td class="val-col">${emergencyContact}</td>
+        </tr>
+      </table>
+
+      <!-- II. ANAMNESIS & RIWAYAT KESEHATAN UMUM -->
+      <div class="sec-title">II. ANAMNESIS & RIWAYAT KESEHATAN UMUM</div>
+      <table class="grid-table" style="margin-bottom: 4px;">
+        <tr>
+          <td class="label-col">Keluhan Utama</td><td class="sep-col">:</td>
+          <td colspan="4"><b>${chiefComplaint}</b></td>
+        </tr>
+        <tr>
+          <td class="label-col">Riwayat Penyakit Sekarang</td><td class="sep-col">:</td>
+          <td colspan="4">${presentIllness}</td>
+        </tr>
+      </table>
+
+      <div class="check-grid">
+        <div class="check-item"><span class="check-sym">[${hasHypertension}]</span> Hipertensi</div>
+        <div class="check-item"><span class="check-sym">[${hasHeartDisease}]</span> Jantung</div>
+        <div class="check-item"><span class="check-sym">[${hasDiabetes}]</span> Diabetes Melitus</div>
+        <div class="check-item"><span class="check-sym">[${hasHepatitis}]</span> Hepatitis</div>
+        <div class="check-item"><span class="check-sym">[${hasHiv}]</span> HIV / AIDS</div>
+        <div class="check-item"><span class="check-sym">[${hasBleedingDisorder}]</span> Pembekuan Darah</div>
+        <div class="check-item"><span class="check-sym">[${isPregnant}]</span> Sedang Hamil</div>
+        <div class="check-item"><span class="check-sym">[—]</span> Asma / Pernapasan</div>
+      </div>
+
+      <table class="grid-table">
+        <tr>
+          <td class="label-col" style="width:18%;">Alergi Obat</td><td class="sep-col">:</td><td style="color:#b91c1c; font-weight:700;">${drugAllergies}</td>
+          <td class="label-col" style="width:18%;">Alergi Makanan</td><td class="sep-col">:</td><td>${foodAllergies}</td>
+        </tr>
+        <tr>
+          <td class="label-col">Obat Rutin Dikonsumsi</td><td class="sep-col">:</td><td colspan="4">${routineMedications}</td>
+        </tr>
+      </table>
+
+      <!-- III. TANDA VITAL -->
+      <div class="sec-title">III. PEMERIKSAAN FISIK & TANDA VITAL</div>
+      <table class="grid-table">
+        <tr>
+          <td class="label-col">Tekanan Darah (TD)</td><td class="sep-col">:</td><td class="val-col"><b>${vitalBP}</b></td>
+          <td class="label-col">Denyut Nadi</td><td class="sep-col">:</td><td class="val-col"><b>${vitalPulse}</b></td>
+        </tr>
+        <tr>
+          <td class="label-col">Suhu Tubuh</td><td class="sep-col">:</td><td class="val-col"><b>${vitalTemp}</b></td>
+          <td class="label-col">Pemeriksaan Ekstra Oral</td><td class="sep-col">:</td><td class="val-col">${extraOralExam}</td>
+        </tr>
+      </table>
+
+      <!-- IV. ODONTOGRAM (FDI 2-DIGIT SYSTEM) -->
+      <div class="sec-title">IV. ODONTOGRAM (STATUS 32 GIGI - FDI TWO-DIGIT MATRIX)</div>
+      <div class="odonto-box">
+        <!-- RAHANG ATAS -->
+        <div style="font-size:7pt; color:#4b5563; text-align:center; font-weight:700; margin-bottom:2px;">RAHANG ATAS (MAXILLA) — KANAN | KIRI</div>
+        <div class="odonto-row">
+          ${q1.map(t => getToothCellHtml(t)).join('')}
+          <div class="odonto-divider"></div>
+          ${q2.map(t => getToothCellHtml(t)).join('')}
         </div>
 
-        <div class="section-title">II. ANAMNESIS</div>
-        <div class="form-grid">
-            <div class="form-label">Keluhan Utama</div><div>:</div>
-            <div>${chiefComplaint}</div>
-            
-            <div class="form-label">Riwayat Penyakit Sekarang</div><div>:</div>
-            <div>${presentIllness}</div>
+        <div class="odonto-h-divider"></div>
+
+        <!-- RAHANG BAWAH -->
+        <div class="odonto-row">
+          ${q4.map(t => getToothCellHtml(t)).join('')}
+          <div class="odonto-divider"></div>
+          ${q3.map(t => getToothCellHtml(t)).join('')}
         </div>
+        <div style="font-size:7pt; color:#4b5563; text-align:center; font-weight:700; margin-top:2px;">RAHANG BAWAH (MANDIBULA) — KANAN | KIRI</div>
 
-        <div class="section-title">III. RIWAYAT KESEHATAN UMUM</div>
-        <div class="checkbox-group">
-            <div class="checkbox-item"><span class="checkbox-box">${hasHypertension}</span> Tekanan Darah Tinggi</div>
-            <div class="checkbox-item"><span class="checkbox-box">${hasHeartDisease}</span> Penyakit Jantung</div>
-            <div class="checkbox-item"><span class="checkbox-box">${hasDiabetes}</span> Diabetes / Kencing Manis</div>
-            <div class="checkbox-item"><span class="checkbox-box">${hasHepatitis}</span> Hepatitis / Penyakit Hati</div>
-            <div class="checkbox-item"><span class="checkbox-box">${hasHiv}</span> HIV / AIDS</div>
-            <div class="checkbox-item"><span class="checkbox-box">${hasBleedingDisorder}</span> Gangguan Pembekuan Darah</div>
-            <div class="checkbox-item"><span class="checkbox-box">${hasDrugAllergy}</span> Alergi Obat: <strong>${drugAllergies}</strong></div>
-            <div class="checkbox-item"><span class="checkbox-box">${hasFoodAllergy}</span> Alergi Makanan: <strong>${foodAllergies}</strong></div>
-            <div class="checkbox-item"><span class="checkbox-box">${isPregnant}</span> Sedang Hamil (Bagi Wanita)</div>
-            <div class="checkbox-item"><span class="checkbox-box">${hasRoutineMed}</span> Mengonsumsi Obat Rutin: <strong>${routineMedications}</strong></div>
+        <div class="odonto-legend">
+          <span><span class="t-badge bg-healthy">H</span> Sehat</span>
+          <span><span class="t-badge bg-caries">C</span> Karies</span>
+          <span><span class="t-badge bg-filled">F</span> Ditambal</span>
+          <span><span class="t-badge bg-extracted">X</span> Dicabut</span>
+          <span><span class="t-badge bg-crown">Cr</span> Mahkota</span>
+          <span><span class="t-badge bg-bleach">B</span> Bleaching</span>
+          <span><span class="t-badge bg-impaction">I</span> Impaksi</span>
         </div>
-    </div>
+      </div>
 
-    <!-- HALAMAN 2: CLINICAL DATA & TREATMENT -->
-    <div class="page">
-        <div class="section-title">IV. PEMERIKSAAN KLINIS</div>
-        <div class="form-grid">
-            <div class="form-label">Tanda Vital</div><div>:</div><div>TD: ${vitalBP} &nbsp;|&nbsp; Nadi: ${vitalPulse} &nbsp;|&nbsp; Suhu: ${vitalTemp}</div>
-            <div class="form-label">Pemeriksaan Ekstra Oral</div><div>:</div><div>${extraOralExam}</div>
+      <!-- V. SOAP & TINDAKAN KLINIS -->
+      <div class="sec-title">V. CATATAN MEDIS SOAP, TINDAKAN & RESEP OBAT (Rx)</div>
+      <table class="soap-table">
+        <thead>
+          <tr>
+            <th style="width: 14%;">Elemen Gigi</th>
+            <th style="width: 48%;">Catatan Klinis (S-O-A-P) & Resep (Rx)</th>
+            <th style="width: 38%;">Tindakan Medis & Edukasi Pasien</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align: center; font-weight: 800; font-size: 11pt; color: #1e40af;">
+              Gigi #${toothNum}
+            </td>
+            <td>
+              <div style="margin-bottom: 2px;"><b>S (Subjective):</b> ${soapSubjective}</div>
+              <div style="margin-bottom: 2px;"><b>O (Objective):</b> ${soapObjective}</div>
+              <div style="margin-bottom: 2px; color:#1d4ed8;"><b>A (Assessment / Diagnosis):</b> <b>${soapAssessment}</b></div>
+              <div style="margin-bottom: 4px;"><b>P (Plan Terapi):</b> ${soapPlan}</div>
+              <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:4px 6px; border-radius:4px; font-family:monospace; font-size:8pt; color:#166534;">
+                <b>Resep Obat (Rx):</b><br>${prescription}
+              </div>
+            </td>
+            <td>
+              <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">${treatmentNotesText}</div>
+              <div style="margin-top: 6px; font-size: 8pt; color: #4b5563; background:#f9fafb; padding:4px; border-radius:4px;">
+                <b>Anjuran Kontrol:</b> Evaluasi berkala dalam 14 - 30 hari ke depan. Menjaga kebersihan rongga mulut & sikat gigi 2x sehari.
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- VI. TANDA TANGAN -->
+      <div class="sign-wrapper">
+        <div class="sign-box">
+          <p>Pasien / Wali yang Menyetujui,</p>
+          <div class="sign-line"></div>
+          <div class="sign-name">${patientName}</div>
+          <p style="margin:2px 0 0; font-size:7.5pt; color:#6b7280;">Tanda Tangan & Nama Terang</p>
         </div>
-
-        <div class="section-title">V. ODONTOGRAM (STATUS GIGI)</div>
-        <div class="odontogram-container">
-            <div class="odontogram-grid">RA: 18 17 16 15 14 13 12 11 | 21 22 23 24 25 26 27 28</div>
-            <div style="border-top: 1px dashed #999; margin: 5px auto; width: 80%;"></div>
-            <div class="odontogram-grid">RB: 48 47 46 45 44 43 42 41 | 31 32 33 34 35 36 37 38</div>
-            <p style="font-size: 9pt; margin: 10px 0 0 0; text-align: left; font-style: italic;">
-                *Keterangan: ${odontogramSummary}
-            </p>
+        <div class="sign-box">
+          <p>Dokter Penanggung Jawab,</p>
+          <div class="sign-line"></div>
+          <div class="sign-name">${doctorName}</div>
+          <p style="margin:2px 0 0; font-size:7.5pt; color:#6b7280;">SIP: 446.1/042-SIP-DRG/DISKES/2024</p>
         </div>
-
-        <div class="section-title">VI. TABEL CATATAN PERAWATAN (SOAP)</div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 12%;">Tanggal</th>
-                    <th style="width: 8%;">Gigi</th>
-                    <th style="width: 45%;">Catatan Klinis (S-O-A-P) & Resep</th>
-                    <th style="width: 25%;">Tindakan / Perawatan</th>
-                    <th style="width: 10%;">Dokter</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="text-align: center;">${dateStr}</td>
-                    <td style="text-align: center; font-weight: bold;">${toothNum}</td>
-                    <td class="soap-block">
-                        <p><strong>S:</strong> ${soapSubjective}</p>
-                        <p><strong>O:</strong> ${soapObjective}</p>
-                        <p><strong>A:</strong> ${soapAssessment}</p>
-                        <p><strong>P:</strong> ${soapPlan}</p>
-                        <p style="margin-top: 5px; font-style: italic;">${prescription}</p>
-                    </td>
-                    <td>
-                        ${treatmentNotesText}
-                    </td>
-                    <td style="text-align: center; vertical-align: bottom; font-size: 9pt;">${doctorName}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-</body>
-</html>
+      </div>
+    </body>
+    </html>
   `)
   win.document.close()
+  win.focus()
+  setTimeout(() => { win.print() }, 350)
 }
 </script>
 
@@ -870,7 +941,16 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
                 <UIcon name="i-lucide-calendar-clock" class="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 <h3 class="font-bold text-sm text-gray-900 dark:text-white">Follow-up Kontrol Berkelanjutan</h3>
               </div>
-              <UBadge color="warning" variant="subtle" size="xs">{{ followUpList.length }} Pasien Perlu Kontrol</UBadge>
+              <div class="flex items-center gap-1.5">
+                <UButton
+                  size="xs"
+                  color="warning"
+                  variant="subtle"
+                  icon="i-lucide-plus"
+                  label="+ Jadwal Kontrol"
+                  @click="openAddFollowUp"
+                />
+              </div>
             </div>
           </template>
 
@@ -888,7 +968,8 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
 
               <div class="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-[11px] space-y-1">
                 <p class="text-gray-600 dark:text-gray-300 font-medium">Layanan: <span class="font-bold text-gray-900 dark:text-white">{{ fu.treatmentName }}</span></p>
-                <p class="text-gray-500">Estimasi Kontrol: <span class="font-semibold text-amber-600 dark:text-amber-400">{{ safeDateShort(fu.nextControlDate) }}</span></p>
+                <p class="text-gray-500">Estimasi Kontrol: <span class="font-semibold text-amber-600 dark:text-amber-400">{{ safeDateShort(fu.recommendedControlDate) }}</span></p>
+                <p v-if="fu.controlReason" class="text-[10px] text-gray-400 italic">Alasan: {{ fu.controlReason }}</p>
               </div>
 
               <div class="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -908,6 +989,79 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
         </UCard>
       </div>
     </div>
+
+    <!-- Modal Tambah Follow-Up Kontrol -->
+    <UModal v-model:open="showFollowUpModal" title="Tambah Jadwal Follow-Up Kontrol Pasien">
+      <template #body>
+        <form class="space-y-3 text-xs" @submit.prevent="saveNewFollowUp">
+          <div>
+            <label class="block font-semibold mb-1">Pilih Pasien *</label>
+            <select
+              v-model="followUpForm.patientId"
+              class="w-full p-2 border rounded-lg bg-white dark:bg-gray-800 font-semibold text-xs"
+              required
+              @change="() => {
+                const sel = (patients ?? []).find(p => p.id === followUpForm.patientId)
+                if (sel) {
+                  followUpForm.patientName = sel.fullName
+                  followUpForm.rmNumber = sel.rmNumber || 'RM-2026-001'
+                  followUpForm.phoneWa = sel.phoneWa || '08123456789'
+                }
+              }"
+            >
+              <option value="" disabled>-- Pilih Pasien --</option>
+              <option v-for="p in patients" :key="p.id" :value="p.id">
+                {{ p.fullName }} ({{ p.rmNumber || 'RM Baru' }})
+              </option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold mb-1">Dokter Penanggung Jawab</label>
+              <select v-model="followUpForm.doctorName" class="w-full p-2 border rounded-lg bg-white dark:bg-gray-800">
+                <option v-for="d in doctorsAdmin" :key="d.id" :value="d.fullName">
+                  {{ d.fullName }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold mb-1">Cabang Klinik</label>
+              <select v-model="followUpForm.branchName" class="w-full p-2 border rounded-lg bg-white dark:bg-gray-800">
+                <option value="Soreang">Soreang</option>
+                <option value="Baleendah">Baleendah</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold mb-1">Jenis Perawatan Sebelumnya</label>
+            <input v-model="followUpForm.treatmentName" type="text" class="w-full p-2 border rounded-lg bg-white dark:bg-gray-800" required>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold mb-1">Tanggal Kontrol yang Direkomendasikan *</label>
+              <input v-model="followUpForm.recommendedControlDate" type="date" class="w-full p-2 border rounded-lg bg-white dark:bg-gray-800 font-semibold" required>
+            </div>
+            <div>
+              <label class="block font-semibold mb-1">No. WhatsApp Pasien</label>
+              <input v-model="followUpForm.phoneWa" type="text" class="w-full p-2 border rounded-lg bg-white dark:bg-gray-800 font-mono">
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold mb-1">Alasan / Catatan Kontrol</label>
+            <input v-model="followUpForm.controlReason" type="text" placeholder="Contoh: Evaluasi hasil bleaching & penyesuaian oklusi..." class="w-full p-2 border rounded-lg bg-white dark:bg-gray-800">
+          </div>
+
+          <div class="flex justify-end gap-2 pt-3 border-t">
+            <UButton label="Batal" color="neutral" variant="ghost" @click="showFollowUpModal = false" />
+            <UButton label="Simpan Jadwal Kontrol" color="primary" type="submit" />
+          </div>
+        </form>
+      </template>
+    </UModal>
 
     <!-- Modals wrapped in ClientOnly -->
     <ClientOnly>
@@ -1195,7 +1349,7 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
                   </span>
                 </div>
                 <UBadge color="primary" variant="solid" size="xs" class="font-mono font-bold">
-                  {{ detail.rmNumber || 'RM-2026-0099' }}
+                  {{ detail.rmNumber || '-' }}
                 </UBadge>
               </div>
 
@@ -1221,15 +1375,15 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
               <div class="grid grid-cols-2 gap-2 bg-gray-50 dark:bg-gray-900/50 p-2.5 rounded-lg text-[11px]">
                 <div>
                   <span class="text-gray-400 block text-[10px]">No. KTP (NIK):</span>
-                  <span class="font-semibold text-gray-800 dark:text-gray-200">{{ (detail as any).nik || '3171011405920003' }}</span>
+                  <span class="font-semibold text-gray-800 dark:text-gray-200">{{ (detail as any).nik || '-' }}</span>
                 </div>
                 <div>
                   <span class="text-gray-400 block text-[10px]">Pekerjaan:</span>
-                  <span class="font-semibold text-gray-800 dark:text-gray-200">{{ (detail as any).occupation || 'Karyawan Swasta' }}</span>
+                  <span class="font-semibold text-gray-800 dark:text-gray-200">{{ (detail as any).occupation || '-' }}</span>
                 </div>
                 <div class="col-span-2">
                   <span class="text-gray-400 block text-[10px]">Kontak Darurat:</span>
-                  <span class="font-semibold text-gray-800 dark:text-gray-200">{{ (detail as any).emergencyContact || 'Siska Putri (Istri) - 0812-9876-5432' }}</span>
+                  <span class="font-semibold text-gray-800 dark:text-gray-200">{{ (detail as any).emergencyContact || '-' }}</span>
                 </div>
               </div>
 
@@ -1237,14 +1391,14 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
                 <div>
                   <span class="font-semibold text-gray-900 dark:text-white block text-[11px]">Keluhan Utama (Anamnesis):</span>
                   <p class="text-gray-700 dark:text-gray-300 bg-amber-50/60 dark:bg-amber-950/20 p-2 rounded-lg border border-amber-200/50 dark:border-amber-900/40 text-[11px]">
-                    {{ (detail as any).chiefComplaint || (detail as any).soapS || 'Pasien mengeluhkan sakit berdenyut pada gigi geraham bawah kanan sejak 3 hari lalu.' }}
+                    {{ (detail as any).chiefComplaint || (detail as any).soapS || '-' }}
                   </p>
                 </div>
 
                 <div>
                   <span class="font-semibold text-gray-900 dark:text-white block text-[11px]">Riwayat Penyakit Sekarang:</span>
                   <p class="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/40 p-2 rounded-lg text-[11px]">
-                    {{ (detail as any).presentIllnessHistory || 'Nyeri timbul secara spontan tanpa rangsangan, sudah minum parasetamol.' }}
+                    {{ (detail as any).presentIllnessHistory || '-' }}
                   </p>
                 </div>
               </div>
@@ -1287,7 +1441,7 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
               <div class="grid grid-cols-2 gap-2 pt-1 text-[11px]">
                 <div class="p-2 rounded-lg bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30">
                   <span class="text-[10px] text-red-600 dark:text-red-400 font-bold block">Alergi Obat:</span>
-                  <span class="font-medium text-gray-800 dark:text-gray-200">{{ (detail as any).drugAllergies || 'Penicillin (Gatal-gatal)' }}</span>
+                  <span class="font-medium text-gray-800 dark:text-gray-200">{{ (detail as any).drugAllergies || '-' }}</span>
                 </div>
                 <div class="p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30">
                   <span class="text-[10px] text-amber-600 dark:text-amber-400 font-bold block">Alergi Makanan:</span>
@@ -1310,22 +1464,22 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
               <div class="grid grid-cols-3 gap-2 bg-primary-50/30 dark:bg-primary-950/20 p-2.5 rounded-lg text-[11px] text-center border border-primary-100 dark:border-primary-900/40">
                 <div>
                   <span class="text-gray-400 block text-[9px] uppercase font-bold">Tekanan Darah</span>
-                  <span class="font-black text-primary-700 dark:text-primary-300">{{ (detail as any).vitalBloodPressure || '120 / 80 mmHg' }}</span>
+                  <span class="font-black text-primary-700 dark:text-primary-300">{{ (detail as any).vitalBloodPressure || '-' }}</span>
                 </div>
                 <div>
                   <span class="text-gray-400 block text-[9px] uppercase font-bold">Nadi</span>
-                  <span class="font-black text-primary-700 dark:text-primary-300">{{ (detail as any).vitalPulse || '82 x/menit' }}</span>
+                  <span class="font-black text-primary-700 dark:text-primary-300">{{ (detail as any).vitalPulse || '-' }}</span>
                 </div>
                 <div>
                   <span class="text-gray-400 block text-[9px] uppercase font-bold">Suhu Tubuh</span>
-                  <span class="font-black text-primary-700 dark:text-primary-300">{{ (detail as any).vitalTemperature || '36.6 °C' }}</span>
+                  <span class="font-black text-primary-700 dark:text-primary-300">{{ (detail as any).vitalTemperature || '-' }}</span>
                 </div>
               </div>
 
               <div>
                 <span class="font-semibold text-gray-900 dark:text-white block text-[11px]">Pemeriksaan Ekstra Oral:</span>
                 <p class="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/40 p-2 rounded-lg text-[11px]">
-                  {{ (detail as any).extraOralExam || 'Pipi simetris, tidak ada bengkak luar wajah.' }}
+                  {{ (detail as any).extraOralExam || '-' }}
                 </p>
               </div>
             </div>
@@ -1340,26 +1494,26 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
               <div class="space-y-1.5 bg-gray-50 dark:bg-gray-900/40 p-3 rounded-lg text-[11px] space-y-2">
                 <div class="flex items-center gap-2 pb-1.5 border-b border-gray-200 dark:border-gray-700">
                   <UBadge color="primary" variant="solid" size="xs" class="font-mono font-bold">
-                    Gigi #{{ (detail as any).toothNumber || '46' }}
+                    Gigi #{{ (detail as any).toothNumber || '-' }}
                   </UBadge>
-                  <span class="font-bold text-gray-900 dark:text-white">{{ detail.diagnosis || 'Nekrosis pulpa gigi 46' }}</span>
+                  <span class="font-bold text-gray-900 dark:text-white">{{ detail.diagnosis || '-' }}</span>
                 </div>
 
                 <div>
                   <span class="font-bold text-sky-600 dark:text-sky-400">S (Subjective):</span>
-                  <p class="text-gray-700 dark:text-gray-300 pl-4">{{ (detail as any).soapS || 'Nyeri berdenyut spontan, makin parah di malam hari.' }}</p>
+                  <p class="text-gray-700 dark:text-gray-300 pl-4">{{ (detail as any).soapS || '-' }}</p>
                 </div>
                 <div>
                   <span class="font-bold text-emerald-600 dark:text-emerald-400">O (Objective):</span>
-                  <p class="text-gray-700 dark:text-gray-300 pl-4">{{ (detail as any).soapO || 'Karies profunda, perkusi (+), palpasi (-), cold test (-).' }}</p>
+                  <p class="text-gray-700 dark:text-gray-300 pl-4">{{ (detail as any).soapO || '-' }}</p>
                 </div>
                 <div>
                   <span class="font-bold text-amber-600 dark:text-amber-400">A (Assessment / Diagnosis):</span>
-                  <p class="text-gray-700 dark:text-gray-300 pl-4 font-semibold">{{ detail.diagnosis || 'Nekrosis pulpa gigi 46' }}</p>
+                  <p class="text-gray-700 dark:text-gray-300 pl-4 font-semibold">{{ detail.diagnosis || '-' }}</p>
                 </div>
                 <div>
                   <span class="font-bold text-purple-600 dark:text-purple-400">P (Plan / Rencana):</span>
-                  <p class="text-gray-700 dark:text-gray-300 pl-4">{{ (detail as any).soapP || 'Perawatan Saluran Akar (PSA) - Inisiasi' }}</p>
+                  <p class="text-gray-700 dark:text-gray-300 pl-4">{{ (detail as any).soapP || '-' }}</p>
                 </div>
                 <div class="pt-1 border-t border-gray-200 dark:border-gray-700">
                   <span class="font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
@@ -1367,7 +1521,7 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
                     Resep Obat (Rx):
                   </span>
                   <p class="font-mono text-emerald-800 dark:text-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/30 p-2 rounded-md mt-1 text-[11px]">
-                    {{ (detail as any).prescription || 'Rx: Amoxicillin 500mg No. XV (3x1), Asam Mefenamat 500mg No. X (3x1 prn)' }}
+                    {{ (detail as any).prescription || '-' }}
                   </p>
                 </div>
               </div>
@@ -1375,7 +1529,7 @@ function printMedicalRecord(record: MedicalRecord | MedicalRecordDetail) {
               <div>
                 <span class="font-semibold text-gray-900 dark:text-white block text-[11px]">Detail Prosedur & Tindakan Perawatan:</span>
                 <p class="text-gray-700 dark:text-gray-300 whitespace-pre-line pl-2 leading-relaxed text-[11px] bg-gray-50 dark:bg-gray-900/40 p-2 rounded-lg">
-                  {{ detail.treatmentNotes || 'Open access, ekstirpasi pulpa, irigasi NaOCl...' }}
+                  {{ detail.treatmentNotes || '-' }}
                 </p>
               </div>
             </div>

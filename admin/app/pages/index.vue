@@ -133,13 +133,22 @@ const paymentColumns = [
 
 <template>
   <div class="p-4 space-y-4 w-full max-w-none">
-    <div>
-      <h1 class="text-xl font-semibold">
-        Dashboard
-      </h1>
-      <p class="text-sm text-muted">
-        Ringkasan operasional Nina Dental Care — Soreang & Baleendah.
-      </p>
+    <!-- Premium Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-primary-50 to-emerald-50 dark:from-primary-950/20 dark:to-emerald-950/20 p-6 rounded-3xl border border-primary-100/50 dark:border-primary-900/50 shadow-sm">
+      <div>
+        <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary-700 to-emerald-700 dark:from-primary-400 dark:to-emerald-400">
+          Dashboard Operasional
+        </h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium mt-1">
+          Ringkasan data real-time Nina Dental Care — Soreang & Baleendah.
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <UBadge color="emerald" variant="soft" size="md" class="px-3 py-1.5 font-bold">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping mr-2 absolute"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 relative"></span> Sistem Aktif
+        </UBadge>
+      </div>
     </div>
 
     <UAlert
@@ -151,32 +160,37 @@ const paymentColumns = [
       :description="`core-api belum bisa dihubungi: ${error.message}`"
     />
 
-    <!-- KPI Row -->
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <!-- Premium KPI Row -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       <div
         v-for="kpi in kpis"
         :key="kpi.label"
-        class="p-3 rounded-xl border border-default bg-card shadow-xs flex flex-col justify-between"
+        class="group p-4 rounded-2xl border border-white/60 dark:border-gray-800 bg-white/60 dark:bg-gray-900/60 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] backdrop-blur-xl hover:shadow-[0_8px_30px_-4px_rgba(6,81,237,0.15)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden relative"
       >
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-muted font-medium">{{ kpi.label }}</span>
-          <UIcon
-            :name="kpi.icon"
-            class="w-4 h-4 text-primary"
-          />
+        <!-- Background decorative gradient -->
+        <div class="absolute -right-6 -top-6 w-24 h-24 bg-primary-100/50 dark:bg-primary-900/20 rounded-full blur-2xl group-hover:bg-primary-200/50 transition-colors duration-500"></div>
+
+        <div class="flex items-center justify-between relative z-10">
+          <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{{ kpi.label }}</span>
+          <div class="w-8 h-8 rounded-full bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary-100 dark:group-hover:bg-primary-900 transition-all duration-300">
+            <UIcon
+              :name="kpi.icon"
+              class="w-4 h-4 text-primary-600 dark:text-primary-400"
+            />
+          </div>
         </div>
-        <div class="mt-2">
+        <div class="mt-3 relative z-10">
           <SkeletonTextSkeleton
             v-if="summaryStatus === 'pending'"
             class="h-7 w-20"
           />
           <p
             v-else
-            class="text-lg font-bold text-gray-900 dark:text-white"
+            class="text-xl md:text-2xl font-black text-gray-900 dark:text-white tracking-tight"
           >
             {{ kpi.value }}
           </p>
-          <span class="text-[10px] text-muted">{{ kpi.hint }}</span>
+          <span class="text-[10px] text-gray-500 font-medium mt-1 inline-block">{{ kpi.hint }}</span>
         </div>
       </div>
     </div>
@@ -326,89 +340,6 @@ const paymentColumns = [
       </UCard>
     </div>
 
-    <!-- Recent Tables Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h2 class="font-medium">
-              Reservasi Terbaru
-            </h2>
-            <UButton
-              to="/reservations"
-              variant="link"
-              size="xs"
-              label="Lihat semua"
-              trailing-icon="i-lucide-arrow-right"
-            />
-          </div>
-        </template>
-        <SkeletonTableSkeleton
-          v-if="reservationsStatus === 'pending'"
-          :rows="5"
-          :columns="3"
-        />
-        <UTable
-          v-else
-          :data="recentReservations"
-          :columns="reservationColumns"
-        >
-          <template #scheduledAt-cell="{ row }">
-            {{ formatDateTime(row.original.scheduledAt) }}
-          </template>
-          <template #status-cell="{ row }">
-            <UBadge
-              :color="reservationStatusColor(row.original.status)"
-              variant="subtle"
-            >
-              {{ reservationStatusLabel(row.original.status) }}
-            </UBadge>
-          </template>
-        </UTable>
-      </UCard>
-
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h2 class="font-medium">
-              Transaksi Terbaru
-            </h2>
-            <UButton
-              to="/billing"
-              variant="link"
-              size="xs"
-              label="Lihat semua"
-              trailing-icon="i-lucide-arrow-right"
-            />
-          </div>
-        </template>
-        <SkeletonTableSkeleton
-          v-if="paymentsStatus === 'pending'"
-          :rows="5"
-          :columns="4"
-        />
-        <UTable
-          v-else
-          :data="recentPayments"
-          :columns="paymentColumns"
-        >
-          <template #createdAt-cell="{ row }">
-            {{ formatDateTime(row.original.createdAt) }}
-          </template>
-          <template #amount-cell="{ row }">
-            {{ formatIDR(row.original.amount) }}
-          </template>
-          <template #status-cell="{ row }">
-            <UBadge
-              :color="paymentStatusColor(row.original.status)"
-              variant="subtle"
-            >
-              {{ paymentStatusLabel(row.original.status) }}
-            </UBadge>
-          </template>
-        </UTable>
-      </UCard>
-    </div>
 
     <!-- Panel Pasien Rekomendasi Kontrol & Tindak Lanjut (Paling Bawah) -->
     <UCard class="bg-white dark:bg-gray-800 border-l-4 border-l-amber-500 shadow-xs mt-4">

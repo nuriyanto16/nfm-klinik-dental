@@ -32,14 +32,6 @@ class ProfilePage extends ConsumerWidget {
           onPressed: () => context.go('/home'),
         ),
         title: const Text('Profilku', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppColors.textMuted),
-            onPressed: () {
-              _showLogoutDialog(context, ref);
-            },
-          ),
-        ],
       ),
       body: SafeArea(
         child: ListView(
@@ -208,7 +200,7 @@ class ProfilePage extends ConsumerWidget {
             _buildProfileInfoItem('Jenis Kelamin', 'Pria'),
             _buildProfileInfoItem('Alamat', 'Jalan Belum Diisi'),
             const SizedBox(height: 16),
-            // Quick Links: Asuransi & Tambah Pasien
+            // Quick Links: Asuransi, Tambah Pasien, Tema
             ListTile(
               leading: const Icon(Icons.shield_outlined, color: AppColors.primary),
               title: const Text('Data Asuransi', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -220,6 +212,12 @@ class ProfilePage extends ConsumerWidget {
               title: const Text('Tambah Data Pasien / Keluarga', style: TextStyle(fontWeight: FontWeight.bold)),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => AddPatientSheet.show(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.palette_outlined, color: AppColors.primary),
+              title: const Text('Pengaturan Tema & Tampilan', style: TextStyle(fontWeight: FontWeight.bold)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/settings/theme'),
             ),
             const SizedBox(height: 24),
             // Patient QR Button
@@ -304,6 +302,24 @@ class ProfilePage extends ConsumerWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 32),
+            
+            // Logout Button at the Bottom
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () => _showLogoutDialog(context, ref),
+                icon: const Icon(Icons.logout_rounded),
+                label: const Text('Keluar (Logout)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

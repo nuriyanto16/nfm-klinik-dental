@@ -19,6 +19,7 @@ export function useAdminNav() {
 
     { type: 'label', label: 'Operasional' },
     { label: 'Reservasi & Antrian', icon: 'i-lucide-calendar-check', to: '/reservations', phase: 1 },
+    { label: 'Display Antrian TV', icon: 'i-lucide-tv', to: '/queue-display', phase: 1 },
     { label: 'Pasien', icon: 'i-lucide-users', to: '/patients', phase: 1 },
     { label: 'Dokter & Jadwal', icon: 'i-lucide-stethoscope', to: '/doctors', phase: 1 },
     { label: 'Cabang', icon: 'i-lucide-map-pin', to: '/branches', phase: 1 },

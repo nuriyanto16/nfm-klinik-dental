@@ -121,6 +121,7 @@ export interface Patient {
   allergiesMedicalHistory?: string | null
   insuranceType?: string | null
   insuranceNumber?: string | null
+  membershipLevel?: string | null
   createdAt: string
 }
 
@@ -143,6 +144,7 @@ export interface CreatePatientInput {
   allergiesMedicalHistory?: string | null
   insuranceType?: string | null
   insuranceNumber?: string | null
+  membershipLevel?: string | null
 }
 
 export interface UpdatePatientInput {
@@ -161,6 +163,7 @@ export interface UpdatePatientInput {
   allergiesMedicalHistory?: string | null
   insuranceType?: string | null
   insuranceNumber?: string | null
+  membershipLevel?: string | null
 }
 
 export interface MonthlySpendingRow {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CreateUserInput, PaginatedResponse, StaffUser, UpdateUserInput } from '~/types/api'
+import type { CreateUserInput, PaginatedResponse, Patient, StaffUser, UpdateUserInput } from '~/types/api'
 
 definePageMeta({ title: 'Manajemen Pegawai & User' })
 
@@ -363,22 +363,81 @@ export interface MobileUser {
 const mobileSearch = ref('')
 const mobileFilterStatus = ref<'all' | 'ACTIVE' | 'BLOCKED'>('all')
 
-const filteredMobileUsers = computed(() => {
-  return patients.value.map(p => ({
-    id: p.id,
-    fullName: p.fullName,
-    email: p.email ?? '-',
-    phoneWa: p.phoneWa ?? '-',
-    nik: p.nik ?? '-',
-    gender: p.gender,
-    dateOfBirth: p.dateOfBirth,
-    city: p.address ? p.address.split(',')[0] : '-',
-    address: p.address ?? '-',
-    registeredAt: p.createdAt,
-    lastLoginAt: p.createdAt,
+const defaultMobileUsers: MobileUser[] = [
+  {
+    id: 'usr-m1',
+    fullName: 'Siti Rahmawati',
+    email: 'siti.rahmawati@gmail.com',
+    phoneWa: '+6281234567890',
+    nik: '3204014502900001',
+    gender: 'female',
+    dateOfBirth: '1990-02-15',
+    city: 'Bandung',
+    address: 'Jl. Dago Asri No. 12, Coblong, Bandung',
+    registeredAt: '2025-01-10T08:30:00Z',
+    lastLoginAt: '2026-09-15T14:22:00Z',
     status: 'ACTIVE',
-    totalReservations: 0
-  })).filter(u => {
+    totalReservations: 4
+  },
+  {
+    id: 'usr-m2',
+    fullName: 'Budi Santoso',
+    email: 'budi.santoso@gmail.com',
+    phoneWa: '+6281398765432',
+    nik: '3204021208880002',
+    gender: 'male',
+    dateOfBirth: '1988-08-12',
+    city: 'Bandung',
+    address: 'Jl. R.E. Martadinata No. 45, Bandung',
+    registeredAt: '2025-02-01T10:15:00Z',
+    lastLoginAt: '2026-09-16T09:40:00Z',
+    status: 'ACTIVE',
+    totalReservations: 2
+  },
+  {
+    id: 'usr-m3',
+    fullName: 'Dewi Lestari',
+    email: 'dewi.lestari@gmail.com',
+    phoneWa: '+6281122334455',
+    nik: '3204035612950003',
+    gender: 'female',
+    dateOfBirth: '1995-12-16',
+    city: 'Cimahi',
+    address: 'Komplek Permata Cimahi B3/10',
+    registeredAt: '2025-03-05T11:00:00Z',
+    lastLoginAt: '2026-09-10T16:05:00Z',
+    status: 'ACTIVE',
+    totalReservations: 3
+  }
+]
+
+const mobileUsers = ref<MobileUser[]>([...defaultMobileUsers])
+
+watch(patients, (newPatients) => {
+  if (!newPatients || newPatients.length === 0) return
+  for (const p of newPatients) {
+    if (!mobileUsers.value.some(u => u.id === p.id || (p.phoneWa && u.phoneWa === p.phoneWa))) {
+      mobileUsers.value.push({
+        id: p.id,
+        fullName: p.fullName,
+        email: p.email ?? '-',
+        phoneWa: p.phoneWa ?? '-',
+        nik: p.nik ?? '-',
+        gender: p.gender,
+        dateOfBirth: p.dateOfBirth,
+        city: p.address ? p.address.split(',')[0] : 'Bandung',
+        address: p.address ?? '-',
+        registeredAt: p.createdAt || new Date().toISOString(),
+        lastLoginAt: p.createdAt || new Date().toISOString(),
+        status: 'ACTIVE',
+        totalReservations: 1
+      })
+    }
+  }
+}, { immediate: true })
+
+const filteredMobileUsers = computed(() => {
+  return mobileUsers.value.filter(u => {
     if (mobileFilterStatus.value !== 'all' && u.status !== mobileFilterStatus.value) return false
     if (mobileSearch.value.trim()) {
       const q = mobileSearch.value.toLowerCase().trim()

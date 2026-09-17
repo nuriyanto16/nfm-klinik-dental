@@ -27,6 +27,7 @@ import '../../features/reservation/presentation/booking_flow_page.dart';
 import '../../features/reservation/presentation/reservation_detail_page.dart';
 import '../../features/reservation/presentation/schedule_page.dart';
 import '../../features/treatments/presentation/price_list_page.dart';
+import '../../features/settings/presentation/theme_settings_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -53,6 +54,9 @@ final appRouter = GoRouter(
     GoRoute(path: '/reward', builder: (context, state) => const RewardPage()),
     GoRoute(path: '/notifications', builder: (context, state) => const NotificationPage()),
     GoRoute(path: '/insurance', builder: (context, state) => const InsurancePage()),
+    
+    // ─── Settings ────────────────────────────────────────────────────────────
+    GoRoute(path: '/settings/theme', builder: (context, state) => const ThemeSettingsPage()),
 
     // ─── Info Klinik ─────────────────────────────────────────────────────────
     GoRoute(path: '/branches', builder: (context, state) => const BranchesPage()),

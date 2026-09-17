@@ -211,7 +211,7 @@ function openPaymentDetail(payment: Payment) {
 }
 
 function printInvoice(payment: Payment) {
-  navigateTo(`/billing/${payment.id}/invoice`)
+  window.open(`/product/klinik/billing/${payment.id}/invoice`, '_blank')
 }
 
 async function onSubmit() {

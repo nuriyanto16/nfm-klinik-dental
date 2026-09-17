@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:http/http.dart' as http;
 
 import '../../../core/storage/session_storage.dart';
 import '../data/patient_repository.dart';
@@ -78,7 +76,7 @@ class SessionController extends AsyncNotifier<PatientSession?> {
       scopeHint: ['email', 'profile'],
     );
     
-    final auth = await account.authentication;
+    final auth = account.authentication;
     final idToken = auth.idToken;
     if (idToken == null) {
       throw Exception('ID token Google tidak ditemukan');

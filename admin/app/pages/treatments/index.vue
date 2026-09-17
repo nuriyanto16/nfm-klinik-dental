@@ -194,15 +194,21 @@ async function onSubmit() {
 function onSoftDelete(t: Treatment) {
   if (!confirm(`Arsipkan perawatan "${t.name}"? Data tetap aman di sistem.`)) return
   const idx = localTreatments.value.findIndex(x => x.id === t.id)
-  if (idx !== -1) localTreatments.value[idx] = { ...localTreatments.value[idx], isActive: false }
-  if (detailTreatment.value?.id === t.id) detailTreatment.value = { ...localTreatments.value[idx] }
+  if (idx !== -1) {
+    const updated: Treatment = { ...localTreatments.value[idx]!, isActive: false }
+    localTreatments.value[idx] = updated
+    if (detailTreatment.value?.id === t.id) detailTreatment.value = updated
+  }
   try { $fetch(apiUrl(`/treatments/${t.id}`), { method: 'PUT', body: { ...t, isActive: false } }) } catch {}
 }
 
 function onReactivate(t: Treatment) {
   const idx = localTreatments.value.findIndex(x => x.id === t.id)
-  if (idx !== -1) localTreatments.value[idx] = { ...localTreatments.value[idx], isActive: true }
-  if (detailTreatment.value?.id === t.id) detailTreatment.value = { ...localTreatments.value[idx] }
+  if (idx !== -1) {
+    const updated: Treatment = { ...localTreatments.value[idx]!, isActive: true }
+    localTreatments.value[idx] = updated
+    if (detailTreatment.value?.id === t.id) detailTreatment.value = updated
+  }
   try { $fetch(apiUrl(`/treatments/${t.id}`), { method: 'PUT', body: { ...t, isActive: true } }) } catch {}
 }
 

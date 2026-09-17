@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/skeleton_loader.dart';
 import '../../patient/application/session_controller.dart';
 import '../data/reservation_model.dart';

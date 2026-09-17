@@ -7,6 +7,7 @@ panel (Nuxt 3 + Go + PostgreSQL).
 Baca dulu:
 - [`docs/architecture.md`](docs/architecture.md) — plan arsitektur lengkap (disetujui)
 - [`docs/status.md`](docs/status.md) — apa yang sudah & belum dikerjakan
+- [`docs/Panduan_Penggunaan.md`](docs/Panduan_Penggunaan.md) — Buku Panduan Lengkap untuk Admin dan Pasien
 - [`HISTORY.md`](HISTORY.md) — changelog tiap update/adjustment
 
 ## Struktur
