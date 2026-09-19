@@ -32,6 +32,13 @@ const showControls = ref(true)
 const isAnnouncing = ref(false)
 const showWalkinModal = ref(false)
 
+// Theme & Color Mode
+const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
+function toggleColorMode() {
+  colorMode.preference = isDark.value ? 'light' : 'dark'
+}
+
 // Real-time Clock
 const currentTime = ref('')
 const currentDate = ref('')
@@ -416,16 +423,16 @@ const tickerMessages = [
 
 <template>
   <div
-    class="min-h-screen bg-slate-950 text-white font-sans flex flex-col justify-between select-none relative overflow-hidden"
+    class="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/40 to-slate-100 text-slate-800 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-white font-sans flex flex-col justify-between select-none relative overflow-hidden transition-colors duration-300"
     :class="{ 'fixed inset-0 z-50': isFullscreen }"
   >
     <!-- Background Ambient Glows -->
-    <div class="absolute -top-40 -left-40 w-96 h-96 bg-primary-600/15 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute top-1/2 -right-40 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-primary-500/10 dark:bg-primary-600/15 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute top-1/2 -right-40 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-sky-500/10 dark:bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
     <!-- 1. TOP HEADER BAR -->
-    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-6 py-3.5 flex items-center justify-between gap-4 z-10">
+    <header class="bg-white/90 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 px-6 py-3.5 flex items-center justify-between gap-4 z-10 transition-colors shadow-xs dark:shadow-none">
       <!-- Clinic Brand -->
       <div class="flex items-center gap-3">
         <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white shadow-lg shadow-primary-500/25">
@@ -433,20 +440,20 @@ const tickerMessages = [
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="font-extrabold text-xl tracking-wider text-white">NINA DENTAL CARE</h1>
-            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <h1 class="font-extrabold text-xl tracking-wider text-slate-900 dark:text-white">NINA DENTAL CARE</h1>
+            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30">
               LIVE DISPLAY
             </span>
           </div>
-          <p class="text-xs text-slate-400 font-medium">Klinik Dokter Gigi Spesialis & Keluarga</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Klinik Dokter Gigi Spesialis & Keluarga</p>
         </div>
       </div>
 
       <!-- Center: Branch Selector -->
-      <div class="hidden md:flex items-center gap-1.5 bg-slate-800/80 p-1 rounded-xl border border-slate-700">
+      <div class="hidden md:flex items-center gap-1.5 bg-slate-100/90 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
         <button
           class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
-          :class="selectedBranch === 'Soreang' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'"
+          :class="selectedBranch === 'Soreang' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700/50'"
           @click="selectedBranch = 'Soreang'"
         >
           <UIcon name="i-lucide-map-pin" class="w-3.5 h-3.5" />
@@ -454,7 +461,7 @@ const tickerMessages = [
         </button>
         <button
           class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
-          :class="selectedBranch === 'Baleendah' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'"
+          :class="selectedBranch === 'Baleendah' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700/50'"
           @click="selectedBranch = 'Baleendah'"
         >
           <UIcon name="i-lucide-map-pin" class="w-3.5 h-3.5" />
@@ -465,40 +472,58 @@ const tickerMessages = [
       <!-- Right: Clock & Top Controls -->
       <div class="flex items-center gap-4">
         <div class="text-right">
-          <div class="font-mono font-extrabold text-lg text-emerald-400 tracking-wider flex items-center justify-end gap-1.5">
-            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <div class="font-mono font-extrabold text-lg text-emerald-600 dark:text-emerald-400 tracking-wider flex items-center justify-end gap-1.5">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping"></span>
             {{ currentTime }}
           </div>
-          <div class="text-xs text-slate-400 font-medium">{{ currentDate }}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">{{ currentDate }}</div>
         </div>
 
-        <div class="flex items-center gap-1 border-l border-slate-800 pl-3">
+        <div class="flex items-center gap-1 border-l border-slate-200 dark:border-slate-800 pl-3">
           <!-- Audio mute toggle -->
           <button
-            class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
             :title="isMuted ? 'Aktifkan Suara Panggilan' : 'Matikan Suara'"
             @click="isMuted = !isMuted"
           >
-            <UIcon :name="isMuted ? 'i-lucide-volume-x' : 'i-lucide-volume-2'" class="w-5 h-5 text-emerald-400" />
+            <UIcon :name="isMuted ? 'i-lucide-volume-x' : 'i-lucide-volume-2'" class="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           </button>
 
           <!-- Toggle Controls Bar -->
           <button
-            class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
             title="Sembunyikan / Tampilkan Tombol Operator"
             @click="showControls = !showControls"
           >
             <UIcon name="i-lucide-sliders" class="w-5 h-5" />
           </button>
 
+          <!-- Theme toggle (Light / Dark) -->
+          <button
+            class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
+            :title="isDark ? 'Beralih ke Mode Terang (Light)' : 'Beralih ke Mode Gelap (Dark)'"
+            @click="toggleColorMode"
+          >
+            <UIcon :name="isDark ? 'i-lucide-sun' : 'i-lucide-moon'" class="w-5 h-5 text-amber-500 dark:text-amber-400" />
+          </button>
+
           <!-- Fullscreen toggle -->
           <button
-            class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
             :title="isFullscreen ? 'Keluar Layar Penuh' : 'Mode TV Layar Penuh'"
             @click="toggleFullscreen"
           >
-            <UIcon :name="isFullscreen ? 'i-lucide-minimize' : 'i-lucide-maximize'" class="w-5 h-5 text-primary-400" />
+            <UIcon :name="isFullscreen ? 'i-lucide-minimize' : 'i-lucide-maximize'" class="w-5 h-5 text-primary-600 dark:text-primary-400" />
           </button>
+
+          <!-- Back to Dashboard -->
+          <NuxtLink
+            to="/"
+            class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
+            title="Kembali ke Dashboard Admin"
+          >
+            <UIcon name="i-lucide-layout-dashboard" class="w-5 h-5 text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400" />
+          </NuxtLink>
         </div>
       </div>
     </header>
@@ -508,11 +533,11 @@ const tickerMessages = [
       <!-- LEFT / CENTER COLUMN: ACTIVE CALLING TICKET HERO (Col 12 / 8) -->
       <div class="lg:col-span-8 flex flex-col gap-6">
         <!-- HERO CARD: SEDANG DILAYANI -->
-        <div class="flex-1 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-800/80 border-2 border-primary-500/50 p-7 flex flex-col justify-between shadow-2xl shadow-primary-950/50 relative overflow-hidden">
+        <div class="flex-1 rounded-3xl bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-800/80 border-2 border-primary-300/80 dark:border-primary-500/50 p-7 flex flex-col justify-between shadow-xl shadow-primary-500/10 dark:shadow-2xl dark:shadow-primary-950/50 relative overflow-hidden transition-all">
           <!-- Sound wave pulsing banner if calling -->
           <div
             v-if="isAnnouncing"
-            class="absolute top-0 left-0 right-0 py-1 bg-gradient-to-r from-emerald-600 to-teal-500 text-center font-bold text-xs uppercase tracking-widest text-white flex items-center justify-center gap-2 animate-pulse"
+            class="absolute top-0 left-0 right-0 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-500 text-center font-bold text-xs uppercase tracking-widest text-white flex items-center justify-center gap-2 animate-pulse shadow-xs"
           >
             <UIcon name="i-lucide-volume-2" class="w-4 h-4 animate-bounce" />
             SEDANG MEMANGGIL NOMOR ANTRIAN...
@@ -521,13 +546,13 @@ const tickerMessages = [
           <!-- Top Label -->
           <div class="flex items-center justify-between pt-2">
             <div class="flex items-center gap-2">
-              <span class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
-              <span class="text-sm font-extrabold uppercase tracking-widest text-emerald-400">
+              <span class="w-3 h-3 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping"></span>
+              <span class="text-sm font-extrabold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
                 PANGGILAN SAAT INI
               </span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="px-3 py-1 rounded-full text-xs font-bold bg-primary-500/20 text-primary-300 border border-primary-500/30">
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200 dark:bg-primary-500/20 dark:text-primary-300 dark:border-primary-500/30">
                 {{ activeQueue.polyName }}
               </span>
             </div>
@@ -535,42 +560,42 @@ const tickerMessages = [
 
           <!-- Center Massive Ticket -->
           <div class="text-center my-auto py-6">
-            <div class="inline-block px-10 py-5 rounded-3xl bg-slate-950/80 border-4 border-primary-500 shadow-inner shadow-primary-500/20">
-              <div class="text-7xl sm:text-8xl md:text-9xl font-black font-mono tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-primary-300 drop-shadow-md">
+            <div class="inline-block px-10 py-5 rounded-3xl bg-gradient-to-b from-blue-50/70 via-white to-slate-100/80 dark:bg-slate-950/80 border-4 border-primary-500 shadow-lg shadow-primary-500/15 dark:shadow-inner dark:shadow-primary-500/20">
+              <div class="text-7xl sm:text-8xl md:text-9xl font-black font-mono tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-primary-700 via-primary-600 to-blue-800 dark:from-white dark:via-slate-100 dark:to-primary-300 drop-shadow-xs">
                 {{ activeQueue.ticketNumber }}
               </div>
             </div>
 
             <!-- Patient Name -->
             <div class="mt-5">
-              <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight">
+              <h2 class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
                 {{ activeQueue.patientName }}
               </h2>
-              <p class="text-sm sm:text-base text-primary-300 font-semibold mt-1">
+              <p class="text-sm sm:text-base text-primary-600 dark:text-primary-300 font-bold mt-1">
                 {{ activeQueue.treatmentName }}
               </p>
             </div>
           </div>
 
           <!-- Bottom Room & Doctor Indicator -->
-          <div class="pt-4 border-t border-slate-800/80 grid grid-cols-2 gap-4 bg-slate-950/40 p-4 rounded-2xl">
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-2 gap-4 bg-slate-50/90 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-200/60 dark:border-transparent">
             <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                 <UIcon name="i-lucide-map-pin" class="w-6 h-6" />
               </div>
               <div>
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Ruangan / Unit</span>
-                <span class="text-base sm:text-lg font-black text-emerald-300">Dental Unit {{ activeQueue.unitNumber }}</span>
+                <span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Ruangan / Unit</span>
+                <span class="text-base sm:text-lg font-black text-emerald-700 dark:text-emerald-300">Dental Unit {{ activeQueue.unitNumber }}</span>
               </div>
             </div>
 
             <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-xl bg-primary-500/10 border border-primary-500/30 flex items-center justify-center text-primary-400">
+              <div class="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
                 <UIcon name="i-lucide-stethoscope" class="w-6 h-6" />
               </div>
               <div>
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Dokter Penanggung Jawab</span>
-                <span class="text-base sm:text-lg font-bold text-white truncate block">{{ activeQueue.doctorName }}</span>
+                <span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Dokter Penanggung Jawab</span>
+                <span class="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate block">{{ activeQueue.doctorName }}</span>
               </div>
             </div>
           </div>
@@ -581,30 +606,30 @@ const tickerMessages = [
           <div
             v-for="u in dentalUnits"
             :key="u.id"
-            class="p-3.5 rounded-2xl border transition-all duration-300 flex flex-col justify-between gap-2"
+            class="p-3.5 rounded-2xl border transition-all duration-300 flex flex-col justify-between gap-2 shadow-xs"
             :class="u.status === 'BUSY'
-              ? 'bg-slate-900/90 border-emerald-500/40 shadow-md shadow-emerald-950/20'
-              : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'"
+              ? 'bg-emerald-50/70 dark:bg-slate-900/90 border-emerald-300 dark:border-emerald-500/40 shadow-emerald-500/10 dark:shadow-emerald-950/20'
+              : 'bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'"
           >
             <div class="flex items-center justify-between">
-              <span class="text-xs font-extrabold text-white">{{ u.unitName }}</span>
+              <span class="text-xs font-extrabold text-slate-900 dark:text-white">{{ u.unitName }}</span>
               <span
                 class="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
-                :class="u.status === 'BUSY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'"
+                :class="u.status === 'BUSY' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'"
               >
                 {{ u.status === 'BUSY' ? 'Melayani' : 'Tersedia' }}
               </span>
             </div>
 
             <div>
-              <div v-if="u.status === 'BUSY'" class="flex items-center gap-1.5 font-mono font-black text-xl text-emerald-400">
-                <UIcon name="i-lucide-ticket-percent" class="w-4 h-4" />
+              <div v-if="u.status === 'BUSY'" class="flex items-center gap-1.5 font-mono font-black text-xl text-emerald-700 dark:text-emerald-400">
+                <UIcon name="i-lucide-ticket-percent" class="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 {{ u.currentTicket }}
               </div>
-              <div v-else class="text-slate-500 text-xs italic">
+              <div v-else class="text-slate-400 dark:text-slate-500 text-xs italic">
                 Siap periksa pasien
               </div>
-              <div class="text-[11px] text-slate-300 font-medium truncate mt-0.5">{{ u.doctorName }}</div>
+              <div class="text-[11px] text-slate-600 dark:text-slate-300 font-medium truncate mt-0.5">{{ u.doctorName }}</div>
             </div>
           </div>
         </div>
@@ -613,14 +638,14 @@ const tickerMessages = [
       <!-- RIGHT COLUMN: UPCOMING QUEUE LIST (Col 12 / 4) -->
       <div class="lg:col-span-4 flex flex-col gap-4">
         <!-- Card Antrian Menunggu -->
-        <div class="flex-1 rounded-3xl bg-slate-900/80 border border-slate-800 p-5 flex flex-col justify-between shadow-xl">
+        <div class="flex-1 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 p-5 flex flex-col justify-between shadow-lg shadow-slate-200/50 dark:shadow-xl dark:shadow-none transition-all">
           <div>
-            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div class="flex items-center gap-2">
-                <UIcon name="i-lucide-users" class="w-5 h-5 text-primary-400" />
-                <h3 class="font-extrabold text-sm tracking-wide text-white">ANTRIAN BERIKUTNYA</h3>
+                <UIcon name="i-lucide-users" class="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                <h3 class="font-extrabold text-sm tracking-wide text-slate-900 dark:text-white">ANTRIAN BERIKUTNYA</h3>
               </div>
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-500/20 text-primary-300">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200 dark:bg-primary-500/20 dark:text-primary-300 dark:border-transparent">
                 {{ waitingQueues.length }} Menunggu
               </span>
             </div>
@@ -629,51 +654,51 @@ const tickerMessages = [
             <div class="space-y-2.5 mt-3 overflow-y-auto max-h-[380px] pr-1">
               <div
                 v-if="waitingQueues.length === 0"
-                class="py-12 text-center text-slate-500 text-xs italic"
+                class="py-12 text-center text-slate-400 dark:text-slate-500 text-xs italic"
               >
                 Tidak ada antrian yang menunggu saat ini.
               </div>
               <div
-                v-for="(item, idx) in waitingQueues"
+                v-for="item in waitingQueues"
                 :key="item.id"
-                class="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between gap-3 hover:border-slate-700 transition-colors"
+                class="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between gap-3 hover:border-primary-300 dark:hover:border-slate-700 transition-colors shadow-xs dark:shadow-none"
               >
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-xl bg-slate-800 text-primary-300 font-mono font-black text-sm flex items-center justify-center border border-slate-700">
+                  <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 text-primary-700 dark:text-primary-300 font-mono font-black text-sm flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-xs dark:shadow-none">
                     {{ item.ticketNumber }}
                   </div>
                   <div>
-                    <h4 class="font-bold text-xs text-white leading-snug">{{ item.patientName }}</h4>
-                    <p class="text-[10px] text-slate-400 truncate">{{ item.doctorName }}</p>
+                    <h4 class="font-bold text-xs text-slate-900 dark:text-white leading-snug">{{ item.patientName }}</h4>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">{{ item.doctorName }}</p>
                   </div>
                 </div>
 
                 <div class="text-right">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-amber-400 block mb-0.5">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 border border-amber-200 text-amber-800 dark:bg-slate-800 dark:border-transparent dark:text-amber-400 block mb-0.5">
                     Unit {{ item.unitNumber }}
                   </span>
-                  <span class="text-[10px] text-slate-500 font-mono">~{{ item.estimatedTime }}</span>
+                  <span class="text-[10px] text-slate-500 dark:text-slate-500 font-mono">~{{ item.estimatedTime }}</span>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Bottom: Quick stats & Completed ticker -->
-          <div class="pt-3 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+          <div class="pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
             <span>Selesai Dilayani Hari Ini:</span>
-            <span class="font-bold text-emerald-400">{{ completedQueues.length }} Pasien</span>
+            <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ completedQueues.length }} Pasien</span>
           </div>
         </div>
 
         <!-- OPERATOR CONTROL BAR (Quick Buttons) -->
-        <div v-if="showControls" class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5">
+        <div v-if="showControls" class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5 shadow-md shadow-slate-200/50 dark:shadow-none">
           <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <UIcon name="i-lucide-sliders" class="w-3.5 h-3.5 text-primary" />
+            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <UIcon name="i-lucide-sliders" class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
               Kontrol Petugas / Resepsionis
             </span>
             <button
-              class="text-[11px] text-primary-400 hover:underline font-bold flex items-center gap-1"
+              class="text-[11px] text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:underline font-bold flex items-center gap-1"
               @click="showWalkinModal = true"
             >
               <UIcon name="i-lucide-plus" class="w-3 h-3" />
@@ -683,7 +708,7 @@ const tickerMessages = [
 
           <div class="grid grid-cols-2 gap-2">
             <button
-              class="px-3 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-900/30 hover:opacity-95 active:scale-95 transition-all"
+              class="px-3 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 dark:shadow-emerald-900/30 hover:opacity-95 active:scale-95 transition-all"
               @click="callNextQueue"
             >
               <UIcon name="i-lucide-megaphone" class="w-4 h-4" />
@@ -691,26 +716,26 @@ const tickerMessages = [
             </button>
 
             <button
-              class="px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-700 active:scale-95 transition-all"
+              class="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all"
               @click="recallCurrentQueue"
             >
-              <UIcon name="i-lucide-volume-2" class="w-4 h-4 text-emerald-400" />
+              <UIcon name="i-lucide-volume-2" class="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               Panggil Ulang (Suara)
             </button>
 
             <button
-              class="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 font-semibold text-xs flex items-center justify-center gap-1"
+              class="px-3 py-2 rounded-xl bg-slate-100/80 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center justify-center gap-1 transition-colors"
               @click="markCompleted"
             >
-              <UIcon name="i-lucide-check-circle" class="w-3.5 h-3.5 text-emerald-400" />
+              <UIcon name="i-lucide-check-circle" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               Tandai Selesai
             </button>
 
             <button
-              class="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 font-semibold text-xs flex items-center justify-center gap-1"
+              class="px-3 py-2 rounded-xl bg-slate-100/80 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center justify-center gap-1 transition-colors"
               @click="skipCurrentQueue"
             >
-              <UIcon name="i-lucide-skip-forward" class="w-3.5 h-3.5 text-amber-400" />
+              <UIcon name="i-lucide-skip-forward" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               Lewati Antrian
             </button>
           </div>
@@ -719,14 +744,14 @@ const tickerMessages = [
     </main>
 
     <!-- 3. BOTTOM LIVE RUNNING TICKER -->
-    <footer class="bg-slate-900/95 border-t border-slate-800 py-2.5 px-6 flex items-center gap-4 z-10 overflow-hidden">
+    <footer class="bg-white/95 dark:bg-slate-900/95 border-t border-slate-200/90 dark:border-slate-800 py-2.5 px-6 flex items-center gap-4 z-10 overflow-hidden shadow-xs dark:shadow-none">
       <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary-600 text-white font-extrabold text-[11px] uppercase tracking-wider shrink-0">
         <UIcon name="i-lucide-bell" class="w-3.5 h-3.5" />
         INFO KLINIK
       </div>
 
       <div class="overflow-hidden whitespace-nowrap w-full">
-        <div class="inline-block animate-marquee text-xs text-slate-300 font-medium">
+        <div class="inline-block animate-marquee text-xs text-slate-700 dark:text-slate-300 font-medium">
           <span v-for="(msg, i) in tickerMessages" :key="i" class="mx-6">
             {{ msg }}
           </span>
@@ -737,24 +762,24 @@ const tickerMessages = [
     <!-- MODAL PENDAFTARAN TIKET WALK-IN -->
     <UModal v-model:open="showWalkinModal" title="Pendaftaran Antrian Walk-in (Di Tempat)">
       <template #body>
-        <form class="space-y-3.5 text-xs text-gray-800 dark:text-white" @submit.prevent="registerWalkinTicket">
+        <form class="space-y-3.5 text-xs text-slate-800 dark:text-white" @submit.prevent="registerWalkinTicket">
           <div>
-            <label class="block font-semibold mb-1">Nama Pasien *</label>
+            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Nama Pasien *</label>
             <input
               v-model="walkinForm.patientName"
               type="text"
               placeholder="Nama lengkap pasien..."
-              class="w-full p-2.5 border rounded-lg bg-white dark:bg-gray-800 font-semibold"
+              class="w-full p-2.5 border rounded-lg bg-slate-50 dark:bg-gray-800 border-slate-300 dark:border-gray-700 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               required
             >
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-semibold mb-1">Dental Unit / Poli</label>
+              <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Dental Unit / Poli</label>
               <select
                 v-model.number="walkinForm.unitNumber"
-                class="w-full p-2 border rounded-lg bg-white dark:bg-gray-800"
+                class="w-full p-2 border rounded-lg bg-slate-50 dark:bg-gray-800 border-slate-300 dark:border-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option :value="1">Unit 1 - Poli Spesialis Ortodonti</option>
                 <option :value="2">Unit 2 - Poli Gigi Umum & Bedah</option>
@@ -764,10 +789,10 @@ const tickerMessages = [
             </div>
 
             <div>
-              <label class="block font-semibold mb-1">Dokter</label>
+              <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Dokter</label>
               <select
                 v-model="walkinForm.doctorName"
-                class="w-full p-2 border rounded-lg bg-white dark:bg-gray-800"
+                class="w-full p-2 border rounded-lg bg-slate-50 dark:bg-gray-800 border-slate-300 dark:border-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="drg. Friski Raisis, Sp.Ort">drg. Friski Raisis, Sp.Ort</option>
                 <option value="drg. Siti Aminah">drg. Siti Aminah</option>
@@ -778,16 +803,16 @@ const tickerMessages = [
           </div>
 
           <div>
-            <label class="block font-semibold mb-1">Layanan / Keluhan</label>
+            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Layanan / Keluhan</label>
             <input
               v-model="walkinForm.treatmentName"
               type="text"
               placeholder="Contoh: Scaling karang gigi / Cabut gigi..."
-              class="w-full p-2 border rounded-lg bg-white dark:bg-gray-800"
+              class="w-full p-2 border rounded-lg bg-slate-50 dark:bg-gray-800 border-slate-300 dark:border-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
           </div>
 
-          <div class="flex justify-end gap-2 pt-3 border-t">
+          <div class="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-gray-800">
             <UButton label="Batal" color="neutral" variant="ghost" @click="showWalkinModal = false" />
             <UButton label="Cetak & Masukkan Antrian" color="primary" type="submit" />
           </div>
